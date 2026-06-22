@@ -1,0 +1,24 @@
+{
+  "id": "westmarch",
+  "title": "WestMarch Système",
+  "version": "1.1.6",
+  "changelog": "2026-06-20",
+  "authors": [
+		{
+			"name": "Soruta",
+			"discord": "s0ruta"
+		}
+	],
+  "compatibility": {
+    "minimum": "13",
+    "verified": "13"
+  },
+  "description": "Système de jeu WestMarch",
+  "esmodules": [
+    "./index.js"
+  ],
+  "styles": [
+    "./styles/chat.css",
+    "./styles/character.css"
+  ]
+}

@@ -1,0 +1,52 @@
+.tabbedchatlog.tabs {
+    flex: 0;
+    margin: 0 0 5px;
+    border-bottom: 1px solid #ff6400;
+    box-shadow: 0 0 10px red;
+    line-height: 1.2;
+    width: 100%;
+}
+
+.tabbed-controls {
+    flex: 0;
+    margin: 0 0 5px;
+    line-height: 1.2;
+    width: 100%;
+}
+
+.tabbedchatlog .item.active {
+    color: #FFF;
+    border: 1px solid red;
+    border-bottom: none;
+    box-shadow: 0 0 6px inset #ff6400;
+    border-radius: 5px 5px 0 0;
+}
+
+.tabbed-controls .ui-control {
+    height: 18px;
+    flex: 1;
+}
+
+.hardHide {
+    display: none !important;
+}
+
+#ICNotification {
+    top: 0px;
+    right: 196px;
+}
+
+#OOCNotification {
+    top: 0px;
+    right: 8px;
+}
+
+#OTHERNotification {
+    top: 0px;
+    right: 115px;
+}
+
+#players .players-list {
+    gap: 4px;
+    max-height: 300px;
+}
