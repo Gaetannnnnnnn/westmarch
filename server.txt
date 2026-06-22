@@ -1,3 +1,0 @@
-51.75.73.92
-p22 ouvert
-utilisateur debian
