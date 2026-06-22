@@ -20,5 +20,8 @@
   "styles": [
     "./styles/chat.css",
     "./styles/character.css"
-  ]
+  ],
+  "url": "https://github.com/Gaetannnnnnnn/westmarch.git",
+  "manifest": "https://github.com/Gaetannnnnnnn/westmarch/blob/4aa762887fd4cc2c56b292fe7673a3017f008756/westmarch/module.json",
+  "download": "https://github.com/Gaetannnnnnnn/westmarch/blob/4aa762887fd4cc2c56b292fe7673a3017f008756/westmarch.zip"
 }
