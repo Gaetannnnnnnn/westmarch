@@ -1,11 +1,14 @@
 // ============================================================
 // token.js — Apparences multiples pour le token (GM uniquement)
-// Chaque apparence = une image + un anneau dynamique (Token Ring
-// natif Foundry v13) optionnel, propre à cette apparence.
+// Le GM importe une image de personnage + une image de bordure
+// (avec centre transparent), centre/zoome le perso derrière la
+// bordure, et le tout est fusionné en un seul fichier token.
 // ============================================================
 
-// Normalise une entrée de la liste (compat avec l'ancien format
-// où chaque entrée n'était qu'une simple chaîne de chemin).
+const CANVAS_SIZE = 400;
+
+// Normalise une entrée de la liste (compat avec les anciens formats :
+// simple chaîne de chemin, ou objet {src, ring}).
 function normalizeEntry(entry) {
     if (typeof entry === "string") {
         return { src: entry, ring: null };
@@ -16,43 +19,70 @@ function normalizeEntry(entry) {
     };
 }
 
-// Crée le popup d'import d'une apparence (image + anneau dynamique).
-// Appelle onConfirm({src, ring}) si le GM valide.
+async function ensureUploadFolder() {
+    try {
+        await FilePicker.createDirectory("data", "westmarch-tokens");
+    } catch (e) {
+        // Le dossier existe déjà : on ignore l'erreur
+    }
+}
+
+function drawCheckerboard(ctx, size) {
+    const tile = 16;
+    for (let y = 0; y < size; y += tile) {
+        for (let x = 0; x < size; x += tile) {
+            ctx.fillStyle = ((x / tile + y / tile) % 2 === 0) ? "#444" : "#666";
+            ctx.fillRect(x, y, tile, tile);
+        }
+    }
+}
+
+// Crée le popup d'import d'une apparence (image perso + bordure,
+// avec cadrage à la souris). Appelle onConfirm({src, ring}) si validé.
 function openImportPopup(onConfirm) {
-    let chosenPath = null;
+    const state = {
+        charImg: null,
+        borderImg: null,
+        offsetX: 0,
+        offsetY: 0,
+        scale: 1,
+        dragging: false,
+        lastX: 0,
+        lastY: 0
+    };
 
     const overlay = $(`
         <div class="westmarch-import-overlay" style="position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:9999; display:flex; align-items:center; justify-content:center;">
-            <div class="westmarch-import-popup" style="background:#1f1f1f; border:1px solid #555; border-radius:6px; padding:16px; width:340px; color:#eee; font-size:13px;">
+            <div class="westmarch-import-popup" style="background:#1f1f1f; border:1px solid #555; border-radius:6px; padding:16px; width:380px; color:#eee; font-size:13px;">
                 <h3 style="margin:0 0 10px; font-size:15px;">Importer un token</h3>
 
-                <div style="display:flex; gap:10px; align-items:center; margin-bottom:10px;">
-                    <div class="westmarch-import-preview" style="width:64px; height:64px; flex:0 0 auto; border:1px solid #555; border-radius:4px; background:#000 center/cover no-repeat; display:flex; align-items:center; justify-content:center; overflow:hidden;">
-                        <i class="fas fa-image" style="opacity:0.4;"></i>
-                    </div>
-                    <div style="display:flex; flex-direction:column; gap:6px; flex:1;">
-                        <button type="button" class="westmarch-import-browse"><i class="fas fa-folder-open"></i> Parcourir la base</button>
-                        <button type="button" class="westmarch-import-upload"><i class="fas fa-upload"></i> Importer depuis mon PC</button>
-                        <input type="file" class="westmarch-import-file-input" accept="image/*" style="display:none;">
+                <div style="display:flex; justify-content:center; margin-bottom:10px;">
+                    <canvas class="westmarch-import-canvas" width="${CANVAS_SIZE}" height="${CANVAS_SIZE}" style="width:220px; height:220px; border:1px solid #555; border-radius:4px; cursor:move;"></canvas>
+                </div>
+
+                <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
+                    <i class="fas fa-search" style="opacity:0.7;"></i>
+                    <input type="range" class="westmarch-zoom-slider" min="20" max="400" value="100" style="flex:1;">
+                    <button type="button" class="westmarch-reset-frame" title="Réinitialiser le cadrage"><i class="fas fa-rotate-left"></i></button>
+                </div>
+
+                <div style="margin-bottom:8px;">
+                    <div style="font-weight:bold; margin-bottom:4px;">Image du personnage</div>
+                    <div style="display:flex; gap:6px;">
+                        <button type="button" class="westmarch-pick-char-browse" style="flex:1;"><i class="fas fa-folder-open"></i> Parcourir</button>
+                        <button type="button" class="westmarch-pick-char-upload" style="flex:1;"><i class="fas fa-upload"></i> Importer (PC)</button>
+                        <input type="file" class="westmarch-char-file-input" accept="image/*" style="display:none;">
                     </div>
                 </div>
 
-                <fieldset style="border:1px solid #555; border-radius:4px; padding:8px; margin-bottom:12px;">
-                    <legend style="font-size:12px;">Anneau dynamique (token border)</legend>
-                    <label style="display:flex; align-items:center; gap:6px; margin-bottom:6px;">
-                        <input type="checkbox" class="westmarch-ring-enabled"> Activer l'anneau
-                    </label>
-                    <div class="westmarch-ring-options" style="display:flex; gap:14px; opacity:0.4; pointer-events:none;">
-                        <label style="display:flex; flex-direction:column; gap:2px;">
-                            Couleur anneau
-                            <input type="color" class="westmarch-ring-color" value="#ffffff">
-                        </label>
-                        <label style="display:flex; flex-direction:column; gap:2px;">
-                            Couleur de fond
-                            <input type="color" class="westmarch-ring-bg" value="#000000">
-                        </label>
+                <div style="margin-bottom:12px;">
+                    <div style="font-weight:bold; margin-bottom:4px;">Bordure du token</div>
+                    <div style="display:flex; gap:6px;">
+                        <button type="button" class="westmarch-pick-border-browse" style="flex:1;"><i class="fas fa-folder-open"></i> Parcourir</button>
+                        <button type="button" class="westmarch-pick-border-upload" style="flex:1;"><i class="fas fa-upload"></i> Importer (PC)</button>
+                        <input type="file" class="westmarch-border-file-input" accept="image/*" style="display:none;">
                     </div>
-                </fieldset>
+                </div>
 
                 <div style="display:flex; gap:8px; justify-content:flex-end;">
                     <button type="button" class="westmarch-import-cancel">Annuler</button>
@@ -62,69 +92,140 @@ function openImportPopup(onConfirm) {
         </div>
     `);
 
-    const setPreview = (path) => {
-        chosenPath = path;
-        overlay.find(".westmarch-import-preview").css("background-image", `url("${path}")`).find("i").hide();
-        overlay.find(".westmarch-import-confirm").prop("disabled", false);
+    const canvas = overlay.find(".westmarch-import-canvas")[0];
+    const ctx = canvas.getContext("2d");
+
+    const redraw = () => {
+        ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
+        drawCheckerboard(ctx, CANVAS_SIZE);
+
+        if (state.charImg) {
+            ctx.save();
+            ctx.translate(CANVAS_SIZE / 2 + state.offsetX, CANVAS_SIZE / 2 + state.offsetY);
+            ctx.scale(state.scale, state.scale);
+            ctx.drawImage(state.charImg, -state.charImg.width / 2, -state.charImg.height / 2);
+            ctx.restore();
+        }
+        if (state.borderImg) {
+            ctx.drawImage(state.borderImg, 0, 0, CANVAS_SIZE, CANVAS_SIZE);
+        }
+
+        overlay.find(".westmarch-import-confirm").prop("disabled", !state.charImg);
     };
 
-    overlay.find(".westmarch-ring-enabled").on("change", (ev) => {
-        overlay.find(".westmarch-ring-options").css({
-            opacity: ev.target.checked ? 1 : 0.4,
-            "pointer-events": ev.target.checked ? "auto" : "none"
-        });
-    });
-
-    overlay.find(".westmarch-import-browse").on("click", () => {
-        const fp = new FilePicker({
-            type: "image",
-            callback: (path) => setPreview(path)
-        });
-        fp.browse();
-    });
-
-    overlay.find(".westmarch-import-upload").on("click", () => {
-        overlay.find(".westmarch-import-file-input").trigger("click");
-    });
-
-    overlay.find(".westmarch-import-file-input").on("change", async (ev) => {
-        const file = ev.target.files?.[0];
-        if (!file) return;
-        try {
-            const folder = "westmarch-tokens";
-            try {
-                await FilePicker.createDirectory("data", folder);
-            } catch (e) {
-                // Le dossier existe déjà : on ignore l'erreur
+    const loadImage = (path, target) => {
+        const img = new Image();
+        img.onload = () => {
+            state[target] = img;
+            if (target === "charImg") {
+                state.offsetX = 0;
+                state.offsetY = 0;
+                state.scale = 1;
+                overlay.find(".westmarch-zoom-slider").val(100);
             }
-            const result = await FilePicker.upload("data", folder, file);
-            if (result?.path) setPreview(result.path);
-        } catch (err) {
-            console.error("[WestMarch] Erreur upload token :", err);
-            ui.notifications.error("Erreur lors de l'upload de l'image (voir console).");
-        }
+            redraw();
+        };
+        img.onerror = () => ui.notifications.error("Impossible de charger l'image sélectionnée.");
+        img.src = path;
+    };
+
+    // ---- Sélection des images (parcourir / upload) ----
+    const wireImagePicker = (browseSel, uploadSel, inputSel, target) => {
+        overlay.find(browseSel).on("click", () => {
+            const fp = new FilePicker({ type: "image", callback: (path) => loadImage(path, target) });
+            fp.browse();
+        });
+        overlay.find(uploadSel).on("click", () => overlay.find(inputSel).trigger("click"));
+        overlay.find(inputSel).on("change", async (ev) => {
+            const file = ev.target.files?.[0];
+            if (!file) return;
+            try {
+                await ensureUploadFolder();
+                const result = await FilePicker.upload("data", "westmarch-tokens", file);
+                if (result?.path) loadImage(result.path, target);
+            } catch (err) {
+                console.error("[WestMarch] Erreur upload :", err);
+                ui.notifications.error("Erreur lors de l'upload de l'image (voir console).");
+            }
+        });
+    };
+
+    wireImagePicker(".westmarch-pick-char-browse", ".westmarch-pick-char-upload", ".westmarch-char-file-input", "charImg");
+    wireImagePicker(".westmarch-pick-border-browse", ".westmarch-pick-border-upload", ".westmarch-border-file-input", "borderImg");
+
+    // ---- Cadrage : déplacement à la souris ----
+    const pixelRatio = () => CANVAS_SIZE / canvas.clientWidth;
+
+    canvas.addEventListener("pointerdown", (ev) => {
+        state.dragging = true;
+        state.lastX = ev.clientX;
+        state.lastY = ev.clientY;
+    });
+    window.addEventListener("pointermove", (ev) => {
+        if (!state.dragging) return;
+        const ratio = pixelRatio();
+        state.offsetX += (ev.clientX - state.lastX) * ratio;
+        state.offsetY += (ev.clientY - state.lastY) * ratio;
+        state.lastX = ev.clientX;
+        state.lastY = ev.clientY;
+        redraw();
+    });
+    window.addEventListener("pointerup", () => { state.dragging = false; });
+
+    // ---- Cadrage : zoom (molette + slider) ----
+    canvas.addEventListener("wheel", (ev) => {
+        ev.preventDefault();
+        const delta = ev.deltaY > 0 ? -10 : 10;
+        const slider = overlay.find(".westmarch-zoom-slider");
+        const newVal = Math.min(400, Math.max(20, parseInt(slider.val()) + delta));
+        slider.val(newVal);
+        state.scale = newVal / 100;
+        redraw();
+    });
+    overlay.find(".westmarch-zoom-slider").on("input", (ev) => {
+        state.scale = parseInt(ev.target.value) / 100;
+        redraw();
     });
 
-    overlay.find(".westmarch-import-cancel").on("click", () => overlay.remove());
-    overlay.on("click", (ev) => { if (ev.target === overlay[0]) overlay.remove(); });
+    overlay.find(".westmarch-reset-frame").on("click", () => {
+        state.offsetX = 0;
+        state.offsetY = 0;
+        state.scale = 1;
+        overlay.find(".westmarch-zoom-slider").val(100);
+        redraw();
+    });
+
+    // ---- Fermeture / validation ----
+    const cleanup = () => {
+        overlay.remove();
+    };
+
+    overlay.find(".westmarch-import-cancel").on("click", cleanup);
+    overlay.on("click", (ev) => { if (ev.target === overlay[0]) cleanup(); });
 
     overlay.find(".westmarch-import-confirm").on("click", () => {
-        if (!chosenPath) return;
-        const ringEnabled = overlay.find(".westmarch-ring-enabled").prop("checked");
-        const entry = {
-            src: chosenPath,
-            ring: ringEnabled ? {
-                enabled: true,
-                colors: {
-                    ring: overlay.find(".westmarch-ring-color").val(),
-                    background: overlay.find(".westmarch-ring-bg").val()
+        if (!state.charImg) return;
+        canvas.toBlob(async (blob) => {
+            if (!blob) {
+                ui.notifications.error("Erreur lors de la génération de l'image.");
+                return;
+            }
+            try {
+                await ensureUploadFolder();
+                const file = new File([blob], `token-${Date.now()}.png`, { type: "image/png" });
+                const result = await FilePicker.upload("data", "westmarch-tokens", file);
+                if (result?.path) {
+                    onConfirm({ src: result.path, ring: null });
+                    cleanup();
                 }
-            } : null
-        };
-        overlay.remove();
-        onConfirm(entry);
+            } catch (err) {
+                console.error("[WestMarch] Erreur création token :", err);
+                ui.notifications.error("Erreur lors de la création du token (voir console).");
+            }
+        }, "image/png");
     });
 
+    redraw();
     $(document.body).append(overlay);
 }
 
@@ -227,10 +328,6 @@ export function TokenHooks() {
         section.find(".westmarch-add-image").click(() => {
             openImportPopup(async (entry) => {
                 const current = actor.getFlag("westmarch", "images") ?? [];
-                if (current.some(e => normalizeEntry(e).src === entry.src)) {
-                    ui.notifications.warn("Cette image est déjà dans la liste.");
-                    return;
-                }
                 const updated = [...current, entry];
                 await actor.setFlag("westmarch", "images", updated);
                 renderImages(updated);

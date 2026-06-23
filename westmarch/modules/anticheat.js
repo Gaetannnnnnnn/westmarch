@@ -83,13 +83,16 @@ export function AntiCheatHooks() {
         }
 
         // ---- Utilisations d'une feature (feat) ----
-        // On signale uniquement une hausse (récupération suspecte
-        // d'utilisations) — la baisse correspond à une utilisation normale.
-        if (changes.system?.uses?.value !== undefined && item.type === "feat") {
-            const before = item.system.uses?.value ?? 0;
-            const after = changes.system.uses.value;
-            if (after > before) {
-                events.push(`a regagné des utilisations de <strong>${item.name}</strong> (${before} → ${after})`);
+        // dnd5e v4 utilise system.uses.spent (nombre d'utilisations
+        // consommées) plutôt que system.uses.value. Une baisse de "spent"
+        // = récupération d'utilisations (suspect pendant le combat) ;
+        // une hausse = utilisation normale de la feature.
+        if (changes.system?.uses?.spent !== undefined && item.type === "feat") {
+            const before = item.system.uses?.spent ?? 0;
+            const after = changes.system.uses.spent;
+            if (after < before) {
+                const max = item.system.uses?.max ?? "?";
+                events.push(`a regagné des utilisations de <strong>${item.name}</strong> (${max - before} → ${max - after})`);
             }
         }
         if (changes.system?.uses?.max !== undefined && item.type === "feat") {

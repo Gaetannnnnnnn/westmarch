@@ -26,16 +26,22 @@ export function SessionHooks() {
         if (!game.user.getFlag("westmarch", "partyId")) return;
         if (!partyFeatureEnabled("enableSessionLog")) return;
 
-        // renderPlayers peut se déclencher sur un fragment transitoire
-        // (clone utilisé pendant une animation/redimensionnement), qui
-        // n'est jamais branché au vrai DOM ni cliquable. On ignore donc
-        // complètement le "html" du hook et on cible toujours le vrai
-        // élément #players visible et interactif.
-        const root = document.getElementById('players');
-        if (!root) return;
+        // Ni le "html" du hook ni document.getElementById('players') ne
+        // sont fiables ici : Foundry peut laisser traîner un clone
+        // transitoire (animation/redimensionnement) qui partage le même
+        // id="players", et getElementById peut alors retourner l'un ou
+        // l'autre selon l'ordre dans le DOM. Seul app.element référence
+        // toujours le vrai élément géré par l'instance "Players" elle-même.
+        const root = app.element instanceof HTMLElement ? app.element : app.element?.[0];
+        if (!root || !root.isConnected) return;
 
         // Supprime toute instance déjà présente (évite les doublons)
         $(root).find('.westmarch-close-session-wrap').remove();
+        // Supprime aussi tout clone orphelin partageant le même id="players"
+        // ailleurs dans le document, s'il en reste un.
+        document.querySelectorAll('#players .westmarch-close-session-wrap').forEach(el => {
+            if (!root.contains(el)) el.remove();
+        });
 
         // Bouton Clore la session
         const closeBtn = $(`

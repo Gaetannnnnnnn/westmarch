@@ -10,21 +10,24 @@ export function ImageHooks() {
         if (!game.user.isGM) return;
         if (!partyFeatureEnabled("enableShowParty")) return;
 
-        // Cherche la barre de contrôles header
-        const header = element.querySelector(".window-header .window-controls");
+        // En v13, les boutons sont des <button class="header-control">
+        // posés directement dans le <header class="window-header">,
+        // pas dans un sous-conteneur ".window-controls".
+        const header = element.querySelector(".window-header");
         if (!header) return;
 
         // Evite de dupliquer le bouton si déjà présent
         if (header.querySelector(".share-image-party")) return;
 
         const btn = document.createElement("button");
-        btn.classList.add("share-image-party");
-        btn.innerHTML = '<i class="fas fa-user"></i>';
-        btn.title = "Show Party";
+        btn.type = "button";
+        btn.classList.add("header-control", "icon", "fa-solid", "fa-user", "share-image-party");
+        btn.dataset.tooltip = "Show Party";
+        btn.setAttribute("aria-label", "Show Party");
         btn.addEventListener("click", () => {
             const myPartyId = game.user.getFlag("westmarch", "partyId");
-            const users = game.users.filter(user => 
-                user.id !== game.user.id && 
+            const users = game.users.filter(user =>
+                user.id !== game.user.id &&
                 user.getFlag("westmarch", "partyId") === myPartyId
             );
             if (users.length > 0) {
@@ -34,7 +37,12 @@ export function ImageHooks() {
             }
         });
 
-        header.prepend(btn);
+        const closeBtn = header.querySelector('[data-action="close"]');
+        if (closeBtn) {
+            closeBtn.before(btn);
+        } else {
+            header.appendChild(btn);
+        }
     });
 
     // Fallback : tant qu'ImagePopout n'est pas migré vers ApplicationV2
@@ -44,11 +52,11 @@ export function ImageHooks() {
         if (!game.user.isGM) return;
         if (!partyFeatureEnabled("enableShowParty")) return;
 
-        const header = $(html).find(".window-header .window-controls");
+        const header = $(html).find(".window-header");
         if (!header.length) return;
         if (header.find(".share-image-party").length) return;
 
-        const btn = $(`<button type="button" class="share-image-party" title="Show Party"><i class="fas fa-user"></i></button>`);
+        const btn = $(`<button type="button" class="header-control icon fa-solid fa-user share-image-party" data-tooltip="Show Party" aria-label="Show Party"></button>`);
         btn.on("click", () => {
             const myPartyId = game.user.getFlag("westmarch", "partyId");
             const users = game.users.filter(user =>
@@ -62,6 +70,11 @@ export function ImageHooks() {
             }
         });
 
-        header.prepend(btn);
+        const closeBtn = header.find('[data-action="close"]');
+        if (closeBtn.length) {
+            closeBtn.first().before(btn);
+        } else {
+            header.append(btn);
+        }
     });
 }

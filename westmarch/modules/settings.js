@@ -157,6 +157,26 @@ export function registerSettings() {
         requiresReload: false
     });
 
+    game.settings.register("westmarch", "enableDiscordLog", {
+        name: "Log Discord (modifications)",
+        hint: "Envoie un message dans un salon Discord (via webhook, différent du webhook IC par scène) à chaque ajout/suppression d'objet, changement de quantité, gain d'XP/niveau, et création/suppression de personnage.",
+        scope: "world",
+        config: true,
+        type: Boolean,
+        default: false,
+        requiresReload: false
+    });
+
+    game.settings.register("westmarch", "discordLogWebhookUrl", {
+        name: "URL du Webhook Discord (log)",
+        hint: "URL du webhook Discord vers lequel envoyer les logs de modifications. À créer dans Discord : Paramètres du salon → Intégrations → Webhooks → Nouveau webhook → Copier l'URL.",
+        scope: "world",
+        config: true,
+        type: String,
+        default: "",
+        requiresReload: false
+    });
+
     // ============================================================
     // SECTION : Mise en forme visuelle — regroupe les options
     // dépendantes du système de Party sous "Système de Party" avec
