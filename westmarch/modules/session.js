@@ -25,7 +25,11 @@ export function SessionHooks() {
         if (!game.user.isGM) return;
         if (!game.user.getFlag("westmarch", "partyId")) return;
         if (!partyFeatureEnabled("enableSessionLog")) return;
-        if ($(html).find('.westmarch-close-session').length) return;
+
+        // Supprime toute instance déjà présente n'importe où dans la page
+        // (évite les doublons quand renderPlayers est appelé sur un fragment
+        // différent de celui où le bouton précédent a été inséré)
+        $(document).find('.westmarch-close-session-wrap').remove();
 
         // Bouton Clore la session
         const closeBtn = $(`
@@ -274,10 +278,16 @@ async function createSessionJournal(date, content) {
     }
 
     // Créer le journal
+    // Depuis v10/v11, JournalEntry n'a plus de champ "content" direct :
+    // le texte doit être posé sur une JournalEntryPage de type "text".
     await JournalEntry.create({
         name: date,
         folder: reportFolder.id,
-        content: content,
+        pages: [{
+            name: date,
+            type: "text",
+            text: { content: content, format: 1 } // 1 = CONST.JOURNAL_ENTRY_PAGE_FORMATS.HTML
+        }],
         permission: { default: 2 }
     });
 }

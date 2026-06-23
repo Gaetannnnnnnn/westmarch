@@ -158,6 +158,7 @@ export function PlayerHooks() {
                 const targetUser = game.users.get(li.dataset.userId);
                 if (!targetUser) return false;
                 if (targetUser.id === game.user.id) return false;
+                if (targetUser.isGM) return false;
                 const myParty = game.user.getFlag('westmarch', 'partyId');
                 if (!myParty) return false;
                 return targetUser.getFlag('westmarch', 'partyId') === myParty;

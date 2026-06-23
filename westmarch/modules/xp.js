@@ -21,28 +21,27 @@ export function XpHooks() {
     // SECTION : Masquage du bouton Level Up et verrouillage du
     // champ XP sur la fiche personnage (joueurs uniquement)
     // ============================================================
-    Hooks.on("renderActorSheet", (sheet, html, data) => {
+    const hideLevelUpAndXp = (html) => {
         if (game.user.isGM) return;
         if (!game.settings.get("westmarch", "enableXpBlock")) return;
 
-        // Masquer le bouton Level Up
-        $(html).find('.level-up').hide();
-        $(html).find('[data-action="levelUp"]').hide();
+        const $html = $(html);
 
-        // Rendre le champ XP non éditable
-        $(html).find('.experience input').prop('disabled', true);
-        $(html).find('.xp input').prop('disabled', true);
-    });
+        // Bouton/badge Level Up : plusieurs variantes de markup possibles
+        // selon la version de la fiche (dnd5e v3/v4, sheets custom, etc.)
+        $html.find('[data-action]').filter(
+            (i, el) => /level.?up/i.test(el.dataset.action ?? "")
+        ).hide();
+        $html.find('.level-up, .level-up-badge, .level-badge').hide();
+
+        // Champ XP : ciblé en priorité par le name du data-binding
+        // (stable d'une version à l'autre), classes connues en fallback
+        $html.find('input[name$="xp.value"], input[name$="xp.max"]').prop('disabled', true);
+        $html.find('.experience input, .xp input').prop('disabled', true);
+    };
+
+    Hooks.on("renderActorSheet", (sheet, html, data) => hideLevelUpAndXp(html));
 
     // Pour les fiches V2 (ApplicationV2 / Tidy5e etc.)
-    Hooks.on("renderActorSheetV2", (sheet, html, data) => {
-        if (game.user.isGM) return;
-        if (!game.settings.get("westmarch", "enableXpBlock")) return;
-
-        $(html).find('.level-up').hide();
-        $(html).find('[data-action="levelUp"]').hide();
-
-        $(html).find('.experience input').prop('disabled', true);
-        $(html).find('.xp input').prop('disabled', true);
-    });
+    Hooks.on("renderActorSheetV2", (sheet, html, data) => hideLevelUpAndXp(html));
 }

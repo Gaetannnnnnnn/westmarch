@@ -3,26 +3,19 @@ export function TokenHooks() {
     // ============================================================
     // SECTION : Bouton "Image suivante" dans le HUD du token
     // - Tout le monde peut cycler sur son propre token
-    // - Nécessite que des images aient été configurées par un GM
-    //   (sur le token posé, ou par défaut sur le token prototype
-    //   de la fiche du personnage)
+    // - Les images sont stockées sur l'acteur (prototype token)
     // ============================================================
     Hooks.on("renderTokenHUD", (hud, html, data) => {
         if (!game.settings.get("westmarch", "enableTokenAppearance")) return;
         const token = hud.object;
         if (!token) return;
 
-        // Vérifier que l'utilisateur contrôle ce token
         const actor = token.actor;
         if (!actor) return;
         if (!game.user.isGM && !actor.isOwner) return;
 
-        // Récupérer la liste d'images : d'abord sur le token posé,
-        // sinon on retombe sur le token prototype de la fiche perso
-        let images = token.document.getFlag("westmarch", "images");
-        if (!images || images.length < 2) {
-            images = actor.prototypeToken?.getFlag("westmarch", "images");
-        }
+        // Les images sont toujours sur l'acteur
+        const images = actor.getFlag("westmarch", "images");
         if (!images || images.length < 2) return;
 
         // Ajouter le bouton ▶ dans le HUD
@@ -43,20 +36,25 @@ export function TokenHooks() {
     });
 
     // ============================================================
-    // SECTION : Gestion de la liste d'images dans la config du token
+    // SECTION : Gestion de la liste d'images dans le prototype token
     // - GM uniquement
-    // - Accessible via clic droit sur un token posé (renderTokenConfig)
-    //   OU via l'onglet "Jeton" de la fiche du personnage
-    //   (renderPrototypeTokenConfig)
+    // - Accessible via l'onglet "Jeton" de la fiche du personnage
+    // - Les images sont stockées sur l'acteur, donc permanentes
+    //   pour tous les tokens posés depuis cette fiche
     // ============================================================
-    const onRenderTokenConfig = (app, html, data) => {
+    Hooks.on("renderPrototypeTokenConfig", (app, html, data) => {
         if (!game.settings.get("westmarch", "enableTokenAppearance")) return;
         if (!game.user.isGM) return;
 
-        const token = app.document;
-        const images = token.getFlag("westmarch", "images") ?? [];
+        // En v13 l'acteur est accessible via app.document.parent
+        const actor = app.document?.parent ?? app.object?.actor ?? app.actor;
+        if (!actor) {
+            console.warn("[WestMarch] renderPrototypeTokenConfig : acteur introuvable", app);
+            return;
+        }
 
-        // Construire l'UI de gestion des images
+        const images = actor.getFlag("westmarch", "images") ?? [];
+
         const section = $(`
             <fieldset style="margin-top: 12px; border: 1px solid #555; padding: 8px 12px; border-radius: 4px;">
                 <legend style="font-weight: bold; font-size: 13px;">Apparences (WestMarch)</legend>
@@ -69,7 +67,6 @@ export function TokenHooks() {
             </fieldset>
         `);
 
-        // Afficher les images existantes
         const renderImages = (imgs) => {
             const list = section.find(".westmarch-image-list");
             list.empty();
@@ -86,40 +83,32 @@ export function TokenHooks() {
 
         renderImages(images);
 
-        // Bouton ajouter une image
         section.find(".westmarch-add-image").click(() => {
             const fp = new FilePicker({
                 type: "image",
                 callback: async (path) => {
-                    const current = token.getFlag("westmarch", "images") ?? [];
+                    const current = actor.getFlag("westmarch", "images") ?? [];
                     if (current.includes(path)) {
                         ui.notifications.warn("Cette image est déjà dans la liste.");
                         return;
                     }
                     const updated = [...current, path];
-                    await token.setFlag("westmarch", "images", updated);
+                    await actor.setFlag("westmarch", "images", updated);
                     renderImages(updated);
                 }
             });
             fp.browse();
         });
 
-        // Bouton supprimer une image
         section.on("click", ".westmarch-remove-image", async (ev) => {
             const index = parseInt($(ev.currentTarget).data("index"));
-            const current = token.getFlag("westmarch", "images") ?? [];
+            const current = actor.getFlag("westmarch", "images") ?? [];
             current.splice(index, 1);
-            await token.setFlag("westmarch", "images", [...current]);
+            await actor.setFlag("westmarch", "images", [...current]);
             renderImages(current);
         });
 
-        // Injecter dans la config du token
         const tab = $(html).find(".tab[data-tab='appearance']");
         (tab.length ? tab : $(html)).append(section);
-    };
-
-    // Token posé sur une scène
-    Hooks.on("renderTokenConfig", onRenderTokenConfig);
-    // Token prototype, configuré depuis l'onglet "Jeton" de la fiche du personnage
-    Hooks.on("renderPrototypeTokenConfig", onRenderTokenConfig);
+    });
 }
