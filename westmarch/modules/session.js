@@ -26,10 +26,16 @@ export function SessionHooks() {
         if (!game.user.getFlag("westmarch", "partyId")) return;
         if (!partyFeatureEnabled("enableSessionLog")) return;
 
-        // Supprime toute instance déjà présente n'importe où dans la page
-        // (évite les doublons quand renderPlayers est appelé sur un fragment
-        // différent de celui où le bouton précédent a été inséré)
-        $(document).find('.westmarch-close-session-wrap').remove();
+        // renderPlayers peut se déclencher sur un fragment transitoire
+        // (clone utilisé pendant une animation/redimensionnement), qui
+        // n'est jamais branché au vrai DOM ni cliquable. On ignore donc
+        // complètement le "html" du hook et on cible toujours le vrai
+        // élément #players visible et interactif.
+        const root = document.getElementById('players');
+        if (!root) return;
+
+        // Supprime toute instance déjà présente (évite les doublons)
+        $(root).find('.westmarch-close-session-wrap').remove();
 
         // Bouton Clore la session
         const closeBtn = $(`
@@ -49,12 +55,34 @@ export function SessionHooks() {
             }
         });
 
-        const list = $(html).find('.players-list');
+        const list = $(root).find('.players-list');
         if (list.length) {
             list.after(closeBtn);
         } else {
-            $(html).append(closeBtn);
+            $(root).append(closeBtn);
         }
+    });
+
+    // ============================================================
+    // SECTION : Capture des joueurs qui rejoignent la party en cours
+    // - Au moment de "Create Party with Log", seul le GM a sa partyId
+    //   posée : les joueurs la posent ensuite via "Join Party", donc
+    //   après le snapshot initial fait dans startSessionLog(). Sans ce
+    //   hook, sessionData.players restait vide (d'où l'absence des
+    //   noms/XP dans le journal de session).
+    // ============================================================
+    Hooks.on("updateUser", (user, changes, options, userId) => {
+        if (!sessionData.partyId) return;
+        if (changes.flags?.westmarch?.partyId !== sessionData.partyId) return;
+        if (sessionData.players.find(p => p.userId === user.id)) return;
+        if (!user.character) return;
+
+        sessionData.players.push({
+            userId: user.id,
+            actorId: user.character.id,
+            name: user.character.name,
+            xpBefore: user.character.system?.details?.xp?.value ?? 0
+        });
     });
 
     // ============================================================

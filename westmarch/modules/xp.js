@@ -15,11 +15,50 @@ export function XpHooks() {
             ui.notifications.warn("Vous n'êtes pas autorisé à modifier votre XP.");
             return false;
         }
+
+        // Certains systèmes/extensions modifient directement le niveau
+        // sur l'acteur plutôt que via l'item de classe : on bloque aussi.
+        if (changes?.system?.details?.level !== undefined) {
+            ui.notifications.warn("Vous n'êtes pas autorisé à monter de niveau.");
+            return false;
+        }
     });
 
     // ============================================================
-    // SECTION : Masquage du bouton Level Up et verrouillage du
-    // champ XP sur la fiche personnage (joueurs uniquement)
+    // SECTION : Blocage du level up via l'item de classe
+    // - En dnd5e, monter de niveau = augmenter system.levels sur
+    //   l'item "class" (ou en ajouter un nouveau pour le multiclasse).
+    // - Ça passe par ce mécanisme que ce soit via la fiche standard,
+    //   l'assistant d'avancement, OU un module tiers comme Plutonium :
+    //   tout finit par un update/create sur l'item de classe.
+    // ============================================================
+    Hooks.on("preUpdateItem", (item, changes, options, userId) => {
+        if (game.user.isGM) return true;
+        if (!game.settings.get("westmarch", "enableXpBlock")) return;
+        if (item.type !== "class") return;
+
+        if (changes?.system?.levels !== undefined) {
+            ui.notifications.warn("Vous n'êtes pas autorisé à monter de niveau.");
+            return false;
+        }
+    });
+
+    Hooks.on("preCreateItem", (item, itemData, options, userId) => {
+        if (game.user.isGM) return true;
+        if (!game.settings.get("westmarch", "enableXpBlock")) return;
+
+        // Empêche l'ajout d'une nouvelle classe (multiclasse) par un joueur
+        if ((item.type ?? itemData?.type) === "class") {
+            ui.notifications.warn("Vous n'êtes pas autorisé à monter de niveau.");
+            return false;
+        }
+    });
+
+    // ============================================================
+    // SECTION : Désactivation (sans masquer) du bouton Level Up et
+    // verrouillage du champ XP sur la fiche personnage (joueurs uniquement)
+    // - On garde le badge de niveau visible (le joueur doit voir son
+    //   niveau), on retire juste l'interactivité du clic.
     // ============================================================
     const hideLevelUpAndXp = (html) => {
         if (game.user.isGM) return;
@@ -29,10 +68,15 @@ export function XpHooks() {
 
         // Bouton/badge Level Up : plusieurs variantes de markup possibles
         // selon la version de la fiche (dnd5e v3/v4, sheets custom, etc.)
+        // On désactive le clic sans cacher l'élément (le niveau doit
+        // rester visible sur la fiche).
         $html.find('[data-action]').filter(
             (i, el) => /level.?up/i.test(el.dataset.action ?? "")
-        ).hide();
-        $html.find('.level-up, .level-up-badge, .level-badge').hide();
+        ).each((i, el) => {
+            el.removeAttribute('data-action');
+            el.style.pointerEvents = 'none';
+            el.style.cursor = 'default';
+        });
 
         // Champ XP : ciblé en priorité par le name du data-binding
         // (stable d'une version à l'autre), classes connues en fallback
