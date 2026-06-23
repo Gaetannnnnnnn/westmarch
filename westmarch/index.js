@@ -13,6 +13,7 @@ import { TokenHooks } from './modules/token.js';
 import { SessionHooks } from './modules/session.js';
 import { AntiCheatHooks } from './modules/anticheat.js';
 import { DiscordLogHooks } from './modules/discordlog.js';
+import { SocketHooks } from './modules/socket.js';
 
 Hooks.on("init", async () => {
     Handlebars.registerHelper('for', function(from, to, incr, block) {
@@ -38,4 +39,5 @@ Hooks.on("init", async () => {
     SessionHooks();
     AntiCheatHooks();
     DiscordLogHooks();
+    SocketHooks();
 });

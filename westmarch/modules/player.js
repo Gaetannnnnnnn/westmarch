@@ -146,12 +146,22 @@ export function PlayerHooks() {
             icon: '<i class="fa-solid fa-door-open"></i>',
             callback: async li => {
                 const targetUser = game.users.get(li.dataset.userId);
-                const targetScene = targetUser.viewedScene;
-                if (!targetScene) {
+                const targetSceneId = targetUser.viewedScene;
+                if (!targetSceneId) {
                     ui.notifications.warn("Ce joueur n'est sur aucune scène.");
                     return;
                 }
-                game.socket.emit("pullToScene", targetScene, game.user.id);
+
+                // Le socket "pullToScene" de Foundry v13 ne filtre plus par
+                // userId (il déplace tous les autres clients connectés, et
+                // n'est jamais reçu par l'émetteur lui-même). On change donc
+                // directement notre propre scène, sans passer par le socket.
+                const scene = game.scenes.get(targetSceneId);
+                if (!scene) {
+                    ui.notifications.warn("Scène introuvable.");
+                    return;
+                }
+                scene.view();
             },
             condition: li => {
                 if (!partyFeatureEnabled("enableJoinScene")) return false;

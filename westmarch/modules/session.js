@@ -35,13 +35,12 @@ export function SessionHooks() {
         const root = app.element instanceof HTMLElement ? app.element : app.element?.[0];
         if (!root || !root.isConnected) return;
 
-        // Supprime toute instance déjà présente (évite les doublons)
-        $(root).find('.westmarch-close-session-wrap').remove();
-        // Supprime aussi tout clone orphelin partageant le même id="players"
-        // ailleurs dans le document, s'il en reste un.
-        document.querySelectorAll('#players .westmarch-close-session-wrap').forEach(el => {
-            if (!root.contains(el)) el.remove();
-        });
+        // Supprime TOUTE instance du bouton, où qu'elle soit dans le document
+        // (pas seulement sous #players) : on a observé des clones orphelins
+        // qui finissent attachés ailleurs dans le DOM suite à un re-rendu
+        // partiel de Foundry, et qui ne sont donc jamais nettoyés si on ne
+        // cherche que sous l'élément #players actuel.
+        document.querySelectorAll('.westmarch-close-session-wrap').forEach(el => el.remove());
 
         // Bouton Clore la session
         const closeBtn = $(`

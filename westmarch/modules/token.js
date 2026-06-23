@@ -27,16 +27,6 @@ async function ensureUploadFolder() {
     }
 }
 
-function drawCheckerboard(ctx, size) {
-    const tile = 16;
-    for (let y = 0; y < size; y += tile) {
-        for (let x = 0; x < size; x += tile) {
-            ctx.fillStyle = ((x / tile + y / tile) % 2 === 0) ? "#444" : "#666";
-            ctx.fillRect(x, y, tile, tile);
-        }
-    }
-}
-
 // Crée le popup d'import d'une apparence (image perso + bordure,
 // avec cadrage à la souris). Appelle onConfirm({src, ring}) si validé.
 function openImportPopup(onConfirm) {
@@ -57,7 +47,7 @@ function openImportPopup(onConfirm) {
                 <h3 style="margin:0 0 10px; font-size:15px;">Importer un token</h3>
 
                 <div style="display:flex; justify-content:center; margin-bottom:10px;">
-                    <canvas class="westmarch-import-canvas" width="${CANVAS_SIZE}" height="${CANVAS_SIZE}" style="width:220px; height:220px; border:1px solid #555; border-radius:4px; cursor:move;"></canvas>
+                    <canvas class="westmarch-import-canvas" width="${CANVAS_SIZE}" height="${CANVAS_SIZE}" style="width:220px; height:220px; border:1px solid #555; border-radius:4px; cursor:move; background-image: linear-gradient(45deg, #444 25%, transparent 25%, transparent 75%, #444 75%), linear-gradient(45deg, #444 25%, transparent 25%, transparent 75%, #444 75%); background-size: 16px 16px; background-position: 0 0, 8px 8px; background-color:#666;"></canvas>
                 </div>
 
                 <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
@@ -96,11 +86,23 @@ function openImportPopup(onConfirm) {
     const ctx = canvas.getContext("2d");
 
     const redraw = () => {
+        // clearRect seul (pas de quadrillage dessiné dans le canvas) : le
+        // quadrillage n'est qu'un repère visuel CSS (voir background-image
+        // sur l'élément <canvas>). Si on le dessinait ici, il finirait dans
+        // le PNG exporté par toBlob() et créerait un fond carré gris autour
+        // du token rond au lieu d'une vraie transparence.
         ctx.clearRect(0, 0, CANVAS_SIZE, CANVAS_SIZE);
-        drawCheckerboard(ctx, CANVAS_SIZE);
 
         if (state.charImg) {
             ctx.save();
+            // Découpe l'image du perso en cercle avant de la dessiner, pour
+            // qu'elle ne puisse jamais dépasser du cadre rond dans les coins
+            // (même si la bordure a des coins transparents et qu'on zoome/
+            // déplace le perso au-delà du cercle).
+            ctx.beginPath();
+            ctx.arc(CANVAS_SIZE / 2, CANVAS_SIZE / 2, CANVAS_SIZE / 2, 0, Math.PI * 2);
+            ctx.clip();
+
             ctx.translate(CANVAS_SIZE / 2 + state.offsetX, CANVAS_SIZE / 2 + state.offsetY);
             ctx.scale(state.scale, state.scale);
             ctx.drawImage(state.charImg, -state.charImg.width / 2, -state.charImg.height / 2);
@@ -133,6 +135,15 @@ function openImportPopup(onConfirm) {
     const wireImagePicker = (browseSel, uploadSel, inputSel, target) => {
         overlay.find(browseSel).on("click", () => {
             const fp = new FilePicker({ type: "image", callback: (path) => loadImage(path, target) });
+
+            // Notre popup a un z-index très élevé (9999) pour rester au-dessus
+            // de l'UI de Foundry. La fenêtre du FilePicker s'ouvrait donc
+            // derrière elle, inaccessible. On la force au-dessus dès son rendu.
+            Hooks.once("renderFilePicker", (app, html) => {
+                $(html).closest(".app, .application").css("z-index", 10001);
+                $(html).css("z-index", 10001);
+            });
+
             fp.browse();
         });
         overlay.find(uploadSel).on("click", () => overlay.find(inputSel).trigger("click"));

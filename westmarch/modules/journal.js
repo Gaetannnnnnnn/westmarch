@@ -1,3 +1,5 @@
+import { pullUserToScene } from './socket.js';
+
 export function JournalHooks() {
     Hooks.on("renderJournalEntrySheet", (sheet, html, data) => renderJournalEntrySheet(sheet, html, data));
 }
@@ -13,7 +15,7 @@ function renderJournalEntrySheet(sheet, html, data) {
             callback: async (el) => {
                 const uuid = el.data("uuid");
                 const scene = await fromUuid(uuid);
-                game.socket.emit("pullToScene", scene.id, game.user.id);
+                pullUserToScene(scene.id, game.user.id);
             }
         },
         {
@@ -25,7 +27,7 @@ function renderJournalEntrySheet(sheet, html, data) {
                 const partyId = game.user.getFlag("westmarch", "partyId");
                 game.users.forEach(user => {
                     if (user.getFlag("westmarch", "partyId") === partyId) {
-                        game.socket.emit("pullToScene", scene.id, user.id);
+                        pullUserToScene(scene.id, user.id);
                     }
                 });
                 ui.notifications.info(`Groupe téléporté vers ${scene.name}`);

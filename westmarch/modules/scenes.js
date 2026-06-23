@@ -1,4 +1,5 @@
 import { partyFeatureEnabled } from './settings.js';
+import { pullUserToScene } from './socket.js';
 
 export function ScenesHooks() {
     Hooks.on('getSceneContextOptions', (html, contextMenu) => {
@@ -29,7 +30,7 @@ export function ScenesHooks() {
 function GoWithParty(destination){
     game.users.forEach(user => { 
         if (user.getFlag("westmarch", "partyId") == game.user.getFlag("westmarch", "partyId")) {
-            game.socket.emit("pullToScene", destination.id, user.id);
+            pullUserToScene(destination.id, user.id);
         }
     });
 }
