@@ -7,6 +7,25 @@
 
 const INVENTORY_TYPES = ["weapon", "equipment", "consumable", "tool", "backpack", "loot"];
 
+// Anti-doublon par contenu : certains modules tiers (ex. Monks TokenBar /
+// Assign XP) déclenchent parfois deux fois le même hook preUpdateActor pour
+// un seul et même changement réel (avant/après identiques). Ce n'est pas
+// dû à plusieurs GM connectés (déjà géré par activeGM ci-dessous), donc on
+// bloque aussi tout message strictement identique envoyé dans les 5
+// dernières secondes.
+const recentMessages = new Map();
+const DEDUPE_WINDOW_MS = 5000;
+
+function isDuplicate(content) {
+    const now = Date.now();
+    for (const [msg, ts] of recentMessages) {
+        if (now - ts > DEDUPE_WINDOW_MS) recentMessages.delete(msg);
+    }
+    if (recentMessages.has(content)) return true;
+    recentMessages.set(content, now);
+    return false;
+}
+
 // Envoie un message au webhook. N'est exécuté que côté GM (les hooks
 // se déclenchent sur tous les clients connectés, mais on ne veut
 // envoyer le message qu'une seule fois).
@@ -17,6 +36,7 @@ function sendToDiscord(content) {
     // message au webhook → message en triple (ou plus) sur Discord.
     if (game.user.id !== game.users.activeGM?.id) return;
     if (!game.settings.get("westmarch", "enableDiscordLog")) return;
+    if (isDuplicate(content)) return;
 
     const url = game.settings.get("westmarch", "discordLogWebhookUrl");
     if (!url) return;

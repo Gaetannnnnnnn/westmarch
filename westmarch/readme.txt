@@ -1,7 +1,7 @@
 ================================================================================
                         WESTMARCH SYSTÈME — MODULE FOUNDRY VTT
                                Auteur : Soruta (Discord: s0ruta)
-                                       Version : 1.2.1
+                                       Version : 1.2.2
                               Compatibilité : Foundry VTT v13
 ================================================================================
 
@@ -264,8 +264,5 @@ NOTES TECHNIQUES
                         WESTMARCH SYSTÈME — MISES À JOUR
 ================================================================================
  
-v1.2.1 | 2026-06-23
+v1.2.2 | 2026-06-23
 correctif
-- logs-foundry discord
-- token changement images
-- join scene

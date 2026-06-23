@@ -36,24 +36,34 @@ function openImportPopup(onConfirm) {
         offsetX: 0,
         offsetY: 0,
         scale: 1,
+        clipPct: 100,
         dragging: false,
         lastX: 0,
         lastY: 0
     };
 
+    // Pas de fond plein écran qui capte les clics : la popup est une fenêtre
+    // flottante normale. Cliquer ailleurs (canevas du jeu, fenêtre Parcourir
+    // de Foundry, etc.) ne l'annule plus — elle reste ouverte derrière/à
+    // côté tant qu'on ne clique pas sur "Annuler" ou "Créer".
     const overlay = $(`
-        <div class="westmarch-import-overlay" style="position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:9999; display:flex; align-items:center; justify-content:center;">
-            <div class="westmarch-import-popup" style="background:#1f1f1f; border:1px solid #555; border-radius:6px; padding:16px; width:380px; color:#eee; font-size:13px;">
+        <div class="westmarch-import-overlay" style="position:fixed; inset:0; pointer-events:none; z-index:9999; display:flex; align-items:center; justify-content:center;">
+            <div class="westmarch-import-popup" style="pointer-events:auto; background:#1f1f1f; border:1px solid #555; border-radius:6px; padding:16px; width:380px; color:#eee; font-size:13px; box-shadow:0 4px 20px rgba(0,0,0,0.6);">
                 <h3 style="margin:0 0 10px; font-size:15px;">Importer un token</h3>
 
                 <div style="display:flex; justify-content:center; margin-bottom:10px;">
                     <canvas class="westmarch-import-canvas" width="${CANVAS_SIZE}" height="${CANVAS_SIZE}" style="width:220px; height:220px; border:1px solid #555; border-radius:4px; cursor:move; background-image: linear-gradient(45deg, #444 25%, transparent 25%, transparent 75%, #444 75%), linear-gradient(45deg, #444 25%, transparent 25%, transparent 75%, #444 75%); background-size: 16px 16px; background-position: 0 0, 8px 8px; background-color:#666;"></canvas>
                 </div>
 
-                <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
-                    <i class="fas fa-search" style="opacity:0.7;"></i>
+                <div style="display:flex; align-items:center; gap:8px; margin-bottom:6px;">
+                    <i class="fas fa-search" style="opacity:0.7;" title="Zoom du personnage"></i>
                     <input type="range" class="westmarch-zoom-slider" min="20" max="400" value="100" style="flex:1;">
                     <button type="button" class="westmarch-reset-frame" title="Réinitialiser le cadrage"><i class="fas fa-rotate-left"></i></button>
+                </div>
+
+                <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
+                    <i class="fas fa-circle-notch" style="opacity:0.7;" title="Taille de la découpe"></i>
+                    <input type="range" class="westmarch-clip-slider" min="40" max="100" value="100" style="flex:1;">
                 </div>
 
                 <div style="margin-bottom:8px;">
@@ -99,8 +109,13 @@ function openImportPopup(onConfirm) {
             // qu'elle ne puisse jamais dépasser du cadre rond dans les coins
             // (même si la bordure a des coins transparents et qu'on zoome/
             // déplace le perso au-delà du cercle).
+            // Le rayon de découpe est ajustable (curseur "Taille de la
+            // découpe") car la bordure importée n'a pas forcément un anneau
+            // qui va jusqu'au bord du canvas — sinon le perso dépasse du
+            // cadre visible.
+            const clipRadius = (CANVAS_SIZE / 2) * (state.clipPct / 100);
             ctx.beginPath();
-            ctx.arc(CANVAS_SIZE / 2, CANVAS_SIZE / 2, CANVAS_SIZE / 2, 0, Math.PI * 2);
+            ctx.arc(CANVAS_SIZE / 2, CANVAS_SIZE / 2, clipRadius, 0, Math.PI * 2);
             ctx.clip();
 
             ctx.translate(CANVAS_SIZE / 2 + state.offsetX, CANVAS_SIZE / 2 + state.offsetY);
@@ -198,6 +213,11 @@ function openImportPopup(onConfirm) {
         redraw();
     });
 
+    overlay.find(".westmarch-clip-slider").on("input", (ev) => {
+        state.clipPct = parseInt(ev.target.value);
+        redraw();
+    });
+
     overlay.find(".westmarch-reset-frame").on("click", () => {
         state.offsetX = 0;
         state.offsetY = 0;
@@ -212,7 +232,6 @@ function openImportPopup(onConfirm) {
     };
 
     overlay.find(".westmarch-import-cancel").on("click", cleanup);
-    overlay.on("click", (ev) => { if (ev.target === overlay[0]) cleanup(); });
 
     overlay.find(".westmarch-import-confirm").on("click", () => {
         if (!state.charImg) return;
