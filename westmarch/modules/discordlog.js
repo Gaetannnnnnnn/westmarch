@@ -190,11 +190,15 @@ export function DiscordLogHooks() {
     // ============================================================
     // SECTION : Création / suppression de personnages
     // ============================================================
+    // Uniquement les PJ : les GM créent des PNJ (monstres, figurants) en
+    // permanence, ça polluerait le salon pour rien.
     Hooks.on("createActor", (actor, options, userId) => {
-        sendToDiscord(`🆕 Personnage créé : **${actor.name}** (${actor.type}). ${authorTag(userId)}`);
+        if (actor.type !== "character") return;
+        sendToDiscord(`🆕 Personnage créé : **${actor.name}**. ${authorTag(userId)}`);
     });
 
     Hooks.on("deleteActor", (actor, options, userId) => {
-        sendToDiscord(`❌ Personnage supprimé : **${actor.name}** (${actor.type}). ${authorTag(userId)}`);
+        if (actor.type !== "character") return;
+        sendToDiscord(`❌ Personnage supprimé : **${actor.name}**. ${authorTag(userId)}`);
     });
 }

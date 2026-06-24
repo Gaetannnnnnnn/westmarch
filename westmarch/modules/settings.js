@@ -7,7 +7,8 @@ export const PARTY_DEPENDENT_SETTINGS = [
     "enablePlayerGrouping",
     "enableGoWithPartyScenes",
     "enableGoWithPartyJournal",
-    "enableSessionLog"
+    "enableSessionLog",
+    "enableCombatParty"
 ];
 
 // ============================================================
@@ -50,6 +51,16 @@ export function registerSettings() {
     game.settings.register("westmarch", "enableTokenAppearance", {
         name: "Changement d'apparence des tokens",
         hint: "Permet aux GM de configurer plusieurs images sur un token. Les joueurs peuvent cycler entre les images via un bouton dans le HUD du token.",
+        scope: "world",
+        config: true,
+        type: Boolean,
+        default: true,
+        requiresReload: false
+    });
+
+    game.settings.register("westmarch", "enableArtBook", {
+        name: "Art Book (galerie personnelle)",
+        hint: "Ajoute un bouton 'Art Book' sur la fiche personnage : chaque joueur peut y ajouter ses propres images. Les autres joueurs peuvent consulter l'Art Book d'un joueur (en lecture seule) via une icône dans la liste des joueurs.",
         scope: "world",
         config: true,
         type: Boolean,
@@ -130,6 +141,16 @@ export function registerSettings() {
     game.settings.register("westmarch", "enableSessionLog", {
         name: "Journal de session",
         hint: "Active le bouton 'Clore la session' sous la liste des joueurs. Génère automatiquement un journal de session avec les joueurs présents, l'XP avant/après, les ennemis rencontrés, les PNJ et les objets récupérés.",
+        scope: "world",
+        config: true,
+        type: Boolean,
+        default: true,
+        requiresReload: false
+    });
+
+    game.settings.register("westmarch", "enableCombatParty", {
+        name: "Combat lié à la party (plutôt qu'à la scène)",
+        hint: "Les combats créés par un GM sont automatiquement détachés de leur scène (la party continue de les voir même en changeant de scène) et marqués comme appartenant à sa party. Si plusieurs parties jouent en parallèle, chaque joueur ne voit dans le tracker de combat que celui de sa propre party (le GM voit toujours tout).",
         scope: "world",
         config: true,
         type: Boolean,

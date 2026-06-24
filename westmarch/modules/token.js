@@ -339,7 +339,7 @@ export function TokenHooks() {
                 const borderColor = entry.ring?.enabled ? (entry.ring.colors?.ring ?? "#ffffff") : "#555";
                 const thumb = $(`
                     <div style="position:relative; width:48px; height:48px;">
-                        <img src="${entry.src}" style="width:48px; height:48px; object-fit:cover; border-radius:4px; border:2px solid ${borderColor};" title="${entry.src}"/>
+                        <img class="westmarch-thumb-image" data-src="${entry.src}" src="${entry.src}" style="width:48px; height:48px; object-fit:cover; border-radius:4px; border:2px solid ${borderColor}; cursor:pointer;" title="Cliquer pour voir en grand"/>
                         <div class="westmarch-remove-image" data-index="${index}" style="position:absolute;top:-4px;right:-4px;background:#c00;color:#fff;border-radius:50%;width:16px;height:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:10px;">✕</div>
                     </div>
                 `);
@@ -364,6 +364,12 @@ export function TokenHooks() {
             current.splice(index, 1);
             await actor.setFlag("westmarch", "images", [...current]);
             renderImages(current);
+        });
+
+        // Clic sur une miniature : affiche l'image de cette apparence en grand.
+        section.on("click", ".westmarch-thumb-image", (ev) => {
+            const src = $(ev.currentTarget).data("src");
+            if (src) new ImagePopout(src, { title: actor.name }).render(true);
         });
 
         const tab = $(html).find(".tab[data-tab='appearance']");

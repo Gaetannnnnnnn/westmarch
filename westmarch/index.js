@@ -12,6 +12,8 @@ import { AntiCheatHooks } from './modules/anticheat.js';
 import { DiscordLogHooks } from './modules/discordlog.js';
 import { SocketHooks } from './modules/socket.js';
 import { FakeWarningHooks } from './modules/fake-warning.js';
+import { ArtBookHooks } from './modules/artbook.js';
+import { CombatHooks } from './modules/combat.js';
 
 Hooks.on("init", async () => {
     Handlebars.registerHelper('for', function(from, to, incr, block) {
@@ -39,4 +41,6 @@ Hooks.on("init", async () => {
     DiscordLogHooks();
     SocketHooks();
     FakeWarningHooks();
+    ArtBookHooks();
+    CombatHooks();
 });
