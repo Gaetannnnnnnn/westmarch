@@ -58,9 +58,9 @@ export function registerSettings() {
         requiresReload: false
     });
 
-    game.settings.register("westmarch", "enableArtBook", {
-        name: "Art Book (galerie personnelle)",
-        hint: "Ajoute un bouton 'Art Book' sur la fiche personnage : chaque joueur peut y ajouter ses propres images. Les autres joueurs peuvent consulter l'Art Book d'un joueur (en lecture seule) via une icône dans la liste des joueurs.",
+    game.settings.register("westmarch", "enableTokenPortraitButton", {
+        name: "Bouton 'Voir le portrait' (HUD du token)",
+        hint: "Ajoute un bouton dans le HUD du token (clic droit sur un token) qui affiche en grand l'image liée à la fiche du personnage (son portrait).",
         scope: "world",
         config: true,
         type: Boolean,

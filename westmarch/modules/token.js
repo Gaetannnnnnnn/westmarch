@@ -301,6 +301,34 @@ export function TokenHooks() {
     });
 
     // ============================================================
+    // SECTION : Bouton "Voir le portrait" dans le HUD du token
+    // - Affiche en grand l'image liée à la fiche du personnage (le
+    //   portrait de l'acteur), indépendamment de l'apparence du token.
+    // - Visible par tous les joueurs (pas seulement le propriétaire),
+    //   sur n'importe quel token dont le HUD peut être ouvert.
+    // ============================================================
+    Hooks.on("renderTokenHUD", (hud, html, data) => {
+        if (!game.settings.get("westmarch", "enableTokenPortraitButton")) return;
+        const token = hud.object;
+        if (!token) return;
+
+        const actor = token.actor;
+        if (!actor) return;
+
+        const btn = $(`
+            <div class="control-icon westmarch-show-portrait" title="Voir le portrait">
+                <i class="fas fa-image"></i>
+            </div>
+        `);
+
+        btn.click(() => {
+            new ImagePopout(actor.img, { title: actor.name }).render(true);
+        });
+
+        $(html).find(".col.right").append(btn);
+    });
+
+    // ============================================================
     // SECTION : Gestion de la liste d'apparences dans le prototype token
     // - GM uniquement
     // - Accessible via l'onglet "Jeton" de la fiche du personnage

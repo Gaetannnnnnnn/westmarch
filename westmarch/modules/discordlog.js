@@ -169,7 +169,9 @@ export function DiscordLogHooks() {
         }
 
         // ---- Monnaie ----
-        if (changes.system?.currency) {
+        // Uniquement les PJ : les GM ajustent la bourse des PNJ
+        // (marchands, etc.) sans que ça intéresse le salon Discord.
+        if (actor.type === "character" && changes.system?.currency) {
             const before = actor.system.currency ?? {};
             const after = changes.system.currency;
             const labels = { pp: "PP", gp: "PO", ep: "PE", sp: "PA", cp: "PC" };

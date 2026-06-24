@@ -13,6 +13,26 @@
 
 import { partyFeatureEnabled } from './settings.js';
 
+// Mémorise, pour le combat en cours de changement de tour, la position de
+// la caméra d'un joueur hors-party AVANT que Foundry ne la déplace
+// automatiquement (voir preUpdateCombat / updateCombat plus bas).
+let savedViewPosition = null;
+
+// Renvoie true si CE combat appartient à la party de l'utilisateur courant
+// (ou si le combat n'est pas tagué / le système est désactivé — dans ce
+// cas on ne filtre jamais, par sécurité).
+function isMyCombat(combat) {
+    if (!partyFeatureEnabled("enableCombatParty")) return true;
+    if (!combat) return true;
+    if (game.user.isGM) return true;
+
+    const combatPartyId = combat.getFlag?.("westmarch", "partyId");
+    if (!combatPartyId) return true;
+
+    const myPartyId = game.user.getFlag("westmarch", "partyId");
+    return combatPartyId === myPartyId;
+}
+
 export function CombatHooks() {
 
     // ============================================================
@@ -42,26 +62,60 @@ export function CombatHooks() {
     // - Un combat non tagué (créé avant l'activation du setting, ou
     //   par un GM sans système de party) n'est jamais filtré.
     // - Le GM voit toujours tout.
+    // - On vide TOUT le contenu rendu (sans cibler de classe CSS
+    //   précise, dont on n'était pas sûr) : plus robuste, ne dépend
+    //   pas de la structure interne exacte du template Foundry.
     // ============================================================
     Hooks.on("renderCombatTracker", (tracker, html, data) => {
         if (!partyFeatureEnabled("enableCombatParty")) return;
         if (game.user.isGM) return;
 
-        const combat = tracker.viewed ?? tracker.combat ?? data?.combat;
-        if (!combat) return;
+        // game.combat = le combat actuellement affiché/actif (API stable),
+        // plus fiable que de deviner une propriété sur l'objet "tracker".
+        const combat = game.combat;
+        if (isMyCombat(combat)) return;
 
-        const combatPartyId = combat.getFlag?.("westmarch", "partyId");
-        if (!combatPartyId) return;
-
-        const myPartyId = game.user.getFlag("westmarch", "partyId");
-        if (combatPartyId === myPartyId) return;
-
-        const $html = $(html);
-        const list = $html.find(".combat-tracker, #combat-tracker, .directory-list").first();
-        if (!list.length) return;
-
-        list.empty().append(
+        $(html).empty().append(
             `<p style="padding:8px; opacity:0.7; font-style:italic;">Aucun combat en cours pour votre party.</p>`
         );
+    });
+
+    // ============================================================
+    // SECTION : Empêche le pan automatique de la caméra (et le tracking
+    // visuel du combattant actif) de toucher les joueurs hors-party.
+    // - Foundry pan/centre la caméra de TOUS les clients qui regardent
+    //   la scène à chaque changement de tour, sans notion de party.
+    // - On mémorise la position de la caméra juste avant ce changement
+    //   (preUpdateCombat), puis on la restaure juste après (updateCombat),
+    //   une fois que le pan automatique de Foundry s'est déjà produit.
+    // - Best-effort : si Foundry verrouille aussi le déplacement du
+    //   token lui-même (pas juste la caméra), ce correctif ne suffira
+    //   pas — à vérifier en jeu.
+    // ============================================================
+    Hooks.on("preUpdateCombat", (combat, changes, options, userId) => {
+        if (game.user.isGM) return;
+        if (!("turn" in changes) && !("round" in changes)) return;
+        if (isMyCombat(combat)) return;
+
+        savedViewPosition = canvas?.ready && canvas.scene?._viewPosition
+            ? { ...canvas.scene._viewPosition }
+            : null;
+    });
+
+    Hooks.on("updateCombat", (combat, changes, options, userId) => {
+        if (game.user.isGM) return;
+        if (!savedViewPosition) return;
+        if (!("turn" in changes) && !("round" in changes)) return;
+
+        const pos = savedViewPosition;
+        savedViewPosition = null;
+        if (isMyCombat(combat)) return;
+
+        // Laisse Foundry terminer son pan automatique avant de restaurer
+        // la vue précédente du joueur (sans animation, pour que ça ne
+        // "saute" pas visiblement deux fois).
+        setTimeout(() => {
+            if (canvas?.ready) canvas.animatePan({ ...pos, duration: 0 });
+        }, 50);
     });
 }
