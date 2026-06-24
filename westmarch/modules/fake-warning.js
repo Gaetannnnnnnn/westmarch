@@ -33,8 +33,12 @@ export function FakeWarningHooks() {
                     onClick: () => openFakeWarningDialog(),
                     visible: true
                 }
-            },
-            activeTool: "fakeWarning"
+            }
+            // Pas d'"activeTool" ici : c'est un bouton ponctuel (button: true),
+            // pas un outil à bascule. En définir un poussait Foundry à
+            // "réactiver" cet outil (et donc rappeler onClick) chaque fois que
+            // les contrôles de scène se re-rendaient — ce qui rouvrait la
+            // fenêtre tout seul, sans clic, et empilait plusieurs dialogues.
         };
     });
 }
@@ -63,8 +67,16 @@ function openFakeWarningDialog() {
                 icon: '<i class="fas fa-paper-plane"></i>',
                 label: "Envoyer",
                 callback: (html) => {
-                    const userId = html.find('[name="westmarch-fake-target"]').val();
-                    const message = html.find('[name="westmarch-fake-message"]').val()?.trim();
+                    // En Foundry v13, jQuery est en cours de dépréciation : selon
+                    // le contexte, "html" peut être un élément DOM brut plutôt
+                    // qu'un objet jQuery. ".find" n'existe alors pas, l'erreur
+                    // passe silencieusement (visible seulement dans la console
+                    // du navigateur), et le message n'était jamais envoyé.
+                    // On force le wrapping jQuery pour être sûr, comme ailleurs
+                    // dans le module (voir settings.js).
+                    const $html = $(html);
+                    const userId = $html.find('[name="westmarch-fake-target"]').val();
+                    const message = $html.find('[name="westmarch-fake-message"]').val()?.trim();
                     if (!userId || !message) return;
                     sendFakeWarning(userId, message);
                     ui.notifications.info(`Faux message envoyé à ${game.users.get(userId)?.name ?? "?"}.`);

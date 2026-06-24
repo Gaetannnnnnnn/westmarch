@@ -16,55 +16,87 @@ var sessionData = {
     sceneId: null
 };
 
+// Le bouton est créé UNE SEULE FOIS (singleton) et seulement déplacé
+// (jamais recréé) à chaque renderPlayers. Auparavant, le bouton était
+// supprimé puis recréé à chaque rendu : si Foundry déclenchait
+// renderPlayers deux fois de suite très rapidement (un conteneur
+// transitoire suivi du conteneur définitif, par ex. lors d'un
+// redimensionnement de fenêtre), le nettoyage par querySelectorAll
+// pouvait rater une instance détachée entre les deux passages, la
+// laissant orpheline et visible "derrière" le canvas de la carte
+// (qui capte alors tous les clics par-dessus, la rendant inerte).
+// En réutilisant toujours le même nœud DOM, déplacer == "voler" le
+// nœud à son ancien emplacement (un nœud DOM ne peut exister qu'à un
+// seul endroit à la fois) : il ne peut donc plus jamais y en avoir
+// deux à l'écran simultanément.
+let closeBtnSingleton = null;
+
+function getCloseBtnSingleton() {
+    if (closeBtnSingleton) return closeBtnSingleton;
+
+    closeBtnSingleton = $(`
+        <div class="westmarch-close-session-wrap">
+            <button type="button" class="westmarch-close-session">
+                <i class="fas fa-book"></i> Clore la session
+            </button>
+        </div>
+    `);
+    closeBtnSingleton.find('button').on("click", async (ev) => {
+        ev.preventDefault();
+        try {
+            await closeSession(currentPlayersApp);
+        } catch (err) {
+            console.error("[WestMarch] Erreur lors de la clôture de session :", err);
+            ui.notifications.error("Erreur lors de la clôture de la session (voir console).");
+        }
+    });
+    return closeBtnSingleton;
+}
+
+let currentPlayersApp = null;
+
 export function SessionHooks() {
+
+    // Nettoyage ponctuel UNE SEULE FOIS au chargement du module : si un
+    // ancien bouton orphelin (créé par une version précédente, buggée,
+    // du code) traîne encore dans le document, on le retire avant même
+    // de créer notre singleton. Sans ça, l'ancienne instance resterait
+    // coincée pour toujours, invisible à notre nouvelle logique qui ne
+    // gère plus qu'un seul nœud réutilisé.
+    document.querySelectorAll('.westmarch-close-session-wrap').forEach(el => el.remove());
 
     // ============================================================
     // SECTION : Bouton "Clore la session" sous la liste des joueurs
     // ============================================================
     Hooks.on("renderPlayers", (app, html, data) => {
-        // Supprime TOUTE instance du bouton, où qu'elle soit dans le document
-        // (pas seulement sous #players), et ceci INCONDITIONNELLEMENT, avant
-        // tout "return" lié à isGM/partyId/enableSessionLog. Sinon : dès que
-        // la session se termine (le flag partyId est retiré), la fonction
-        // sortait avant d'atteindre ce nettoyage, et l'ancien bouton restait
-        // orphelin dans le DOM pour toujours — recréant un doublon à chaque
-        // nouvelle session sans jamais virer le précédent.
-        document.querySelectorAll('.westmarch-close-session-wrap').forEach(el => el.remove());
+        currentPlayersApp = app;
+        const closeBtn = getCloseBtnSingleton();
 
-        if (!game.user.isGM) return;
-        if (!game.user.getFlag("westmarch", "partyId")) return;
-        if (!partyFeatureEnabled("enableSessionLog")) return;
+        const shouldShow = game.user.isGM
+            && !!game.user.getFlag("westmarch", "partyId")
+            && partyFeatureEnabled("enableSessionLog");
 
-        // Ni le "html" du hook ni document.getElementById('players') ne
-        // sont fiables ici : Foundry peut laisser traîner un clone
-        // transitoire (animation/redimensionnement) qui partage le même
-        // id="players", et getElementById peut alors retourner l'un ou
-        // l'autre selon l'ordre dans le DOM. Seul app.element référence
-        // toujours le vrai élément géré par l'instance "Players" elle-même.
+        if (!shouldShow) {
+            closeBtn.detach();
+            return;
+        }
+
         const root = app.element instanceof HTMLElement ? app.element : app.element?.[0];
-        if (!root || !root.isConnected) return;
+        if (!root || !root.isConnected) {
+            closeBtn.detach();
+            return;
+        }
 
-        // Bouton Clore la session
-        const closeBtn = $(`
-            <div class="westmarch-close-session-wrap">
-                <button type="button" class="westmarch-close-session">
-                    <i class="fas fa-book"></i> Clore la session
-                </button>
-            </div>
-        `);
-        closeBtn.find('button').on("click", async (ev) => {
-            ev.preventDefault();
-            try {
-                await closeSession(app);
-            } catch (err) {
-                console.error("[WestMarch] Erreur lors de la clôture de session :", err);
-                ui.notifications.error("Erreur lors de la clôture de la session (voir console).");
-            }
-        });
-
-        const list = $(root).find('.players-list');
-        if (list.length) {
-            list.after(closeBtn);
+        // IMPORTANT : on cible #players-active (la liste des joueurs EN
+        // LIGNE), pas ".players-list" — ce sélecteur matchait en réalité
+        // #players-inactive (la liste repliable des joueurs hors-ligne).
+        // Le bouton se retrouvait alors coincé entre les deux listes,
+        // exactement sur la zone où Foundry capte les clics du chevron
+        // de repli/dépli de la liste hors-ligne : cliquer sur le bouton
+        // refermait ce chevron au lieu de déclencher la clôture de session.
+        const activeList = $(root).find('#players-active');
+        if (activeList.length) {
+            closeBtn.insertAfter(activeList);
         } else {
             $(root).append(closeBtn);
         }
