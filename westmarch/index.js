@@ -1,6 +1,3 @@
-(() => {
-})();
-
 import { registerSettings } from './modules/settings.js';
 import { ChatHooks } from './modules/chat.js';
 import { ImageHooks } from './modules/image.js';
@@ -14,6 +11,7 @@ import { SessionHooks } from './modules/session.js';
 import { AntiCheatHooks } from './modules/anticheat.js';
 import { DiscordLogHooks } from './modules/discordlog.js';
 import { SocketHooks } from './modules/socket.js';
+import { FakeWarningHooks } from './modules/fake-warning.js';
 
 Hooks.on("init", async () => {
     Handlebars.registerHelper('for', function(from, to, incr, block) {
@@ -40,4 +38,5 @@ Hooks.on("init", async () => {
     AntiCheatHooks();
     DiscordLogHooks();
     SocketHooks();
+    FakeWarningHooks();
 });

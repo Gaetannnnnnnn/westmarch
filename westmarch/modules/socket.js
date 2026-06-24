@@ -16,11 +16,14 @@
 
 export function SocketHooks() {
     game.socket.on("module.westmarch", (data) => {
-        if (!data || data.action !== "pullToScene") return;
-        if (data.userId !== game.user.id) return;
+        if (!data || data.userId !== game.user.id) return;
 
-        const scene = game.scenes.get(data.sceneId);
-        if (scene) scene.view();
+        if (data.action === "pullToScene") {
+            const scene = game.scenes.get(data.sceneId);
+            if (scene) scene.view();
+        } else if (data.action === "fakeWarning") {
+            ui.notifications.warn(data.message);
+        }
     });
 }
 
@@ -33,4 +36,10 @@ export function pullUserToScene(sceneId, userId) {
         return;
     }
     game.socket.emit("module.westmarch", { action: "pullToScene", sceneId, userId });
+}
+
+// Affiche un faux message d'avertissement (notification jaune) chez
+// l'utilisateur "userId" — utilisé par le bouton "farce" (fake-warning.js).
+export function sendFakeWarning(userId, message) {
+    game.socket.emit("module.westmarch", { action: "fakeWarning", userId, message });
 }

@@ -7,7 +7,6 @@ export function ScenesHooks() {
             name: "Go With Party",
             icon: '<i class="fa-solid fa-people-arrows"></i>',
             callback: li => {
-                console.log(li);
                 var destination = game.scenes.get(li.dataset.entryId ?? li.dataset.sceneId);
                 GoWithParty(destination);
             },

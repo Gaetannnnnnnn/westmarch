@@ -22,6 +22,15 @@ export function SessionHooks() {
     // SECTION : Bouton "Clore la session" sous la liste des joueurs
     // ============================================================
     Hooks.on("renderPlayers", (app, html, data) => {
+        // Supprime TOUTE instance du bouton, où qu'elle soit dans le document
+        // (pas seulement sous #players), et ceci INCONDITIONNELLEMENT, avant
+        // tout "return" lié à isGM/partyId/enableSessionLog. Sinon : dès que
+        // la session se termine (le flag partyId est retiré), la fonction
+        // sortait avant d'atteindre ce nettoyage, et l'ancien bouton restait
+        // orphelin dans le DOM pour toujours — recréant un doublon à chaque
+        // nouvelle session sans jamais virer le précédent.
+        document.querySelectorAll('.westmarch-close-session-wrap').forEach(el => el.remove());
+
         if (!game.user.isGM) return;
         if (!game.user.getFlag("westmarch", "partyId")) return;
         if (!partyFeatureEnabled("enableSessionLog")) return;
@@ -34,13 +43,6 @@ export function SessionHooks() {
         // toujours le vrai élément géré par l'instance "Players" elle-même.
         const root = app.element instanceof HTMLElement ? app.element : app.element?.[0];
         if (!root || !root.isConnected) return;
-
-        // Supprime TOUTE instance du bouton, où qu'elle soit dans le document
-        // (pas seulement sous #players) : on a observé des clones orphelins
-        // qui finissent attachés ailleurs dans le DOM suite à un re-rendu
-        // partiel de Foundry, et qui ne sont donc jamais nettoyés si on ne
-        // cherche que sous l'élément #players actuel.
-        document.querySelectorAll('.westmarch-close-session-wrap').forEach(el => el.remove());
 
         // Bouton Clore la session
         const closeBtn = $(`

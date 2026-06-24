@@ -26,15 +26,30 @@ function isDuplicate(content) {
     return false;
 }
 
-// Envoie un message au webhook. N'est exécuté que côté GM (les hooks
-// se déclenchent sur tous les clients connectés, mais on ne veut
+// Détermine si CE client est celui qui doit envoyer le message (un seul
+// client doit le faire, peu importe combien sont connectés).
+function isElectedSender() {
+    // En priorité, le GM "actif" (désignation déterministe de Foundry,
+    // identique sur tous les clients).
+    const activeGM = game.users.activeGM;
+    if (activeGM) return game.user.id === activeGM.id;
+
+    // Aucun GM connecté (ex. joueurs qui gèrent leur inventaire entre deux
+    // sessions) : avec l'ancien code, personne ne correspondait jamais à
+    // activeGM et le message était silencieusement perdu. On élit donc à
+    // la place l'utilisateur actif avec l'id le plus petit — un calcul
+    // déterministe, identique sur tous les clients connectés.
+    const activeUsers = game.users.filter(u => u.active);
+    if (activeUsers.length === 0) return false;
+    const elected = activeUsers.reduce((a, b) => (a.id < b.id ? a : b));
+    return game.user.id === elected.id;
+}
+
+// Envoie un message au webhook. N'est exécuté que par le client "élu" (les
+// hooks se déclenchent sur tous les clients connectés, mais on ne veut
 // envoyer le message qu'une seule fois).
 function sendToDiscord(content) {
-    // game.users.activeGM désigne un seul GM "actif" parmi tous les GM
-    // connectés (calcul déterministe, identique sur tous les clients).
-    // Avec un simple "isGM", chaque GM connecté envoyait son propre
-    // message au webhook → message en triple (ou plus) sur Discord.
-    if (game.user.id !== game.users.activeGM?.id) return;
+    if (!isElectedSender()) return;
     if (!game.settings.get("westmarch", "enableDiscordLog")) return;
     if (isDuplicate(content)) return;
 

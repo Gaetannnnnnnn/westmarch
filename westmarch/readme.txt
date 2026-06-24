@@ -1,7 +1,7 @@
 ================================================================================
                         WESTMARCH SYSTÈME — MODULE FOUNDRY VTT
                                Auteur : Soruta (Discord: s0ruta)
-                                       Version : 1.2.2
+                                       Version : 1.4.1
                               Compatibilité : Foundry VTT v13
 ================================================================================
 
@@ -25,19 +25,120 @@ westmarch/
 ├── modules/
 │   ├── anticheat.js        Avertit les GM en privé des modifs suspectes (sorts/attunement/équipement) en combat
 │   ├── chat.js             Gestion du chat filtré par party et webhook Discord
+│   ├── discordlog.js       Log Discord (webhook) des modifications : items, XP/niveau, monnaie, persos
 │   ├── document.js         Amélioration de la fenêtre de propriété des documents
+│   ├── fake-warning.js     Bouton GM (icônes de gauche) pour envoyer un faux message d'avertissement à un joueur
 │   ├── image.js            Bouton "Show Party" sur les popouts d'image
 │   ├── journal.js          Menu contextuel sur les liens de scène dans les journaux
-│   ├── party.js            Masquage des stats des autres membres sur la fiche de groupe
 │   ├── player.js           Liste des joueurs, menu contextuel et gestion des parties
 │   ├── scenes.js           Téléportation de groupe depuis le répertoire de scènes
 │   ├── session.js          Journal de session : capture XP, ennemis, PNJ, objets et génère un rapport
 │   ├── settings.js         Enregistrement des paramètres configurables du module
+│   ├── socket.js           Canal socket dédié au module, pour téléporter un utilisateur précis vers une scène
 │   ├── token.js            Changement d'apparence des tokens
 │   └── xp.js               Blocage de la modification de l'XP et masquage du bouton Level Up
 └── styles/
     ├── chat.css            Styles du chat
     └── character.css       Styles des fiches personnage
+
+
+--------------------------------------------------------------------------------
+DÉTAIL DES FICHIERS (modules/)
+--------------------------------------------------------------------------------
+
+anticheat.js
+   Pendant un combat actif, surveille les changements faits par un joueur sur
+   un personnage engagé dans ce combat : sort préparé/dé-préparé, objet
+   attuné/désattuné, arme/armure équipée/déséquipée, utilisations d'une
+   feature regagnées ou maximum modifié, emplacements de sort regagnés ou
+   maximum modifié. À chaque détection, envoie un message privé (whisper) au
+   GM de la party concernée. Les actions des GM ne déclenchent jamais d'alerte.
+
+chat.js
+   Filtre l'affichage du chat par party (un joueur ne voit que les messages
+   de sa propre party dans les onglets IC/OOC/Other ; les GM voient tout).
+   Gère aussi le webhook Discord "par scène" : relaie chaque message IC vers
+   le salon Discord configuré sur la scène active (conversion HTML → markdown
+   via Turndown), avec le nom et l'avatar du personnage qui parle.
+
+discordlog.js
+   Envoie un message vers un second webhook Discord (indépendant de celui de
+   chat.js) à chaque modification d'inventaire (ajout/suppression/quantité),
+   changement d'XP ou de niveau, changement de monnaie, ou création/
+   suppression de personnage. Indique si l'action vient d'un GM ou d'un
+   joueur. Gère la déduplication (un seul envoi même avec plusieurs comptes
+   connectés, et anti-doublon de contenu sur 5 secondes pour les modules
+   tiers qui redéclenchent deux fois le même évènement).
+
+document.js
+   Limite la hauteur de la fenêtre de gestion des permissions/propriété d'un
+   document (journal, acteur...) à 70% de l'écran, avec scroll si le contenu
+   dépasse.
+
+fake-warning.js
+   Ajoute un groupe d'icônes "WestMarch" dans la barre d'outils de gauche du
+   canevas (GM uniquement). Le bouton ouvre une fenêtre permettant de choisir
+   un joueur connecté et un texte de message, puis envoie une fausse
+   notification jaune (façon avertissement système) visible uniquement par
+   ce joueur, via le canal socket du module.
+
+image.js
+   Ajoute un bouton "Show Party" dans la barre de titre des fenêtres d'image
+   (popout), visible par le GM uniquement. Partage l'image affichée à tous
+   les membres de la party du GM en un clic.
+
+journal.js
+   Ajoute un menu contextuel (clic droit) sur les liens de scène à l'intérieur
+   des journaux, avec les options "Go Alone" (se téléporter seul) et "Go With
+   Party" (téléporter toute la party).
+
+player.js
+   Cœur du système de party : ajoute le scroll et un bouton refresh sur la
+   liste des joueurs, regroupe visuellement les membres d'une même party
+   (séparateurs colorés), et ajoute le menu contextuel (clic droit sur un
+   joueur) avec Create Party, Create Party with Log, Join Party, Leave Party,
+   Kick Party, Invite Party et Join Scene. La party est stockée comme un flag
+   "partyId" sur chaque utilisateur (l'id du GM chef).
+
+scenes.js
+   Ajoute l'option "Go With Party" au menu contextuel du répertoire de scènes
+   (et de l'entrée de scène elle-même) : téléporte tous les membres de la
+   party du GM vers la scène sélectionnée.
+
+session.js
+   Gère le journal de session : affiche le bouton "Clore la session" sous la
+   liste des joueurs quand une party a été créée avec "Create Party with
+   Log", capture en continu l'XP des joueurs, les ennemis rencontrés en
+   combat, les PNJ présents sur la scène et les objets obtenus, puis génère
+   à la clôture un journal Foundry dans MJ/<nom du GM>/Rapport de session/.
+
+settings.js
+   Enregistre tous les paramètres configurables du module (Paramètres du jeu
+   → Configuration des modules → WestMarch Système), gère la cascade
+   visuelle/fonctionnelle des sous-options dépendantes du système de Party, et
+   affiche le bandeau d'info (version, description, auteur, mention
+   "Module propriétaire Ashara") en haut de la page de paramètres.
+
+socket.js
+   Canal socket dédié au module ("module.westmarch"), utilisé pour cibler un
+   utilisateur précis : téléporter quelqu'un vers une scène (pullUserToScene,
+   remplace le socket natif "pullToScene" devenu peu fiable en v13) et
+   envoyer une fausse notification (sendFakeWarning, utilisé par
+   fake-warning.js). Chaque client filtre les messages reçus par userId.
+
+token.js
+   Permet au GM de configurer plusieurs apparences sur un token (image de
+   personnage + bordure PNG à centre transparent, fusionnées via une popup
+   d'import avec cadrage, zoom et découpe circulaire ajustable). Les joueurs
+   peuvent cycler entre les apparences enregistrées via un bouton dans le HUD
+   de leur propre token.
+
+xp.js
+   Empêche les joueurs de modifier leur XP ou de monter de niveau (fiche
+   standard, assistant d'avancement, ou modules tiers comme Plutonium — tout
+   passe par une modification de l'item de classe ou de system.details.xp,
+   qui est bloquée côté serveur). Désactive aussi visuellement le champ XP et
+   le bouton Level Up sur la fiche, sans les masquer.
 
 
 --------------------------------------------------------------------------------
@@ -87,13 +188,7 @@ FONCTIONNALITÉS
    (GM uniquement). Il permet de partager l'image directement à tous les membres
    de sa party sans sélection manuelle.
 
-5. FICHE DE GROUPE MASQUÉE (party.js)
-   --------------------------------------
-   Sur la fiche d'acteur de groupe, les joueurs ne voient que leurs propres
-   statistiques (HP, Hit Dice, monnaie). Les statistiques des autres membres
-   leur sont masquées.
-
-6. BLOCAGE DE L'XP ET DU LEVEL UP (xp.js)
+5. BLOCAGE DE L'XP ET DU LEVEL UP (xp.js)
    ------------------------------------------
    Les joueurs ne peuvent pas modifier leur XP manuellement ni utiliser le bouton
    Level Up sur leur fiche personnage. Les GM conservent un accès complet.
@@ -101,15 +196,33 @@ FONCTIONNALITÉS
    - Bouton Level Up masqué
    - Tentative de modification bloquée avec message d'avertissement
 
-7. CHANGEMENT D'APPARENCE DES TOKENS (token.js)
+6. CHANGEMENT D'APPARENCE DES TOKENS (token.js)
    -----------------------------------------------
    Les GM peuvent configurer plusieurs images sur un token via sa configuration
    (onglet Apparence → section WestMarch). Les joueurs peuvent cycler entre les
    images via un bouton ▶ dans le HUD du token (uniquement sur leur propre token).
-   - GM : ajouter/supprimer des images via FilePicker dans la config du token
+   - GM : ajouter/supprimer des images via une popup d'import dédiée
    - Joueurs : bouton ▶ dans le HUD pour passer à l'image suivante
 
-8. PARAMÈTRES CONFIGURABLES (settings.js)
+   Popup d'import ("Importer un token") :
+   - Sélection d'une image de personnage + d'une image de bordure (PNG avec
+     centre transparent), chacune via "Parcourir" (FilePicker Foundry) ou
+     "Importer (PC)" (upload direct depuis l'ordinateur)
+   - Cadrage du personnage à la souris (glisser-déposer) + zoom (molette ou
+     curseur), avec bouton de réinitialisation du cadrage
+   - Curseur "Taille de la découpe" : ajuste le rayon du cercle de découpe
+     du personnage pour qu'il corresponde exactement à l'anneau visible de
+     la bordure importée (évite que le perso dépasse dans les coins si la
+     bordure a un anneau plus petit que le canvas)
+   - Le personnage est découpé en cercle avant fusion avec la bordure, et le
+     fond reste réellement transparent dans le PNG exporté (le quadrillage
+     affiché pendant l'édition n'est qu'un repère visuel CSS, jamais inclus
+     dans l'export)
+   - La popup est une fenêtre flottante non-modale : cliquer ailleurs (sur
+     le canevas du jeu, sur la fenêtre "Parcourir", etc.) ne l'annule pas —
+     seuls les boutons "Annuler" ou "Créer" la ferment
+
+7. PARAMÈTRES CONFIGURABLES (settings.js)
    ------------------------------------------
    Toutes les fonctionnalités du module sont activables/désactivables par les GM
    via : Paramètres du jeu → Configuration des modules → WestMarch Système.
@@ -117,9 +230,9 @@ FONCTIONNALITÉS
 
    Paramètres indépendants :
    - Blocage de l'XP et du Level Up
-   - Masquage des stats sur la fiche de groupe
    - Changement d'apparence des tokens
-   - Webhook Discord
+   - Webhook Discord (chat IC, par scène)
+   - Log Discord (modifications : items, XP/niveau, monnaie, persos)
    - Anti-Cheat (combat)
 
    Paramètre maître :
@@ -137,7 +250,7 @@ FONCTIONNALITÉS
    - Filtrage du chat par party
    - Journal de session
 
-9. JOURNAL DE SESSION (session.js)
+8. JOURNAL DE SESSION (session.js)
    --------------------------------------
    Un bouton "Clore la session" apparaît sous la liste des joueurs (GM
    uniquement) lorsqu'une party créée avec "Create Party with Log" est active.
@@ -150,7 +263,7 @@ FONCTIONNALITÉS
    À la clôture, un journal est généré dans MJ/<nom du GM>/Rapport de session/
    avec la date du jour, puis la party est automatiquement dissoute.
 
-10. ANTI-CHEAT EN COMBAT (anticheat.js)
+9. ANTI-CHEAT EN COMBAT (anticheat.js)
    --------------------------------------
    Pendant un combat actif (game.combat.started), si un joueur dont le
    personnage est engagé dans le combat modifie :
@@ -161,7 +274,7 @@ FONCTIONNALITÉS
    par les GM (whisper), indiquant le personnage, le joueur et l'objet/sort
    concerné. Les modifications faites par un GM ne déclenchent jamais d'alerte.
 
-11. CHAT FILTRÉ ET WEBHOOK DISCORD (chat.js)
+10. CHAT FILTRÉ ET WEBHOOK DISCORD (chat.js)
    --------------------------------------------
    Filtrage du chat par party :
    - Le chat est divisé en 3 onglets : IC, OOC, Other (rôleplay, hors-jeu, autres
@@ -185,7 +298,49 @@ FONCTIONNALITÉS
    - Comme c'est rattaché à la scène et non à la table entière, chaque lieu/arc
      de la campagne peut être relayé vers un salon Discord différent (ou aucun)
 
-12. AMÉLIORATIONS DIVERSES
+11. LOG DISCORD DES MODIFICATIONS (discordlog.js)
+   ---------------------------------------------------
+   Envoie un message dans un salon Discord (via un second webhook, distinct
+   de celui du chat IC par scène) à chaque :
+   - Ajout / suppression d'un objet d'inventaire, ou changement de quantité
+   - Gain de niveau (classe) ou changement d'XP
+   - Changement de monnaie (PP/PO/PE/PA/PC), avec le détail des deltas
+   - Création / suppression d'un personnage
+
+   Chaque message indique qui a fait l'action : "(par <nom>)" pour un GM,
+   ou "⚠️ (par <nom> — joueur)" pour repérer en un coup d'œil les actions
+   faites par les joueurs eux-mêmes plutôt que par un GM.
+
+   Un seul message est envoyé par évènement, même avec plusieurs comptes
+   connectés simultanément : le GM "actif" (game.users.activeGM) est élu
+   pour l'envoi ; si aucun GM n'est connecté, un joueur actif est élu à sa
+   place (calcul déterministe, identique sur tous les clients) pour éviter
+   que le log soit perdu quand les joueurs gèrent leur inventaire seuls. Une
+   protection anti-doublon supplémentaire (5 secondes) filtre aussi les cas
+   où un module tiers (ex. Monks TokenBar) redéclenche deux fois le même
+   évènement réel.
+
+   Configuration : Paramètres du jeu → Configuration des modules →
+   WestMarch Système → "Log Discord (modifications)" (activer) + "URL du
+   Webhook Discord (log)" (coller l'URL créée côté Discord via Paramètres
+   du salon → Intégrations → Webhooks → Nouveau webhook).
+
+12. FAUX MESSAGE DE MAINTENANCE (fake-warning.js)
+   ----------------------------------------------------
+   Ajoute un nouveau groupe d'icônes "WestMarch" (marteau 🔨) dans la barre
+   d'outils de gauche du canevas, visible uniquement par les GM. En cliquant
+   sur l'icône ⚠️ qui apparaît dans ce groupe, le GM peut :
+   - Choisir un joueur connecté dans une liste déroulante
+   - Modifier le texte du message (pré-rempli avec "Mise à jour effectuée —
+     le problème devrait être résolu.")
+   - Envoyer : le joueur ciblé (et lui seul) voit alors apparaître ce texte
+     sous la forme d'une notification jaune classique de Foundry, comme si
+     un vrai avertissement venait du système — pratique pour faire croire
+     qu'un bug vient d'être corrigé.
+   Le message est transmis via le canal socket du module (socket.js), donc
+   uniquement reçu par le client du joueur visé.
+
+13. AMÉLIORATIONS DIVERSES
    -------------------------
    - Scroll sur la liste des joueurs (player.js), quand il y a beaucoup de joueurs connectés, la liste devient scrollable au lieu de déborder hors de l'écran
    - Scroll sur les fenêtres de propriété (document.js), quand tu ouvres la fenêtre de permissions/propriété d'un document (journal, acteur...), elle est limitée à 70% de la hauteur de l'écran avec un scroll si le contenu dépasse
@@ -252,8 +407,12 @@ NOTES TECHNIQUES
 - Le module utilise des flags Foundry sous le scope "westmarch" pour stocker
   l'identifiant de party (partyId) sur chaque utilisateur.
 
-- La téléportation utilise game.socket.emit("pullToScene", sceneId, userId),
-  fonctionnalité native de Foundry v13.
+- La téléportation utilise un canal socket dédié au module ("module.westmarch",
+  voir socket.js) plutôt que le socket natif "pullToScene" de Foundry : ce
+  dernier a changé de comportement en v13 (il ne filtre plus par userId et
+  n'est jamais relayé à l'émetteur), donc on gère nous-mêmes le filtrage par
+  userId côté client. Un déplacement vers soi-même n'utilise aucun socket
+  (scene.view() directement).
 
 - Le menu contextuel des liens de scène dans les journaux utilise le système
   ContextMenu natif de Foundry pour éviter les conflits avec d'autres modules.
@@ -264,5 +423,64 @@ NOTES TECHNIQUES
                         WESTMARCH SYSTÈME — MISES À JOUR
 ================================================================================
  
-v1.2.2 | 2026-06-23
+v1.4.1 | 2026-06-24
+nettoyage
+- suppression du setting "Masquage des stats sur la fiche de groupe"
+  (enablePartyStats) : jamais lu par aucun code, fonctionnalité jamais
+  implémentée
+- suppression d'une IIFE vide en tête d'index.js, d'un console.log de debug
+  oublié dans scenes.js, et du hack de z-index sur le FilePicker dans
+  token.js (devenu inutile depuis le passage à une popup non-modale)
+
+v1.4.0 | 2026-06-24
+nouveauté
+- ajout d'un bandeau d'info dans les paramètres du module (settings.js) :
+  version, description et auteur lus depuis module.json, avec mention
+  "Module propriétaire Ashara — ne pas redistribuer"
+- ajout du faux message de maintenance (fake-warning.js) : nouveau groupe
+  d'icônes "WestMarch" dans la barre d'outils de gauche (GM uniquement),
+  permettant d'envoyer une fausse notification jaune à un joueur précis
+
 correctif
+- bouton "Clore la session" toujours dupliqué malgré le correctif précédent :
+  le nettoyage global était placé après les conditions (isGM/partyId/
+  enableSessionLog) et ne s'exécutait donc jamais à la fin d'une session
+  (le flag partyId étant retiré avant le re-rendu) ; il est maintenant
+  exécuté sans condition à chaque renderPlayers
+
+v1.3.0 | 2026-06-24
+nouveauté
+- ajout du log Discord des modifications (discordlog.js) : items, XP/niveau,
+  monnaie, création/suppression de personnage, avec tag joueur vs GM
+
+correctif
+- join scene / go alone / go with party : le socket natif "pullToScene" de
+  Foundry v13 ne fonctionnait plus correctement (ne filtrait plus par joueur
+  et n'était jamais reçu par l'émetteur) ; remplacé par un canal socket
+  dédié au module (socket.js) avec filtrage par userId
+- popup d'import de token : le quadrillage de transparence se retrouvait
+  inclus dans le PNG exporté (carré visible autour du token rond) ; il n'est
+  désormais qu'un repère visuel CSS, jamais dessiné dans l'image
+- popup d'import de token : la fenêtre "Parcourir" (FilePicker) restait
+  inaccessible derrière la popup ; celle-ci est maintenant une fenêtre
+  flottante non-modale (un clic à côté ne l'annule plus et ne bloque plus
+  l'accès aux autres fenêtres)
+- popup d'import de token : le personnage pouvait dépasser de la bordure
+  ronde ; ajout d'une découpe circulaire avec curseur "Taille de la
+  découpe" ajustable pour coller à l'anneau de chaque bordure
+- bouton "Clore la session" dupliqué : un clone orphelin pouvait rester
+  affiché ailleurs dans la page après un re-rendu partiel ; le nettoyage
+  cherche maintenant dans tout le document, pas seulement sous la liste
+  des joueurs
+- log Discord envoyé en triple pour certains changements d'XP : un module
+  tiers (Monks TokenBar) redéclenchait deux fois le même évènement réel ;
+  ajout d'un anti-doublon par contenu (5 secondes)
+- log Discord absent pour les changements de quantité/monnaie faits par un
+  joueur quand aucun GM n'est connecté : le message n'était envoyé que par
+  le GM "actif", donc perdu si personne n'est GM ; un joueur actif est
+  désormais élu à la place dans ce cas
+
+v1.2.3 | 2026-06-23
+correctif
+- join scene
+- logs-foundry

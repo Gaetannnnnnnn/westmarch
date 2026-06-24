@@ -149,16 +149,10 @@ function openImportPopup(onConfirm) {
     // ---- Sélection des images (parcourir / upload) ----
     const wireImagePicker = (browseSel, uploadSel, inputSel, target) => {
         overlay.find(browseSel).on("click", () => {
+            // Depuis le passage à une popup non-modale (overlay en
+            // pointer-events:none), le FilePicker s'ouvre normalement
+            // au-dessus du jeu sans avoir besoin de forcer son z-index.
             const fp = new FilePicker({ type: "image", callback: (path) => loadImage(path, target) });
-
-            // Notre popup a un z-index très élevé (9999) pour rester au-dessus
-            // de l'UI de Foundry. La fenêtre du FilePicker s'ouvrait donc
-            // derrière elle, inaccessible. On la force au-dessus dès son rendu.
-            Hooks.once("renderFilePicker", (app, html) => {
-                $(html).closest(".app, .application").css("z-index", 10001);
-                $(html).css("z-index", 10001);
-            });
-
             fp.browse();
         });
         overlay.find(uploadSel).on("click", () => overlay.find(inputSel).trigger("click"));

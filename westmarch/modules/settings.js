@@ -47,16 +47,6 @@ export function registerSettings() {
         requiresReload: false
     });
 
-    game.settings.register("westmarch", "enablePartyStats", {
-        name: "Masquage des stats sur la fiche de groupe",
-        hint: "Sur la fiche d'acteur de groupe, les joueurs ne voient que leurs propres statistiques (HP, Hit Dice, monnaie). Les stats des autres membres leur sont masquées.",
-        scope: "world",
-        config: true,
-        type: Boolean,
-        default: true,
-        requiresReload: false
-    });
-
     game.settings.register("westmarch", "enableTokenAppearance", {
         name: "Changement d'apparence des tokens",
         hint: "Permet aux GM de configurer plusieurs images sur un token. Les joueurs peuvent cycler entre les images via un bouton dans le HUD du token.",
@@ -186,6 +176,25 @@ export function registerSettings() {
         const root = $(html);
         const partyGroup = root.find('[name="westmarch.enableParty"]').closest('.form-group');
         if (!partyGroup.length) return;
+
+        // ---- Bandeau d'info en haut de la section WestMarch : version,
+        // description et auteur (lus depuis module.json via game.modules,
+        // jamais modifié directement — voir consigne readme/module.json) ----
+        const moduleData = game.modules.get("westmarch");
+        const version = moduleData?.version ?? "?";
+        const description = moduleData?.description
+            ?? "Module de gestion de campagnes West March : parties, téléportation de groupe, journal de session, logs Discord, anti-cheat et plus.";
+        const author = moduleData?.authors?.[0]?.name ?? "Soruta";
+
+        const banner = $(`
+            <div class="westmarch-settings-banner" style="margin-bottom: 12px; padding: 10px 14px; border: 1px solid #e67e22; border-radius: 4px; background: rgba(230,126,34,0.08);">
+                <p style="margin:0 0 4px 0;"><strong>WestMarch Système</strong> — v${version}</p>
+                <p style="margin:0 0 4px 0; font-size: 0.9em;">${description}</p>
+                <p style="margin:0; font-size: 0.9em;">Auteur : ${author}</p>
+                <p style="margin:6px 0 0 0; font-size: 0.85em; font-style: italic; color: #e67e22;">⚠️ Module propriétaire Ashara — ne pas redistribuer.</p>
+            </div>
+        `);
+        partyGroup.before(banner);
 
         const subNames = PARTY_DEPENDENT_SETTINGS
             .map(key => game.settings.settings.get(`westmarch.${key}`)?.name)
