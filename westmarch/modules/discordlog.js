@@ -45,11 +45,8 @@ function isElectedSender() {
     return game.user.id === elected.id;
 }
 
-// Envoie un message au webhook. N'est exécuté que par le client "élu" (les
-// hooks se déclenchent sur tous les clients connectés, mais on ne veut
-// envoyer le message qu'une seule fois).
-function sendToDiscord(content) {
-    if (!isElectedSender()) return;
+// Envoie effectivement le message au webhook (logique commune).
+function postToWebhook(content) {
     if (!game.settings.get("westmarch", "enableDiscordLog")) return;
     if (isDuplicate(content)) return;
 
@@ -61,6 +58,30 @@ function sendToDiscord(content) {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ content, username: "WestMarch Log" })
     }).catch(err => console.error("[WestMarch] Erreur envoi Discord log :", err));
+}
+
+// Pour les hooks "post" (createItem/deleteItem/createActor/deleteActor) :
+// ceux-ci se déclenchent sur TOUS les clients connectés une fois la
+// modification confirmée par le serveur (GM ET joueurs). Sans élection,
+// chaque client connecté enverrait son propre message en double. On
+// élit donc un seul client responsable de l'envoi.
+function sendToDiscord(content) {
+    if (!isElectedSender()) return;
+    postToWebhook(content);
+}
+
+// Pour les hooks "pre" (preUpdateItem/preUpdateActor) : ceux-ci ne se
+// déclenchent QUE sur le client qui exécute réellement la modification
+// (celui qui appelle .update()), jamais sur les autres clients connectés.
+// Appliquer l'élection ici était le bug : quand un JOUEUR modifiait sa
+// quantité/monnaie/XP, son client (le seul à voir le hook) n'était
+// jamais "l'élu" dès qu'un GM était connecté — et le GM, lui, ne voyait
+// jamais le hook puisqu'il ne l'exécutait pas. Résultat : aucun message
+// n'était jamais envoyé pour les actions des joueurs. Ici, pas de risque
+// de doublon multi-client (un seul client exécute l'update), donc on
+// envoie directement, sans élection.
+function sendToDiscordDirect(content) {
+    postToWebhook(content);
 }
 
 // Tag d'auteur pour affichage dans le log : ajoute un ⚠️ quand l'action
@@ -119,7 +140,7 @@ export function DiscordLogHooks() {
                 : (item.system.quantity?.value ?? 0);
             const after = quantityChange;
             if (before !== after) {
-                sendToDiscord(`🔄 **${actor.name}** : quantité de **${item.name}** ${before} → ${after}. ${authorTag(userId)}`);
+                sendToDiscordDirect(`🔄 **${actor.name}** : quantité de **${item.name}** ${before} → ${after}. ${authorTag(userId)}`);
             }
         }
 
@@ -128,7 +149,7 @@ export function DiscordLogHooks() {
             const before = item.system.levels ?? 0;
             const after = changes.system.levels;
             if (before !== after) {
-                sendToDiscord(`⬆️ **${actor.name}** : niveau de **${item.name}** ${before} → ${after}. ${authorTag(userId)}`);
+                sendToDiscordDirect(`⬆️ **${actor.name}** : niveau de **${item.name}** ${before} → ${after}. ${authorTag(userId)}`);
             }
         }
     });
@@ -143,7 +164,7 @@ export function DiscordLogHooks() {
             const before = actor.system.details?.xp?.value ?? 0;
             const after = changes.system.details.xp.value;
             if (before !== after) {
-                sendToDiscord(`✨ **${actor.name}** : XP ${before} → ${after}. ${authorTag(userId)}`);
+                sendToDiscordDirect(`✨ **${actor.name}** : XP ${before} → ${after}. ${authorTag(userId)}`);
             }
         }
 
@@ -161,7 +182,7 @@ export function DiscordLogHooks() {
                 }
             }
             if (diffs.length > 0) {
-                sendToDiscord(`💰 **${actor.name}** : ${diffs.join(", ")}. ${authorTag(userId)}`);
+                sendToDiscordDirect(`💰 **${actor.name}** : ${diffs.join(", ")}. ${authorTag(userId)}`);
             }
         }
     });

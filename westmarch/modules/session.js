@@ -94,9 +94,16 @@ export function SessionHooks() {
         // exactement sur la zone où Foundry capte les clics du chevron
         // de repli/dépli de la liste hors-ligne : cliquer sur le bouton
         // refermait ce chevron au lieu de déclencher la clôture de session.
+        //
+        // Et surtout : on l'ajoute DEDANS #players-active (append), pas
+        // APRÈS (insertAfter) — le cadre blanc arrondi visible à l'écran
+        // est le style propre de #players-active lui-même. En l'insérant
+        // après, le bouton atterrissait hors du cadre, posé nu sur la
+        // carte en dessous : c'est ça qui ressemblait à un élément
+        // "fantôme" flottant et sans style depuis le début.
         const activeList = $(root).find('#players-active');
         if (activeList.length) {
-            closeBtn.insertAfter(activeList);
+            activeList.append(closeBtn);
         } else {
             $(root).append(closeBtn);
         }

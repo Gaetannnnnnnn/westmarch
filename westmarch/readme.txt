@@ -1,7 +1,7 @@
 ================================================================================
                         WESTMARCH SYSTÈME — MODULE FOUNDRY VTT
                                Auteur : Soruta (Discord: s0ruta)
-                                       Version : 1.2.4
+                                       Version : 1.2.5
                               Compatibilité : Foundry VTT v13
 ================================================================================
 
@@ -480,7 +480,5 @@ correctif
   le GM "actif", donc perdu si personne n'est GM ; un joueur actif est
   désormais élu à la place dans ce cas
 
-v1.2.4 | 2026-06-23
+v1.2.5 | 2026-06-23
 correctif
-- join scene
-- logs-foundry

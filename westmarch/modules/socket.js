@@ -16,6 +16,9 @@
 
 export function SocketHooks() {
     game.socket.on("module.westmarch", (data) => {
+        // DEBUG TEMPORAIRE — à retirer une fois le bug identifié
+        console.log("[westmarch] socket reçu :", data, "| mon id =", game.user.id);
+
         if (!data || data.userId !== game.user.id) return;
 
         if (data.action === "pullToScene") {
