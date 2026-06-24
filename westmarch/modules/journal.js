@@ -26,7 +26,10 @@ function renderJournalEntrySheet(sheet, html, data) {
                 const scene = await fromUuid(uuid);
                 const partyId = game.user.getFlag("westmarch", "partyId");
                 game.users.forEach(user => {
-                    if (user.getFlag("westmarch", "partyId") === partyId) {
+                    // partyId doit être vérifié en plus de l'égalité stricte :
+                    // sinon deux utilisateurs sans party (tous deux à
+                    // "undefined") matchent entre eux par erreur.
+                    if (partyId && user.getFlag("westmarch", "partyId") === partyId) {
                         pullUserToScene(scene.id, user.id);
                     }
                 });

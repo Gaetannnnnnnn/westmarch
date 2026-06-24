@@ -7,8 +7,6 @@ export function ScenesHooks() {
             name: "Go With Party",
             icon: '<i class="fa-solid fa-people-arrows"></i>',
             callback: li => {
-                // DEBUG TEMPORAIRE — à retirer une fois le bug identifié
-                console.log("[westmarch] getSceneContextOptions li.dataset =", li?.dataset);
                 var destination = game.scenes.get(li.dataset.entryId ?? li.dataset.sceneId ?? li.dataset.documentId);
                 GoWithParty(destination);
             },
@@ -20,8 +18,6 @@ export function ScenesHooks() {
             name: "Go With Party",
             icon: '<i class="fa-solid fa-people-arrows"></i>',
             callback: li => {
-                // DEBUG TEMPORAIRE — à retirer une fois le bug identifié
-                console.log("[westmarch] getSceneDirectoryEntryContextOptions li.dataset =", li?.dataset);
                 var destination = game.scenes.get(li.dataset.sceneId ?? li.dataset.entryId ?? li.dataset.documentId);
                 GoWithParty(destination);
             },
@@ -31,22 +27,21 @@ export function ScenesHooks() {
 }
 
 function GoWithParty(destination){
-    // DEBUG TEMPORAIRE — à retirer une fois le bug identifié
-    console.log("[westmarch] GoWithParty destination =", destination);
     if (!destination) {
-        ui.notifications.error("WestMarch (debug) : scène de destination introuvable — voir console.");
+        ui.notifications.warn("Scène de destination introuvable.");
         return;
     }
+    // myPartyId doit être vérifié en plus de l'égalité stricte : sinon
+    // deux utilisateurs sans party (tous deux à "undefined") matchent
+    // entre eux par erreur, et se retrouvent téléportés à tort.
     const myPartyId = game.user.getFlag("westmarch", "partyId");
-    console.log("[westmarch] myPartyId =", myPartyId);
     let count = 0;
     game.users.forEach(user => {
         const theirPartyId = user.getFlag("westmarch", "partyId");
-        console.log(`[westmarch] user ${user.name} partyId =`, theirPartyId);
         if (myPartyId && theirPartyId === myPartyId) {
             count++;
             pullUserToScene(destination.id, user.id);
         }
     });
-    ui.notifications.info(`WestMarch (debug) : ${count} membre(s) ciblé(s) vers ${destination.name}.`);
+    ui.notifications.info(`Groupe téléporté vers ${destination.name} (${count} membre(s)).`);
 }

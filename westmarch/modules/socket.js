@@ -1,48 +1,58 @@
 // ============================================================
-// socket.js — Canal socket dédié au module, pour déplacer un
-// utilisateur précis vers une scène.
+// socket.js — Communication ciblée entre clients pour déplacer un
+// utilisateur précis vers une scène, ou lui afficher un faux message.
 //
-// Le socket core "pullToScene" de Foundry v13 a changé de
-// comportement : son handler ne lit plus que le sceneId (le
-// userId envoyé en second argument est ignoré), et le serveur
-// ne relaie jamais l'événement à l'émetteur lui-même. Résultat :
-// il devient impossible de cibler un joueur précis avec ce socket
-// — il déplace tous les AUTRES clients connectés, et jamais soi-même.
+// Historique : ancienne version basée sur le socket CORE "pullToScene"
+// (game.socket.emit("pullToScene", ...)) — cassé en Foundry v13 (le
+// serveur ne lit plus le userId et ne relaie jamais à l'émetteur).
+// On est alors passés à un canal personnalisé "module.westmarch", MAIS
+// Foundry exige que le manifeste déclare "socket": true pour autoriser
+// un canal de module — ce qui n'a jamais été fait, donc AUCUN message
+// n'a jamais pu être délivré depuis cette migration (ni "Go With Party",
+// ni le faux message de maintenance), peu importe le cache navigateur.
 //
-// On utilise donc notre propre canal "module.westmarch", relayé
-// par le serveur à tous les clients, où chaque client filtre
-// lui-même selon le userId visé.
+// Plutôt que de modifier module.json (règle du projet : ne jamais y
+// toucher), on utilise le système de "queries" de Foundry v13
+// (CONFIG.queries / User#query), conçu justement pour cibler UN client
+// précis sans nécessiter cette déclaration de manifeste.
 // ============================================================
 
 export function SocketHooks() {
-    game.socket.on("module.westmarch", (data) => {
-        // DEBUG TEMPORAIRE — à retirer une fois le bug identifié
-        console.log("[westmarch] socket reçu :", data, "| mon id =", game.user.id);
+    // Chaque client (GM et joueurs) doit enregistrer ces handlers : n'importe
+    // lequel peut être la cible d'une query envoyée par un autre client.
+    CONFIG.queries["westmarch.pullToScene"] = async (queryData) => {
+        const scene = game.scenes.get(queryData.sceneId);
+        if (scene) scene.view();
+        return true;
+    };
 
-        if (!data || data.userId !== game.user.id) return;
-
-        if (data.action === "pullToScene") {
-            const scene = game.scenes.get(data.sceneId);
-            if (scene) scene.view();
-        } else if (data.action === "fakeWarning") {
-            ui.notifications.warn(data.message);
-        }
-    });
+    CONFIG.queries["westmarch.fakeWarning"] = async (queryData) => {
+        ui.notifications.warn(queryData.message);
+        return true;
+    };
 }
 
 // Déplace l'utilisateur "userId" vers la scène "sceneId". Si c'est
-// nous-mêmes, on change directement notre scène (pas besoin de socket).
+// nous-mêmes, on change directement notre scène (pas besoin de query).
 export function pullUserToScene(sceneId, userId) {
     if (userId === game.user.id) {
         const scene = game.scenes.get(sceneId);
         if (scene) scene.view();
         return;
     }
-    game.socket.emit("module.westmarch", { action: "pullToScene", sceneId, userId });
+    const targetUser = game.users.get(userId);
+    if (!targetUser) return;
+    targetUser.query("westmarch.pullToScene", { sceneId }).catch(err =>
+        console.error("[WestMarch] Erreur lors du déplacement de", targetUser.name, ":", err)
+    );
 }
 
 // Affiche un faux message d'avertissement (notification jaune) chez
 // l'utilisateur "userId" — utilisé par le bouton "farce" (fake-warning.js).
 export function sendFakeWarning(userId, message) {
-    game.socket.emit("module.westmarch", { action: "fakeWarning", userId, message });
+    const targetUser = game.users.get(userId);
+    if (!targetUser) return;
+    targetUser.query("westmarch.fakeWarning", { message }).catch(err =>
+        console.error("[WestMarch] Erreur lors de l'envoi du faux message à", targetUser.name, ":", err)
+    );
 }
