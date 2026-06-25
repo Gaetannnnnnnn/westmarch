@@ -28,8 +28,10 @@ function isRageEffect(effect) {
 
 // Vérifie que l'acteur possède bien la feature "Giant's Havoc" (Voie du
 // Géant, palier 3) — sans elle, la rage ne change jamais la taille.
+// Le "." (et non "'?") couvre aussi bien l'apostrophe droite (') que
+// l'apostrophe typographique (') utilisée dans les items officiels.
 function hasGiantsHavoc(actor) {
-    return actor.items?.some(i => /giant'?s havoc/i.test(i.name ?? "")) ?? false;
+    return actor.items?.some(i => /giant.?s havoc/i.test(i.name ?? "")) ?? false;
 }
 
 export function RageHooks() {

@@ -1,7 +1,7 @@
 ================================================================================
                         WESTMARCH SYSTÈME — MODULE FOUNDRY VTT
                                Auteur : Soruta (Discord: s0ruta)
-                                       Version : 1.3.7
+                                       Version : 1.3.8
                               Compatibilité : Foundry VTT v13
 ================================================================================
 
@@ -621,7 +621,6 @@ correctif
   le GM "actif", donc perdu si personne n'est GM ; un joueur actif est
   désormais élu à la place dans ce cas
 
-v1.3.7 | 2026-06-25
-correctif
-- correctif combat par party
+v1.3.8 | 2026-06-25
+
 - rage path of giant qui grandit
