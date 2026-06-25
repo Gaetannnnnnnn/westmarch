@@ -6,9 +6,10 @@
 //   création par sécurité, pour garantir cet état quoi qu'il arrive.
 // - Ce qui change réellement : le combat est marqué (flag) comme
 //   appartenant à la party du GM qui l'a créé.
-// - Du coup, si deux parties jouent en parallèle, chaque joueur ne
-//   voit dans son tracker que le combat de sa propre party (le GM,
-//   lui, voit toujours tout, pour pouvoir gérer toutes les parties).
+// - Du coup, si deux parties jouent en parallèle (table avec plusieurs
+//   GM, chacun avec sa propre party), chaque joueur ET chaque GM ne voit
+//   dans son tracker que le combat de SA propre party — un GM ne voit
+//   pas le combat géré par un autre GM.
 // ============================================================
 
 import { partyFeatureEnabled } from './settings.js';
@@ -30,12 +31,19 @@ let lastNonCombatTab = "chat";
 function isMyCombat(combat) {
     if (!partyFeatureEnabled("enableCombatParty")) return true;
     if (!combat) return true;
-    if (game.user.isGM) return true;
 
+    // Pas de cas particulier pour le GM : sur une table à plusieurs GM
+    // (un par party), un GM doit être traité comme un joueur de sa propre
+    // party — sinon il verrait aussi les combats gérés par les autres GM.
     const combatPartyId = combat.getFlag?.("westmarch", "partyId");
     if (!combatPartyId) return true;
 
-    const myPartyId = game.user.getFlag("westmarch", "partyId");
+    // Un GM qui n'a jamais lancé "Create Party" n'a pas de partyId flag
+    // posé sur lui-même (seul son combat est tagué avec son propre id, en
+    // repli, à la création - voir preCreateCombat) : on applique le même
+    // repli ici, sinon ce GM ne reconnaîtrait plus son propre combat
+    // comme étant le sien.
+    const myPartyId = game.user.getFlag("westmarch", "partyId") ?? (game.user.isGM ? game.user.id : undefined);
     return combatPartyId === myPartyId;
 }
 
@@ -67,48 +75,65 @@ export function CombatHooks() {
     //   propre party (sinon, message "aucun combat" à la place).
     // - Un combat non tagué (créé avant l'activation du setting, ou
     //   par un GM sans système de party) n'est jamais filtré.
-    // - Le GM voit toujours tout.
+    // - S'applique aussi au GM : sur une table à plusieurs GM (un par
+    //   party), chaque GM ne doit voir que le(s) combat(s) de sa propre
+    //   party, pas ceux gérés par un autre GM.
     // - On vide TOUT le contenu rendu (sans cibler de classe CSS
     //   précise, dont on n'était pas sûr) : plus robuste, ne dépend
     //   pas de la structure interne exacte du template Foundry.
     // ============================================================
     Hooks.on("renderCombatTracker", (tracker, html, data) => {
         if (!partyFeatureEnabled("enableCombatParty")) return;
-        if (game.user.isGM) return;
 
-        // Foundry v13 (ApplicationV2 / PARTS) déclenche ce hook séparément
-        // pour chaque partie du gabarit : le bandeau "header" (Round X +
-        // boutons) ET la liste "tracker" (les combattants), avec des
-        // appels distincts qui n'ont pas forcément le même data.combat de
-        // façon fiable entre eux. Constaté en jeu : le bandeau affichait
-        // bien notre message "Aucun combat...", mais la liste des
-        // combattants gardait quand même les vrais combattants d'un combat
-        // étranger juste en dessous. On se base donc sur tracker.viewed
-        // (propriété de l'instance d'Application, donc cohérente quel que
-        // soit l'appel) plutôt que data.combat seul, avec repli au cas où.
-        const combat = tracker.viewed ?? tracker.combat ?? data.combat;
-        if (isMyCombat(combat)) return;
-
+        // Aucune des "valeurs uniques" essayées (data.combat, game.combat,
+        // tracker.viewed) ne s'est avérée fiable pour savoir quel combat
+        // correspond à CE rendu précis dès que plusieurs combats tournent
+        // en parallèle (un par party, puisqu'aucun n'est lié à une scène) :
+        // tantôt ça laissait fuiter les combattants d'un combat étranger,
+        // tantôt ça coinçait un joueur sur "Aucun combat" alors que son
+        // propre combat existe bien. On filtre donc ligne par ligne : pour
+        // chaque <li class="combatant" data-combatant-id="...">, on
+        // retrouve sans ambiguïté son combat parent en cherchant son id
+        // parmi tous les combats de la table.
         const root = $(html);
+        const rows = root.find("li.combatant[data-combatant-id]");
 
-        // root peut être soit le bandeau header, soit la liste <ol
-        // class="combat-tracker">. On ne remet le texte du placeholder que
-        // sur la partie qui contenait réellement les combattants (ou si on
-        // ne reconnaît pas la structure) — sinon on vide juste sans texte,
-        // pour éviter d'afficher le message en double (une fois dans le
-        // bandeau, une fois dans la liste).
-        const isTrackerList = root.is("ol.combat-tracker") || root.find(".combatant").length > 0;
-        const isHeader = root.is("header") || root.hasClass("combat-tracker-header");
-        root.empty();
-        if (isTrackerList || (!isHeader && !isTrackerList)) {
-            // On affiche le message dans la liste des combattants (cas
-            // normal), ou dans la partie rendue si on n'a pas reconnu la
-            // structure (mieux vaut afficher le message une fois que pas
-            // du tout, par sécurité).
-            root.append(
-                `<p style="padding:8px; opacity:0.7; font-style:italic;">Aucun combat en cours pour votre party.</p>`
-            );
+        if (root.is("ol.combat-tracker") || rows.length) {
+            let kept = 0;
+            rows.each(function () {
+                const combatantId = this.dataset.combatantId;
+                let combat = null;
+                for (const c of (game.combats?.combats ?? [])) {
+                    if (c.combatants.get(combatantId)) { combat = c; break; }
+                }
+                if (combat && !isMyCombat(combat)) {
+                    $(this).remove();
+                } else {
+                    kept++;
+                }
+            });
+
+            if (kept === 0) {
+                root.empty().append(
+                    `<p style="padding:8px; opacity:0.7; font-style:italic;">Aucun combat en cours pour votre party.</p>`
+                );
+            }
         }
+
+        // Le bandeau ("header", Round X + boutons) n'est volontairement
+        // pas modifié : il n'expose pas d'identifiant de combat exploitable
+        // et ne révèle de toute façon que le numéro de round (pas les
+        // combattants ni leur état) — fuite mineure jugée acceptable plutôt
+        // que de risquer de re-coincer un joueur sur son propre combat.
+
+        // Pour le changement d'onglet et la fermeture du popup ci-dessous,
+        // on ne se fie qu'à l'existence ou non d'un combat À NOUS : s'il en
+        // existe un, on ne déloge jamais ce joueur de son tracker, même si
+        // un combat étranger tourne aussi en parallèle.
+        const combats = game.combats?.combats ?? [];
+        const hasOwn = combats.some(c => isMyCombat(c));
+        const hasForeign = combats.some(c => !isMyCombat(c));
+        if (hasOwn || !hasForeign) return;
 
         // Foundry vient de forcer l'onglet "Combat" au premier plan pour
         // ce joueur (comportement natif, déclenché au démarrage/maj du
@@ -164,7 +189,6 @@ export function CombatHooks() {
     //   pas — à vérifier en jeu.
     // ============================================================
     Hooks.on("preUpdateCombat", (combat, changes, options, userId) => {
-        if (game.user.isGM) return;
         if (!("turn" in changes) && !("round" in changes)) return;
         if (isMyCombat(combat)) return;
 
@@ -174,7 +198,6 @@ export function CombatHooks() {
     });
 
     Hooks.on("updateCombat", (combat, changes, options, userId) => {
-        if (game.user.isGM) return;
         if (!savedViewPosition) return;
         if (!("turn" in changes) && !("round" in changes)) return;
 

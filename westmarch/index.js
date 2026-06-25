@@ -13,6 +13,7 @@ import { DiscordLogHooks } from './modules/discordlog.js';
 import { SocketHooks } from './modules/socket.js';
 import { FakeWarningHooks } from './modules/fake-warning.js';
 import { CombatHooks } from './modules/combat.js';
+import { ItemHooks } from './modules/items.js';
 
 Hooks.on("init", async () => {
     Handlebars.registerHelper('for', function(from, to, incr, block) {
@@ -41,4 +42,5 @@ Hooks.on("init", async () => {
     SocketHooks();
     FakeWarningHooks();
     CombatHooks();
+    ItemHooks();
 });

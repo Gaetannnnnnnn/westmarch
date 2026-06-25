@@ -168,6 +168,16 @@ export function registerSettings() {
         requiresReload: false
     });
 
+    game.settings.register("westmarch", "enableToolAbilityFix", {
+        name: "Correction de la stat des outils (tools)",
+        hint: "À la création d'un item 'outil' (tool) sans stat définie (ou avec 'Intelligence' par défaut), corrige automatiquement vers la stat canonique de cet outil selon le système dnd5e (ex: Outils de voleur -> Dextérité). Utile notamment pour les outils importés via Plutonium, qui ne renseignent pas toujours la bonne stat.",
+        scope: "world",
+        config: true,
+        type: Boolean,
+        default: true,
+        requiresReload: false
+    });
+
     game.settings.register("westmarch", "enableDiscordLog", {
         name: "Log Discord (modifications)",
         hint: "Envoie un message dans un salon Discord (via webhook, différent du webhook IC par scène) à chaque ajout/suppression d'objet, changement de quantité, gain d'XP/niveau, et création/suppression de personnage.",

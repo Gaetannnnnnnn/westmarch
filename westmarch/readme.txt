@@ -1,7 +1,7 @@
 ================================================================================
                         WESTMARCH SYSTÈME — MODULE FOUNDRY VTT
                                Auteur : Soruta (Discord: s0ruta)
-                                       Version : 1.3.5
+                                       Version : 1.3.6
                               Compatibilité : Foundry VTT v13
 ================================================================================
 
@@ -29,6 +29,7 @@ westmarch/
 │   ├── document.js         Amélioration de la fenêtre de propriété des documents
 │   ├── fake-warning.js     Bouton GM (icônes de gauche) pour envoyer un faux message d'avertissement à un joueur
 │   ├── image.js            Bouton "Show Party" sur les popouts d'image
+│   ├── items.js            Correction de la stat par défaut des outils (tool) à la création
 │   ├── journal.js          Menu contextuel sur les liens de scène dans les journaux
 │   ├── player.js           Liste des joueurs, menu contextuel et gestion des parties
 │   ├── scenes.js           Téléportation de groupe depuis le répertoire de scènes
@@ -86,6 +87,17 @@ image.js
    Ajoute un bouton "Show Party" dans la barre de titre des fenêtres d'image
    (popout), visible par le GM uniquement. Partage l'image affichée à tous
    les membres de la party du GM en un clic.
+
+items.js
+   À la création d'un item de type "outil" (tool) dont la stat n'est pas
+   définie (ou vaut "Intelligence" par défaut), corrige automatiquement
+   vers la stat canonique de cet outil selon le système dnd5e (lue dans
+   CONFIG.DND5E.tools, jamais recopiée à la main). Le système dnd5e ne
+   retombe sur Intelligence par défaut que pour l'AFFICHAGE/les jets
+   quand le champ est vide, quel que soit l'outil réel — Plutonium (et
+   d'autres importeurs) ne renseignent pas ce champ, d'où des outils
+   comme les Outils de voleur affichés à tort en Intelligence au lieu
+   de Dextérité.
 
 journal.js
    Ajoute un menu contextuel (clic droit) sur les liens de scène à l'intérieur
@@ -433,9 +445,17 @@ NOTES TECHNIQUES
 v1.4.2 | 2026-06-25
 nouveauté
 - ajout du combat lié à la party plutôt qu'à la scène (combat.js) : un
-  combat créé par un GM est tagué avec sa party ; chaque joueur ne voit
-  dans son tracker que le combat de sa propre party (message "Aucun
-  combat en cours pour votre party." sinon), le GM voit toujours tout
+  combat créé par un GM est tagué avec sa party ; chaque joueur ET chaque
+  GM ne voit dans son tracker que le combat de sa propre party (message
+  "Aucun combat en cours pour votre party." sinon) — sur une table à
+  plusieurs GM, un GM ne voit donc plus le combat géré par un autre GM
+
+- ajout de la correction automatique de la stat des outils (items.js) :
+  un outil créé sans stat définie (souvent le cas après import via
+  Plutonium) se voit assigner la stat canonique de cet outil précis
+  selon le système dnd5e (ex: Outils de voleur -> Dextérité) au lieu de
+  rester sur Intelligence (valeur de repli du système quand le champ
+  est vide, quel que soit l'outil)
 
 correctif
 - combat.js : le message "Aucun combat en cours pour votre party." restait
@@ -462,12 +482,23 @@ correctif
   bandeau "Round X" et pour la liste des combattants, avec un data.combat
   pas toujours cohérent entre les deux appels — on se base maintenant sur
   tracker.viewed (fiable dans tous les cas) pour vider les deux parties
+- combat.js : le message "Aucun combat en cours pour votre party." restait
+  coincé même pour des joueurs dont la party avait bien un combat en
+  cours — tracker.viewed (utilisé pour identifier le combat de CE rendu)
+  ne reflétait pas forcément le bon combat avec plusieurs combats en
+  parallèle ; le filtrage se fait maintenant ligne par ligne, combattant
+  par combattant (via son id propre), sans dépendre d'un pointeur global
 - combat.js : un joueur hors de toute party (ou hors du combat en cours)
   pouvait se retrouver à nouveau bloqué dans ses mouvements après un
   rechargement de scène — le hook canvasReady se basait sur game.combat
   (peu fiable avec plusieurs combats en parallèle) pour décider de
   libérer ses tokens ; il recalcule maintenant en regardant tous les
   combats actifs de la table, peu importe lequel a déclenché le hook
+- combat.js : un GM qui n'est pas celui qui gère une party voyait quand
+  même le combat de cette party dans son tracker (et subissait le pan de
+  caméra automatique, etc.) — tout le filtrage par party (tracker, pan
+  caméra, mouvement libre TokenBar) s'applique maintenant aussi aux GM,
+  chacun étant identifié par son propre partyId comme un joueur
 - token.js : le bouton "Voir le portrait" du HUD token n'était utilisable
   que par le propriétaire du token (Foundry empêche par défaut l'ouverture
   du HUD par clic droit pour un non-propriétaire) ; patché via libWrapper
@@ -533,6 +564,7 @@ correctif
   le GM "actif", donc perdu si personne n'est GM ; un joueur actif est
   désormais élu à la place dans ce cas
 
-v1.3.5 | 2026-06-25
+v1.3.6 | 2026-06-25
 correctif
 - correctif combat par party
+- ajout du correctif automatique des import de tools en Int
