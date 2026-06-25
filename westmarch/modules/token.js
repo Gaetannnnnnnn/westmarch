@@ -256,6 +256,35 @@ function openImportPopup(onConfirm) {
 export function TokenHooks() {
 
     // ============================================================
+    // SECTION : Autorise l'ouverture du HUD du token (clic droit) pour
+    // tout le monde, pas seulement le propriétaire.
+    // - Par défaut, Foundry empêche un joueur non-propriétaire d'ouvrir
+    //   le HUD d'un token (clic droit ignoré) — c'est pour ça que le
+    //   bouton "Voir le portrait" plus bas n'apparaissait jamais pour un
+    //   token qui n'est pas le sien : le HUD ne s'ouvrait même pas.
+    // - On patch (via libWrapper) le clic droit pour qu'il ouvre toujours
+    //   le HUD, peu importe le propriétaire.
+    // - Sans danger pour les autres icônes du HUD : chacune vérifie déjà
+    //   elle-même la permission nécessaire avant de s'afficher ou d'agir
+    //   (ex. "Apparence suivante" plus bas vérifie actor.isOwner ; les
+    //   icônes natives de Foundry comme les effets de statut ne
+    //   s'affichent déjà que pour le propriétaire/GM dans le template du
+    //   HUD lui-même).
+    // ============================================================
+    if (game.modules.get("lib-wrapper")?.active) {
+        try {
+            libWrapper.register("westmarch", "CONFIG.Token.objectClass.prototype._onClickRight2", function (wrapped, ...args) {
+                if (this.isOwner || game.user.isGM) return wrapped(...args);
+                canvas.hud.token.bind(this);
+            }, "MIXED");
+        } catch (e) {
+            console.warn("[WestMarch] Impossible de patcher l'ouverture du HUD token (libWrapper) :", e);
+        }
+    } else {
+        console.warn("[WestMarch] libWrapper n'est pas actif : le bouton 'Voir le portrait' ne sera utilisable que par le propriétaire du token et le GM.");
+    }
+
+    // ============================================================
     // SECTION : Bouton "Image suivante" dans le HUD du token
     // - Tout le monde peut cycler sur son propre token
     // - Les apparences sont stockées sur l'acteur (prototype token)

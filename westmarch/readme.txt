@@ -1,7 +1,7 @@
 ================================================================================
                         WESTMARCH SYSTÈME — MODULE FOUNDRY VTT
                                Auteur : Soruta (Discord: s0ruta)
-                                       Version : 1.3.2
+                                       Version : 1.3.3
                               Compatibilité : Foundry VTT v13
 ================================================================================
 
@@ -35,7 +35,7 @@ westmarch/
 │   ├── session.js          Journal de session : capture XP, ennemis, PNJ, objets et génère un rapport
 │   ├── settings.js         Enregistrement des paramètres configurables du module
 │   ├── socket.js           Canal socket dédié au module, pour téléporter un utilisateur précis vers une scène
-│   ├── token.js            Changement d'apparence des tokens
+│   ├── token.js            Changement d'apparence des tokens + bouton "Voir le portrait"
 │   └── xp.js               Blocage de la modification de l'XP et masquage du bouton Level Up
 └── styles/
     ├── chat.css            Styles du chat
@@ -132,6 +132,11 @@ token.js
    d'import avec cadrage, zoom et découpe circulaire ajustable). Les joueurs
    peuvent cycler entre les apparences enregistrées via un bouton dans le HUD
    de leur propre token.
+   Ajoute aussi un bouton "Voir le portrait" dans le HUD de tout token
+   (pas seulement le sien), qui affiche en grand l'image de la fiche du
+   personnage. Patch (libWrapper) l'ouverture du HUD par clic droit pour
+   qu'elle fonctionne même sur un token dont on n'est pas propriétaire
+   (comportement par défaut de Foundry sinon).
 
 xp.js
    Empêche les joueurs de modifier leur XP ou de monter de niveau (fiche
@@ -422,7 +427,34 @@ NOTES TECHNIQUES
 ================================================================================
                         WESTMARCH SYSTÈME — MISES À JOUR
 ================================================================================
- 
+
+v1.4.2 | 2026-06-25
+nouveauté
+- ajout du combat lié à la party plutôt qu'à la scène (combat.js) : un
+  combat créé par un GM est tagué avec sa party ; chaque joueur ne voit
+  dans son tracker que le combat de sa propre party (message "Aucun
+  combat en cours pour votre party." sinon), le GM voit toujours tout
+
+correctif
+- combat.js : la caméra des joueurs hors-party n'est plus auto-déplacée
+  par le pan automatique de Foundry à chaque changement de tour d'un
+  combat qui n'est pas le leur (position restaurée juste après)
+- combat.js : le blocage de mouvement causé par le module tiers "Monk's
+  TokenBar" (qui bascule tout le monde en "Mouvement de Combat" sans
+  notion de party dès qu'un combat démarre) ne bloque plus les joueurs
+  hors-party — leurs tokens sont passés en mouvement libre via le flag
+  propre à TokenBar tant que le combat actif n'est pas le leur
+- combat.js : le popup non-fermable du tracker de combat (causé par le
+  module tiers "Monk's Combat Details", qui fait apparaître le tracker
+  dans une fenêtre flottante pour tout le monde dès qu'un combat démarre,
+  sans notion de party) est maintenant refermé automatiquement pour les
+  joueurs hors-party
+- token.js : le bouton "Voir le portrait" du HUD token n'était utilisable
+  que par le propriétaire du token (Foundry empêche par défaut l'ouverture
+  du HUD par clic droit pour un non-propriétaire) ; patché via libWrapper
+  pour que le HUD s'ouvre pour tout le monde — les autres icônes du HUD
+  restent protégées par leurs propres vérifications de permission
+
 v1.4.1 | 2026-06-24
 nettoyage
 - suppression du setting "Masquage des stats sur la fiche de groupe"
@@ -480,8 +512,7 @@ correctif
   le GM "actif", donc perdu si personne n'est GM ; un joueur actif est
   désormais élu à la place dans ce cas
 
-v1.3.2 | 2026-06-23
+v1.3.3 | 2026-06-23
 correctif
-- combat par party
-- ajout image portrait dans l'hud d'un token
-- supression du artbook (pourrais remplir le serve trop vite)
+- correctif combat par party
+- correctif image portrait dans l'hud d'un token
