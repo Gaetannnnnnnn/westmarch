@@ -178,6 +178,16 @@ export function registerSettings() {
         requiresReload: false
     });
 
+    game.settings.register("westmarch", "enableRageSize", {
+        name: "Taille Large pendant la Rage (Voie du Géant)",
+        hint: "Pour les barbares possédant la feature 'Giant's Havoc' (Voie du Géant, palier 3) : dès qu'ils reçoivent l'effet actif 'Rage', leurs tokens passent automatiquement en taille 2x2 (Large) s'ils sont plus petits, et reviennent à leur taille d'origine dès que la rage se termine. N'a aucun effet sur les barbares d'une autre sous-classe.",
+        scope: "world",
+        config: true,
+        type: Boolean,
+        default: true,
+        requiresReload: false
+    });
+
     game.settings.register("westmarch", "enableDiscordLog", {
         name: "Log Discord (modifications)",
         hint: "Envoie un message dans un salon Discord (via webhook, différent du webhook IC par scène) à chaque ajout/suppression d'objet, changement de quantité, gain d'XP/niveau, et création/suppression de personnage.",

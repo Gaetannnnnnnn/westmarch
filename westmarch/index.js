@@ -14,6 +14,8 @@ import { SocketHooks } from './modules/socket.js';
 import { FakeWarningHooks } from './modules/fake-warning.js';
 import { CombatHooks } from './modules/combat.js';
 import { ItemHooks } from './modules/items.js';
+import { AudioHooks } from './modules/audio.js';
+import { RageHooks } from './modules/rage.js';
 
 Hooks.on("init", async () => {
     Handlebars.registerHelper('for', function(from, to, incr, block) {
@@ -43,4 +45,6 @@ Hooks.on("init", async () => {
     FakeWarningHooks();
     CombatHooks();
     ItemHooks();
+    AudioHooks();
+    RageHooks();
 });

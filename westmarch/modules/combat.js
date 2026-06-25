@@ -13,11 +13,18 @@
 // ============================================================
 
 import { partyFeatureEnabled } from './settings.js';
+import { registerSoundFilter } from './audio.js';
 
 // Mémorise, pour le combat en cours de changement de tour, la position de
 // la caméra d'un joueur hors-party AVANT que Foundry ne la déplace
 // automatiquement (voir preUpdateCombat / updateCombat plus bas).
 let savedViewPosition = null;
+
+// Mémorise le DERNIER combat ayant changé de round/tour/état "started",
+// avec l'heure de ce changement — utilisé uniquement pour rattacher un
+// son de thème de combat (voir le filtre audio.js plus bas) au bon
+// combat, sans deviner via un pointeur global peu fiable (game.combat).
+let lastCombatSoundEvent = null;
 
 // Mémorise le dernier onglet de la sidebar autre que "combat" : Foundry
 // force l'onglet Combat au premier plan pour TOUT LE MONDE dès qu'un
@@ -213,6 +220,51 @@ export function CombatHooks() {
         }, 50);
     });
 
+    // Mémorise le combat à l'origine du dernier changement de round/tour/
+    // démarrage, pour le filtre de son de thème de combat (audio.js,
+    // section plus bas) — sans dépendre de game.combat (pointeur global
+    // peu fiable dès que plusieurs combats tournent en parallèle).
+    Hooks.on("updateCombat", (combat, changes) => {
+        if (("turn" in changes) || ("round" in changes) || ("started" in changes)) {
+            lastCombatSoundEvent = { combat, time: Date.now() };
+        }
+    });
+
+    // ============================================================
+    // SECTION : Coupe le son de thème de combat (audio.js) — début de
+    // combat / changement de tour — quand il provient d'un combat qui
+    // n'est pas le nôtre. Foundry le diffuse à toute la table via le
+    // thème choisi (réglage client "core.combatTheme", CONFIG.Combat.
+    // sounds), sans aucune notion de party.
+    // - On ne sait pas reconnaître ce son par son seul chemin (il dépend
+    //   du thème choisi par CE client) : on vérifie donc qu'il fait bien
+    //   partie des sons du thème actif, puis on le rattache au combat
+    //   dont un changement de round/tour/démarrage vient de se produire
+    //   (lastCombatSoundEvent ci-dessus), borné à 2 secondes pour éviter
+    //   de couper un son de thème rejoué plus tard sans rapport (macro,
+    //   etc.).
+    // ============================================================
+    function themeContainsSound(obj, src) {
+        if (!obj || typeof obj !== "object") return false;
+        for (const v of Object.values(obj)) {
+            if (typeof v === "string" && v === src) return true;
+            if (v && typeof v === "object" && themeContainsSound(v, src)) return true;
+        }
+        return false;
+    }
+
+    registerSoundFilter((src) => {
+        if (!partyFeatureEnabled("enableCombatParty")) return false;
+        if (!src || !lastCombatSoundEvent) return false;
+        if (Date.now() - lastCombatSoundEvent.time > 2000) return false;
+
+        const themeKey = game.settings.get("core", "combatTheme");
+        const theme = CONFIG.Combat?.sounds?.[themeKey];
+        if (!theme || !themeContainsSound(theme, src)) return false;
+
+        return !isMyCombat(lastCombatSoundEvent.combat);
+    });
+
     // ============================================================
     // SECTION : Blocage de mouvement causé par le module "Monk's
     // TokenBar" (non lié à westmarch).
@@ -238,7 +290,7 @@ export function CombatHooks() {
     // combat étranger démarré ET qu'aucun combat de notre party n'est lui
     // aussi démarré (sinon le blocage normal de notre propre tour reste
     // pertinent).
-    function applyMonksTokenBarMovementOverride() {
+    async function applyMonksTokenBarMovementOverride() {
         if (!partyFeatureEnabled("enableCombatParty")) return;
         if (game.user.isGM) return;
         if (!game.modules.get("monks-tokenbar")?.active) return;
@@ -254,20 +306,40 @@ export function CombatHooks() {
         for (const token of myTokens) {
             const overridden = token.document.getFlag("westmarch", "mtbMovementOverride");
             if (foreign && !overridden) {
-                token.document.setFlag("westmarch", "mtbMovementOverride", true);
-                token.document.setFlag("monks-tokenbar", "movement", "free");
+                await token.document.setFlag("westmarch", "mtbMovementOverride", true);
+                await token.document.setFlag("monks-tokenbar", "movement", "free");
             } else if (!foreign && overridden) {
-                token.document.unsetFlag("westmarch", "mtbMovementOverride");
-                token.document.unsetFlag("monks-tokenbar", "movement");
+                await token.document.unsetFlag("westmarch", "mtbMovementOverride");
+                await token.document.unsetFlag("monks-tokenbar", "movement");
             }
         }
     }
 
-    Hooks.on("createCombat", () => applyMonksTokenBarMovementOverride());
-    Hooks.on("deleteCombat", () => applyMonksTokenBarMovementOverride());
+    // Monk's TokenBar a SA PROPRE logique de démarrage de combat (réglage
+    // "change-to-combat") qui, au moment précis où un combat démarre
+    // (round 1, turn 0), efface le flag "monks-tokenbar.movement" de TOUS
+    // les tokens visibles sur la scène (pas seulement les combattants) —
+    // exactement le flag qu'on vient de poser ci-dessus pour libérer un
+    // joueur hors-party. Les deux routines se déclenchent sur le MÊME
+    // hook "updateCombat" et sont toutes les deux asynchrones sans être
+    // attendues par Foundry : selon l'ordre d'enregistrement des modules,
+    // l'effacement de TokenBar peut donc s'exécuter APRÈS notre propre
+    // correctif et l'annuler (race condition, jamais fiable à 100%). On
+    // ne peut pas garantir d'arriver après coup, donc on réapplique notre
+    // correctif à quelques reprises après un court délai, pour "gagner"
+    // la course dans tous les cas plutôt qu'une seule fois au mauvais
+    // moment.
+    function scheduleMonksTokenBarMovementOverride() {
+        applyMonksTokenBarMovementOverride();
+        setTimeout(() => applyMonksTokenBarMovementOverride(), 300);
+        setTimeout(() => applyMonksTokenBarMovementOverride(), 1200);
+    }
+
+    Hooks.on("createCombat", () => scheduleMonksTokenBarMovementOverride());
+    Hooks.on("deleteCombat", () => scheduleMonksTokenBarMovementOverride());
     Hooks.on("updateCombat", (combat, changes) => {
         if (!("started" in changes) && !("round" in changes) && !("turn" in changes)) return;
-        applyMonksTokenBarMovementOverride();
+        scheduleMonksTokenBarMovementOverride();
     });
-    Hooks.on("canvasReady", () => applyMonksTokenBarMovementOverride());
+    Hooks.on("canvasReady", () => scheduleMonksTokenBarMovementOverride());
 }

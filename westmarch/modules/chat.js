@@ -1,4 +1,5 @@
 import { partyFeatureEnabled } from './settings.js';
+import { registerSoundFilter } from './audio.js';
 
 var tabSelected = "IC";
 var turndown = undefined;
@@ -8,6 +9,23 @@ export function ChatHooks() {
     Hooks.on("renderChatLog", async (log, html, data) => await renderChatLog(log, html, data));
     Hooks.on("renderSceneConfig", (app, html, data) => renderSceneConfig(app, html, data));
     Hooks.on("chatMessage", (chatLog, message, chatData) => chatMessage(chatLog, message, chatData));
+
+    // ============================================================
+    // Coupe le son de jet de dés (audio.js) quand il provient d'un
+    // message dont l'auteur n'est pas de notre party — voir audio.js
+    // pour le pourquoi (le son est diffusé à toute la table, sans
+    // notion de party, indépendamment du masquage visuel ci-dessus).
+    // ============================================================
+    registerSoundFilter((src) => {
+        if (!partyFeatureEnabled("enableChatFilter")) return false;
+        if (!src || src !== CONFIG.sounds.dice) return false;
+
+        // Le son qu'on est sur le point de jouer vient forcément du
+        // DERNIER message de chat créé portant ce son (un jet de dés) :
+        // on le retrouve pour savoir si son auteur est de notre party.
+        const msg = [...game.messages].reverse().find(m => m.sound === src);
+        return msg ? !isPartyMember(msg.author) : false;
+    });
 
     turndown = new TurndownService();
 }

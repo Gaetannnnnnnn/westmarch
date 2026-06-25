@@ -1,7 +1,7 @@
 ================================================================================
                         WESTMARCH SYSTÈME — MODULE FOUNDRY VTT
                                Auteur : Soruta (Discord: s0ruta)
-                                       Version : 1.3.6
+                                       Version : 1.3.7
                               Compatibilité : Foundry VTT v13
 ================================================================================
 
@@ -24,6 +24,7 @@ westmarch/
 ├── index.js                Point d'entrée — initialise tous les hooks
 ├── modules/
 │   ├── anticheat.js        Avertit les GM en privé des modifs suspectes (sorts/attunement/équipement) en combat
+│   ├── audio.js            Coupe les sons globaux (dés, thème de combat) qui traversent les party
 │   ├── chat.js             Gestion du chat filtré par party et webhook Discord
 │   ├── discordlog.js       Log Discord (webhook) des modifications : items, XP/niveau, monnaie, persos
 │   ├── document.js         Amélioration de la fenêtre de propriété des documents
@@ -32,6 +33,7 @@ westmarch/
 │   ├── items.js            Correction de la stat par défaut des outils (tool) à la création
 │   ├── journal.js          Menu contextuel sur les liens de scène dans les journaux
 │   ├── player.js           Liste des joueurs, menu contextuel et gestion des parties
+│   ├── rage.js             Passage en taille Large (2x2) pendant la Rage du Barbare
 │   ├── scenes.js           Téléportation de groupe depuis le répertoire de scènes
 │   ├── session.js          Journal de session : capture XP, ennemis, PNJ, objets et génère un rapport
 │   ├── settings.js         Enregistrement des paramètres configurables du module
@@ -54,6 +56,19 @@ anticheat.js
    feature regagnées ou maximum modifié, emplacements de sort regagnés ou
    maximum modifié. À chaque détection, envoie un message privé (whisper) au
    GM de la party concernée. Les actions des GM ne déclenchent jamais d'alerte.
+
+audio.js
+   Empêche certains sons globaux de traverser les party : le son de jet
+   de dés (ChatMessage.sound) et le son du thème de combat (réglage
+   client "core.combatTheme") sont normalement diffusés par Foundry à
+   TOUTE la table dès qu'un message de chat avec un jet est créé, ou
+   qu'un combat démarre/change de tour — sans aucune notion de party,
+   et indépendamment du masquage visuel déjà fait par chat.js/combat.js
+   (qui n'agit qu'au RENDU, alors que le son est déjà joué avant). On
+   intercepte directement le point d'entrée Foundry par lequel passe
+   tout son diffusé à plusieurs clients (foundry.audio.AudioHelper.play)
+   ; chat.js et combat.js y enregistrent chacun leur propre condition
+   (l'auteur du message / le combat concerné est-il de notre party ?).
 
 chat.js
    Filtre l'affichage du chat par party (un joueur ne voit que les messages
@@ -89,15 +104,21 @@ image.js
    les membres de la party du GM en un clic.
 
 items.js
-   À la création d'un item de type "outil" (tool) dont la stat n'est pas
-   définie (ou vaut "Intelligence" par défaut), corrige automatiquement
-   vers la stat canonique de cet outil selon le système dnd5e (lue dans
-   CONFIG.DND5E.tools, jamais recopiée à la main). Le système dnd5e ne
-   retombe sur Intelligence par défaut que pour l'AFFICHAGE/les jets
-   quand le champ est vide, quel que soit l'outil réel — Plutonium (et
-   d'autres importeurs) ne renseignent pas ce champ, d'où des outils
-   comme les Outils de voleur affichés à tort en Intelligence au lieu
-   de Dextérité.
+   Corrige automatiquement, vers la stat canonique de chaque outil selon
+   le système dnd5e (lue dans CONFIG.DND5E.tools, jamais recopiée à la
+   main), deux structures de données distinctes qui retombent toutes les
+   deux sur "Intelligence" par défaut côté système, peu importe l'outil
+   réel :
+   1) l'item "tool" lui-même (system.ability), si Plutonium ne le
+      renseigne pas à la création ;
+   2) la proficiency d'outil sur la fiche d'un acteur (system.tools.<clé>,
+      ex: PNJ/monstres importés par Plutonium sans item associé) — c'est
+      cette structure qui était responsable des "Outils de forgeron" en
+      Intelligence au lieu de Force, le système dnd5e initialisant
+      ability: "int" sur CHAQUE entrée par défaut.
+   Couvre la création ET la mise à jour d'acteur (Plutonium renseigne
+   parfois les proficiencies après coup), plus un rattrapage one-shot au
+   chargement du monde pour les acteurs déjà importés avant ce correctif.
 
 journal.js
    Ajoute un menu contextuel (clic droit) sur les liens de scène à l'intérieur
@@ -111,6 +132,16 @@ player.js
    joueur) avec Create Party, Create Party with Log, Join Party, Leave Party,
    Kick Party, Invite Party et Join Scene. La party est stockée comme un flag
    "partyId" sur chaque utilisateur (l'id du GM chef).
+
+rage.js
+   Spécifique à la sous-classe Voie du Géant (feature "Giant's Havoc",
+   palier 3) : dès que l'effet actif "Rage" apparaît sur un acteur
+   possédant cette feature, passe automatiquement tous ses tokens en
+   taille 2x2 (Large) s'ils sont plus petits ; mémorise la taille
+   d'origine de chaque token (flag) pour la restaurer exactement dès que
+   l'effet "Rage" disparaît (fin de la rage). N'a aucun effet sur les
+   barbares d'une autre sous-classe. GM uniquement (évite que plusieurs
+   clients tentent la même mise à jour de token en même temps).
 
 scenes.js
    Ajoute l'option "Go With Party" au menu contextuel du répertoire de scènes
@@ -450,12 +481,29 @@ nouveauté
   "Aucun combat en cours pour votre party." sinon) — sur une table à
   plusieurs GM, un GM ne voit donc plus le combat géré par un autre GM
 
+- ajout du passage automatique en taille Large (2x2) pendant la Rage,
+  spécifique à la Voie du Géant (rage.js) : dès que l'effet actif
+  "Rage" apparaît sur un acteur possédant la feature "Giant's Havoc"
+  (palier 3), son token passe en 2x2 s'il est plus petit ; revient à
+  sa taille d'origine dès que l'effet disparaît (fin de la rage). Sans
+  cette feature (autre sous-classe de barbare), aucun effet
+
+- ajout de la suppression des sons globaux (jet de dés, thème de
+  combat) qui traversaient les party (audio.js) : Foundry diffuse ces
+  sons à toute la table, indépendamment du masquage visuel déjà fait
+  par chat.js/combat.js (le son est joué avant ce masquage) — on coupe
+  maintenant le son lui-même quand le message ou le combat à l'origine
+  n'est pas le nôtre
+
 - ajout de la correction automatique de la stat des outils (items.js) :
-  un outil créé sans stat définie (souvent le cas après import via
-  Plutonium) se voit assigner la stat canonique de cet outil précis
-  selon le système dnd5e (ex: Outils de voleur -> Dextérité) au lieu de
-  rester sur Intelligence (valeur de repli du système quand le champ
-  est vide, quel que soit l'outil)
+  s'applique à la fois aux items "tool" sans stat définie ET aux
+  proficiencies d'outil directement sur la fiche d'un acteur
+  (system.tools, typiquement pour les PNJ/monstres importés par
+  Plutonium sans item associé) — assigne la stat canonique de chaque
+  outil précis selon le système dnd5e (ex: Outils de forgeron -> Force)
+  au lieu de rester sur Intelligence (valeur de repli codée en dur côté
+  système, peu importe l'outil) ; inclut un rattrapage au chargement du
+  monde pour les acteurs déjà importés avant ce correctif
 
 correctif
 - combat.js : le message "Aucun combat en cours pour votre party." restait
@@ -494,6 +542,15 @@ correctif
   (peu fiable avec plusieurs combats en parallèle) pour décider de
   libérer ses tokens ; il recalcule maintenant en regardant tous les
   combats actifs de la table, peu importe lequel a déclenché le hook
+- combat.js : un joueur hors de toute party (ou hors du combat en cours),
+  présent sur la même scène, pouvait quand même se retrouver bloqué dans
+  ses mouvements au moment exact où le combat démarrait — Monk's
+  TokenBar efface lui-même le flag de mouvement libre de TOUS les tokens
+  de la scène à cet instant précis (round 1, turn 0), sur le même hook
+  "updateCombat" que notre propre correctif, sans garantie d'ordre entre
+  les deux (les deux sont asynchrones) ; notre correctif se réapplique
+  maintenant à plusieurs reprises juste après (300ms puis 1200ms) pour
+  ne plus perdre cette course
 - combat.js : un GM qui n'est pas celui qui gère une party voyait quand
   même le combat de cette party dans son tracker (et subissait le pan de
   caméra automatique, etc.) — tout le filtrage par party (tracker, pan
@@ -564,7 +621,7 @@ correctif
   le GM "actif", donc perdu si personne n'est GM ; un joueur actif est
   désormais élu à la place dans ce cas
 
-v1.3.6 | 2026-06-25
+v1.3.7 | 2026-06-25
 correctif
 - correctif combat par party
-- ajout du correctif automatique des import de tools en Int
+- rage path of giant qui grandit
