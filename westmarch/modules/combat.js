@@ -207,13 +207,25 @@ export function CombatHooks() {
     //   a nous-mêmes forcés, pour ne jamais toucher à un réglage de
     //   mouvement que le GM aurait défini manuellement sur un token.
     // ============================================================
-    function applyMonksTokenBarMovementOverride(combat) {
+    // Ne prend plus un combat précis en paramètre : on recalcule à chaque
+    // fois en regardant TOUS les combats actifs de la table (game.combat
+    // ne suffit pas — c'est un pointeur global unique peu fiable dès que
+    // plusieurs combats tournent en parallèle sans scène, comme constaté
+    // pour le tracker plus haut). On est "libre" seulement s'il existe un
+    // combat étranger démarré ET qu'aucun combat de notre party n'est lui
+    // aussi démarré (sinon le blocage normal de notre propre tour reste
+    // pertinent).
+    function applyMonksTokenBarMovementOverride() {
         if (!partyFeatureEnabled("enableCombatParty")) return;
         if (game.user.isGM) return;
         if (!game.modules.get("monks-tokenbar")?.active) return;
         if (!canvas?.ready) return;
 
-        const foreign = combat ? !isMyCombat(combat) : false;
+        const combats = game.combats?.combats ?? [];
+        const hasForeignStarted = combats.some(c => c.started && !isMyCombat(c));
+        const hasOwnStarted = combats.some(c => c.started && isMyCombat(c));
+        const foreign = hasForeignStarted && !hasOwnStarted;
+
         const myTokens = canvas.tokens.placeables.filter(t => t.actor?.isOwner);
 
         for (const token of myTokens) {
@@ -228,11 +240,11 @@ export function CombatHooks() {
         }
     }
 
-    Hooks.on("createCombat", (combat) => applyMonksTokenBarMovementOverride(combat));
-    Hooks.on("deleteCombat", (combat) => applyMonksTokenBarMovementOverride(null));
+    Hooks.on("createCombat", () => applyMonksTokenBarMovementOverride());
+    Hooks.on("deleteCombat", () => applyMonksTokenBarMovementOverride());
     Hooks.on("updateCombat", (combat, changes) => {
         if (!("started" in changes) && !("round" in changes) && !("turn" in changes)) return;
-        applyMonksTokenBarMovementOverride(combat);
+        applyMonksTokenBarMovementOverride();
     });
-    Hooks.on("canvasReady", () => applyMonksTokenBarMovementOverride(game.combat));
+    Hooks.on("canvasReady", () => applyMonksTokenBarMovementOverride());
 }

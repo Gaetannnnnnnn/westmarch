@@ -1,7 +1,7 @@
 ================================================================================
                         WESTMARCH SYSTÈME — MODULE FOUNDRY VTT
                                Auteur : Soruta (Discord: s0ruta)
-                                       Version : 1.3.4
+                                       Version : 1.3.5
                               Compatibilité : Foundry VTT v13
 ================================================================================
 
@@ -462,6 +462,12 @@ correctif
   bandeau "Round X" et pour la liste des combattants, avec un data.combat
   pas toujours cohérent entre les deux appels — on se base maintenant sur
   tracker.viewed (fiable dans tous les cas) pour vider les deux parties
+- combat.js : un joueur hors de toute party (ou hors du combat en cours)
+  pouvait se retrouver à nouveau bloqué dans ses mouvements après un
+  rechargement de scène — le hook canvasReady se basait sur game.combat
+  (peu fiable avec plusieurs combats en parallèle) pour décider de
+  libérer ses tokens ; il recalcule maintenant en regardant tous les
+  combats actifs de la table, peu importe lequel a déclenché le hook
 - token.js : le bouton "Voir le portrait" du HUD token n'était utilisable
   que par le propriétaire du token (Foundry empêche par défaut l'ouverture
   du HUD par clic droit pour un non-propriétaire) ; patché via libWrapper
@@ -527,7 +533,6 @@ correctif
   le GM "actif", donc perdu si personne n'est GM ; un joueur actif est
   désormais élu à la place dans ce cas
 
-v1.3.4 | 2026-06-25
+v1.3.5 | 2026-06-25
 correctif
 - correctif combat par party
-- correctif image portrait dans l'hud d'un token
