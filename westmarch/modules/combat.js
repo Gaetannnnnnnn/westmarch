@@ -76,14 +76,39 @@ export function CombatHooks() {
         if (!partyFeatureEnabled("enableCombatParty")) return;
         if (game.user.isGM) return;
 
-        // game.combat = le combat actuellement affiché/actif (API stable),
-        // plus fiable que de deviner une propriété sur l'objet "tracker".
-        const combat = game.combat;
+        // Foundry v13 (ApplicationV2 / PARTS) déclenche ce hook séparément
+        // pour chaque partie du gabarit : le bandeau "header" (Round X +
+        // boutons) ET la liste "tracker" (les combattants), avec des
+        // appels distincts qui n'ont pas forcément le même data.combat de
+        // façon fiable entre eux. Constaté en jeu : le bandeau affichait
+        // bien notre message "Aucun combat...", mais la liste des
+        // combattants gardait quand même les vrais combattants d'un combat
+        // étranger juste en dessous. On se base donc sur tracker.viewed
+        // (propriété de l'instance d'Application, donc cohérente quel que
+        // soit l'appel) plutôt que data.combat seul, avec repli au cas où.
+        const combat = tracker.viewed ?? tracker.combat ?? data.combat;
         if (isMyCombat(combat)) return;
 
-        $(html).empty().append(
-            `<p style="padding:8px; opacity:0.7; font-style:italic;">Aucun combat en cours pour votre party.</p>`
-        );
+        const root = $(html);
+
+        // root peut être soit le bandeau header, soit la liste <ol
+        // class="combat-tracker">. On ne remet le texte du placeholder que
+        // sur la partie qui contenait réellement les combattants (ou si on
+        // ne reconnaît pas la structure) — sinon on vide juste sans texte,
+        // pour éviter d'afficher le message en double (une fois dans le
+        // bandeau, une fois dans la liste).
+        const isTrackerList = root.is("ol.combat-tracker") || root.find(".combatant").length > 0;
+        const isHeader = root.is("header") || root.hasClass("combat-tracker-header");
+        root.empty();
+        if (isTrackerList || (!isHeader && !isTrackerList)) {
+            // On affiche le message dans la liste des combattants (cas
+            // normal), ou dans la partie rendue si on n'a pas reconnu la
+            // structure (mieux vaut afficher le message une fois que pas
+            // du tout, par sécurité).
+            root.append(
+                `<p style="padding:8px; opacity:0.7; font-style:italic;">Aucun combat en cours pour votre party.</p>`
+            );
+        }
 
         // Foundry vient de forcer l'onglet "Combat" au premier plan pour
         // ce joueur (comportement natif, déclenché au démarrage/maj du

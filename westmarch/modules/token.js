@@ -358,6 +358,33 @@ export function TokenHooks() {
     });
 
     // ============================================================
+    // SECTION : Pour un joueur non-propriétaire (et non-GM), le HUD du
+    // token ne doit montrer QUE le bouton "Voir le portrait".
+    // - Les autres icônes (apparence suivante, effets de statut, cible,
+    //   élévation, visibilité, icônes ajoutées par des modules tiers
+    //   comme Monk's TokenBar...) ainsi que les barres de vie/ressource
+    //   donnent des informations sur un token qu'on ne possède pas —
+    //   exactement ce qu'on veut éviter en autorisant l'ouverture du HUD
+    //   pour tout le monde (voir le patch libWrapper plus haut).
+    // - setTimeout(0) : on nettoie après que TOUS les hooks
+    //   "renderTokenHUD" (les nôtres ci-dessus, et ceux des modules
+    //   tiers) aient fini d'ajouter leurs propres icônes, peu importe
+    //   l'ordre d'enregistrement.
+    // ============================================================
+    Hooks.on("renderTokenHUD", (hud, html, data) => {
+        if (!game.settings.get("westmarch", "enableTokenPortraitButton")) return;
+        const token = hud.object;
+        if (!token) return;
+        if (game.user.isGM || token.isOwner) return;
+
+        setTimeout(() => {
+            const root = $(html);
+            root.find(".control-icon").not(".westmarch-show-portrait").remove();
+            root.find(".col.middle").remove();
+        }, 0);
+    });
+
+    // ============================================================
     // SECTION : Gestion de la liste d'apparences dans le prototype token
     // - GM uniquement
     // - Accessible via l'onglet "Jeton" de la fiche du personnage

@@ -1,7 +1,7 @@
 ================================================================================
                         WESTMARCH SYSTÈME — MODULE FOUNDRY VTT
                                Auteur : Soruta (Discord: s0ruta)
-                                       Version : 1.3.3
+                                       Version : 1.3.4
                               Compatibilité : Foundry VTT v13
 ================================================================================
 
@@ -136,7 +136,9 @@ token.js
    (pas seulement le sien), qui affiche en grand l'image de la fiche du
    personnage. Patch (libWrapper) l'ouverture du HUD par clic droit pour
    qu'elle fonctionne même sur un token dont on n'est pas propriétaire
-   (comportement par défaut de Foundry sinon).
+   (comportement par défaut de Foundry sinon). Pour un non-propriétaire,
+   toutes les autres icônes du HUD (et les barres de vie/ressource) sont
+   retirées : seul le bouton "Voir le portrait" reste visible.
 
 xp.js
    Empêche les joueurs de modifier leur XP ou de monter de niveau (fiche
@@ -436,6 +438,11 @@ nouveauté
   combat en cours pour votre party." sinon), le GM voit toujours tout
 
 correctif
+- combat.js : le message "Aucun combat en cours pour votre party." restait
+  affiché en permanence dans l'onglet sidebar même pour un joueur dont
+  c'était bien le combat de party en cours — le filtre se basait sur
+  game.combat (le combat "actif" global, peu fiable puisque tous les
+  combats ont scene: null) au lieu du combat réellement rendu (data.combat)
 - combat.js : la caméra des joueurs hors-party n'est plus auto-déplacée
   par le pan automatique de Foundry à chaque changement de tour d'un
   combat qui n'est pas le leur (position restaurée juste après)
@@ -449,11 +456,19 @@ correctif
   dans une fenêtre flottante pour tout le monde dès qu'un combat démarre,
   sans notion de party) est maintenant refermé automatiquement pour les
   joueurs hors-party
+- combat.js : la liste des combattants d'un combat étranger restait
+  visible dans l'onglet sidebar (sous notre message "Aucun combat..."),
+  parce que Foundry v13 déclenche le rendu du tracker séparément pour le
+  bandeau "Round X" et pour la liste des combattants, avec un data.combat
+  pas toujours cohérent entre les deux appels — on se base maintenant sur
+  tracker.viewed (fiable dans tous les cas) pour vider les deux parties
 - token.js : le bouton "Voir le portrait" du HUD token n'était utilisable
   que par le propriétaire du token (Foundry empêche par défaut l'ouverture
   du HUD par clic droit pour un non-propriétaire) ; patché via libWrapper
-  pour que le HUD s'ouvre pour tout le monde — les autres icônes du HUD
-  restent protégées par leurs propres vérifications de permission
+  pour que le HUD s'ouvre pour tout le monde — pour un non-propriétaire,
+  toutes les autres icônes et les barres de vie/ressource sont retirées
+  du HUD (elles donneraient des informations sur un token qu'on ne
+  possède pas), seul le bouton "Voir le portrait" reste visible
 
 v1.4.1 | 2026-06-24
 nettoyage
@@ -512,7 +527,7 @@ correctif
   le GM "actif", donc perdu si personne n'est GM ; un joueur actif est
   désormais élu à la place dans ce cas
 
-v1.3.3 | 2026-06-23
+v1.3.4 | 2026-06-25
 correctif
 - correctif combat par party
 - correctif image portrait dans l'hud d'un token
