@@ -7,6 +7,22 @@
 
 const INVENTORY_TYPES = ["weapon", "equipment", "consumable", "tool", "backpack", "loot"];
 
+// ============================================================
+// Horodatage classique ajouté devant chaque message de log Discord :
+// jour/mois/année heure:minute:seconde.
+// ============================================================
+function buildTimestamp() {
+    const now = new Date();
+    const day = String(now.getDate()).padStart(2, "0");
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const year = now.getFullYear();
+    const hh = String(now.getHours()).padStart(2, "0");
+    const mm = String(now.getMinutes()).padStart(2, "0");
+    const ss = String(now.getSeconds()).padStart(2, "0");
+
+    return `${day}/${month}/${year} ${hh}:${mm}:${ss}`;
+}
+
 // Anti-doublon par contenu : certains modules tiers (ex. Monks TokenBar /
 // Assign XP) déclenchent parfois deux fois le même hook preUpdateActor pour
 // un seul et même changement réel (avant/après identiques). Ce n'est pas
@@ -53,10 +69,12 @@ function postToWebhook(content) {
     const url = game.settings.get("westmarch", "discordLogWebhookUrl");
     if (!url) return;
 
+    const timestamped = `\`${buildTimestamp()}\` ${content}`;
+
     fetch(url, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ content, username: "WestMarch Log" })
+        body: JSON.stringify({ content: timestamped, username: "WestMarch Log" })
     }).catch(err => console.error("[WestMarch] Erreur envoi Discord log :", err));
 }
 

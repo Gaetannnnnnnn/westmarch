@@ -1,7 +1,7 @@
 ================================================================================
                         WESTMARCH SYSTÈME — MODULE FOUNDRY VTT
                                Auteur : Soruta (Discord: s0ruta)
-                                       Version : 1.3.8
+                                       Version : 1.3.9
                               Compatibilité : Foundry VTT v13
 ================================================================================
 
@@ -135,13 +135,19 @@ player.js
 
 rage.js
    Spécifique à la sous-classe Voie du Géant (feature "Giant's Havoc",
-   palier 3) : dès que l'effet actif "Rage" apparaît sur un acteur
-   possédant cette feature, passe automatiquement tous ses tokens en
-   taille 2x2 (Large) s'ils sont plus petits ; mémorise la taille
-   d'origine de chaque token (flag) pour la restaurer exactement dès que
-   l'effet "Rage" disparaît (fin de la rage). N'a aucun effet sur les
-   barbares d'une autre sous-classe. GM uniquement (évite que plusieurs
-   clients tentent la même mise à jour de token en même temps).
+   palier 3) : dès que la rage s'active sur un acteur possédant cette
+   feature, passe automatiquement tous ses tokens en taille 2x2 (Large)
+   s'ils sont plus petits ; restaure la taille d'origine de chaque token
+   (flag mémorisé) dès que la rage se termine. N'a aucun effet sur les
+   barbares d'une autre sous-classe.
+   L'effet actif "Rage" (PHB 2024) est stocké en permanence sur l'item
+   lui-même (transfer effect), désactivé par défaut : activer/désactiver
+   la rage ne crée/détruit pas de document, ça bascule juste son champ
+   "disabled" — le module écoute donc updateActiveEffect (en plus de
+   create/deleteActiveEffect, au cas où un effet maison fonctionnerait
+   autrement) et remonte jusqu'à l'acteur via l'item porteur si besoin.
+   GM uniquement (évite que plusieurs clients tentent la même mise à
+   jour de token en même temps).
 
 scenes.js
    Ajoute l'option "Go With Party" au menu contextuel du répertoire de scènes
@@ -361,6 +367,9 @@ FONCTIONNALITÉS
    ou "⚠️ (par <nom> — joueur)" pour repérer en un coup d'œil les actions
    faites par les joueurs eux-mêmes plutôt que par un GM.
 
+   Chaque message est précédé d'un horodatage classique entre backticks,
+   au format jour/mois/année heure:minute:seconde, ex: `25/06/2026 14:23:05`.
+
    Un seul message est envoyé par évènement, même avec plusieurs comptes
    connectés simultanément : le GM "actif" (game.users.activeGM) est élu
    pour l'envoi ; si aucun GM n'est connecté, un joueur actif est élu à sa
@@ -487,6 +496,10 @@ nouveauté
   (palier 3), son token passe en 2x2 s'il est plus petit ; revient à
   sa taille d'origine dès que l'effet disparaît (fin de la rage). Sans
   cette feature (autre sous-classe de barbare), aucun effet
+
+- ajout d'un horodatage classique devant chaque message de log Discord
+  (discordlog.js), au format jour/mois/année heure:minute:seconde,
+  ex: `25/06/2026 14:23:05`
 
 - ajout de la suppression des sons globaux (jet de dés, thème de
   combat) qui traversaient les party (audio.js) : Foundry diffuse ces
@@ -621,6 +634,6 @@ correctif
   le GM "actif", donc perdu si personne n'est GM ; un joueur actif est
   désormais élu à la place dans ce cas
 
-v1.3.8 | 2026-06-25
+v1.3.9 | 2026-06-25
 
 - rage path of giant qui grandit
