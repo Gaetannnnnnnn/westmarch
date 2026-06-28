@@ -1,8 +1,9 @@
-# Carte des expéditions — Projet en développement séparé
+# Carte des expéditions — Module autonome, indépendant de westmarch
 
 Ce dossier est volontairement isolé du module `westmarch` en production
-(`Ashara/westmarch/`). Rien ici n'est branché ni actif tant que les fichiers
-ne sont pas copiés/fusionnés dans le module.
+(`Ashara/westmarch/`). Il s'agit d'un module Foundry autonome, **non destiné
+à être fusionné** dans `westmarch` : il reste un projet séparé, installé et
+activé indépendamment.
 
 ## Fonctionnement visé
 
@@ -34,26 +35,27 @@ ne sont pas copiés/fusionnés dans le module.
 
 ## Fichiers
 
-- `modules/map.js` — synchro des permissions (hook `updateActor` + resynchro
-  au démarrage) et swap du fog par personnage (hooks `preUpdateUser` /
-  `updateUser`). Version "prête à fusionner" (namespace `westmarch`).
-- `modules/map-settings.js` — déclare `enableExpeditionMap` (active/désactive
-  tout le module) et `expeditionMapSceneId` (menu déroulant pour choisir la
-  scène carte du monde concernée par le swap de fog). À fusionner dans
-  `westmarch/modules/settings.js`.
-- `carte-expeditions/` (sous-dossier, même nom que l'`id` du module — requis
-  par Foundry pour bien le reconnaître une fois placé dans `Data/modules/`)
-  — **module Foundry autonome et activable**, titre affiché "Map Ouvert
-  Systèmes", pour tester en conditions réelles sans toucher au module
-  `westmarch` en production. Contient `module.json`, `index.js`, et des
-  copies de `map.js`/`map-settings.js` avec le namespace `carte-expeditions`
-  à la place de `westmarch` (settings + flags). Pour l'installer : copier ce
-  sous-dossier `carte-expeditions/` directement dans `Data/modules/` du
-  monde, puis l'activer depuis la liste des modules. Le désactiver ne touche
-  à rien d'autre. Quand la fonctionnalité est validée, c'est le contenu de
-  `modules/` (namespace `westmarch`, à la racine du dossier `carte-expeditions`
-  parent) qui doit être copié dans le module en production — pas ce
-  sous-dossier de test.
+- `modules/` (sous-dossier — **anciennement nommé `carte-expeditions/`**,
+  renommé en `modules/`) — contient le **module Foundry autonome et
+  activable**, titre affiché "Map Ouvert Systèmes", namespace
+  `carte-expeditions` (settings + flags). Contient `module.json`, `index.js`,
+  `map.js`, `map-settings.js`.
+  - `modules/map.js` — synchro des permissions (hook `updateActor` +
+    resynchro au démarrage, restreinte à la scène choisie dans les réglages)
+    et swap du fog par personnage (hooks `preUpdateUser` / `updateUser`).
+  - `modules/map-settings.js` — déclare `enableExpeditionMap` (active/
+    désactive tout le module) et `expeditionMapSceneId` (menu déroulant pour
+    choisir la scène carte du monde concernée — sert à la fois au swap de
+    fog et au filtre de synchro Owner).
+  - **Pour l'installer** : le dossier Foundry de destination (`Data/modules/`)
+    doit contenir un sous-dossier portant exactement l'`id` du module, soit
+    `carte-expeditions` — c'est une exigence de Foundry pour le reconnaître.
+    Comme ce sous-dossier s'appelle maintenant `modules/` et non plus
+    `carte-expeditions/`, il faut le **renommer en `carte-expeditions`** au
+    moment de la copie dans `Data/modules/` (ou créer un dossier
+    `Data/modules/carte-expeditions/` et y copier le contenu de `modules/`).
+    Puis activer le module depuis la liste des modules. Le désactiver ne
+    touche à rien d'autre.
 
 ## Détails techniques vérifiés sur le serveur
 
@@ -83,18 +85,17 @@ ne sont pas copiés/fusionnés dans le module.
   `timestamp`, `flags`.
 - Le swap de fog par personnage sauvegarde/restaure `explored`, `positions`
   et `timestamp` dans un flag sur le `User` :
-  `flags.westmarch.fogByCharacter = { [characterId]: { explored, positions,
-  timestamp } }`. Si le nouveau personnage n'a jamais exploré la carte, le
+  `flags.carte-expeditions.fogByCharacter = { [characterId]: { explored,
+  positions, timestamp } }`. Si le nouveau personnage n'a jamais exploré la carte, le
   document `FogExploration` du joueur est supprimé (retour à l'état natif
   "rien exploré") plutôt que d'écrire une valeur vide potentiellement
   invalide.
 
-## À vérifier avant fusion dans westmarch
+## Points à surveiller
 
 - **Swap de fog par personnage** : conçu et écrit, mais **pas encore testé
   en conditions réelles** (changement de personnage en cours de partie, va
   et vient entre scènes, plusieurs personnages avec des zones différentes).
-  À tester sur la scène de test avant tout passage en prod.
 - **Cas multi-GM** : le swap ne s'exécute que sur le client `game.user.isGM`
   pour éviter une double écriture ; si plusieurs GM sont connectés en même
   temps, chacun exécutera le swap (idempotent mais redondant — pas
@@ -105,8 +106,7 @@ ne sont pas copiés/fusionnés dans le module.
 
 ## Statut
 
-Owner sync : vérifié fonctionnel sur le serveur (voir tests précédents).
-Fog natif (activation + contraste visuel) : vérifié fonctionnel sur la scène
-de test. Swap de fog par personnage : code écrit, **pas encore testé** —
-prochaine étape avant intégration dans `westmarch/index.js` et
-`westmarch/modules/settings.js`.
+Owner sync : vérifié fonctionnel sur le serveur, et désormais restreinte à la
+scène choisie dans les réglages (`expeditionMapSceneId`). Fog natif
+(activation + contraste visuel) : vérifié fonctionnel sur la scène de test.
+Swap de fog par personnage : code écrit, **pas encore testé**.

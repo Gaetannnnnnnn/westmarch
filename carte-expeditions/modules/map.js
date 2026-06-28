@@ -10,6 +10,7 @@ export function MapHooks() {
         if (!game.settings.get("carte-expeditions", "enableExpeditionMap")) return;
         if (actor.type !== "group") return;
         if (!changes.system?.members) return;
+        if (!isActorOnExpeditionScene(actor)) return;
 
         syncGroupVisionOwnership(actor);
     });
@@ -17,7 +18,9 @@ export function MapHooks() {
     Hooks.once("ready", () => {
         if (!game.user.isGM) return;
         if (!game.settings.get("carte-expeditions", "enableExpeditionMap")) return;
-        game.actors.filter(a => a.type === "group").forEach(syncGroupVisionOwnership);
+        game.actors
+            .filter(a => a.type === "group" && isActorOnExpeditionScene(a))
+            .forEach(syncGroupVisionOwnership);
     });
 
     Hooks.on("preUpdateUser", (user, changes, options, userId) => {
@@ -41,6 +44,14 @@ export function MapHooks() {
 
         swapFogForUserCharacter(scene, user, oldCharId, newCharId);
     });
+}
+
+function isActorOnExpeditionScene(actor) {
+    const sceneId = game.settings.get("carte-expeditions", "expeditionMapSceneId");
+    if (!sceneId) return false;
+    const scene = game.scenes.get(sceneId);
+    if (!scene) return false;
+    return scene.tokens.some(t => t.actorId === actor.id);
 }
 
 async function syncGroupVisionOwnership(actor) {
