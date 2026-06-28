@@ -10,7 +10,6 @@ export function MapHooks() {
         if (!game.settings.get("carte-expeditions", "enableExpeditionMap")) return;
         if (actor.type !== "group") return;
         if (!changes.system?.members) return;
-        if (!isActorOnExpeditionScene(actor)) return;
 
         syncGroupVisionOwnership(actor);
     });
@@ -19,7 +18,7 @@ export function MapHooks() {
         if (!game.user.isGM) return;
         if (!game.settings.get("carte-expeditions", "enableExpeditionMap")) return;
         game.actors
-            .filter(a => a.type === "group" && isActorOnExpeditionScene(a))
+            .filter(a => a.type === "group")
             .forEach(syncGroupVisionOwnership);
     });
 
@@ -44,6 +43,23 @@ export function MapHooks() {
 
         swapFogForUserCharacter(scene, user, oldCharId, newCharId);
     });
+
+    // ---- Rafraîchit le fog affiché en direct sur le client concerné.
+    // Ces hooks se déclenchent sur TOUS les clients connectés quand le
+    // document FogExploration change (y compris celui du joueur dont le
+    // fog vient d'être swappé par le GM) — contrairement à un simple
+    // contrôle dans swapFogForUserCharacter, qui ne s'exécute que côté
+    // GM et ne peut donc jamais correspondre au client du joueur. ----
+    Hooks.on("createFogExploration", refreshFogIfMine);
+    Hooks.on("updateFogExploration", refreshFogIfMine);
+    Hooks.on("deleteFogExploration", refreshFogIfMine);
+}
+
+function refreshFogIfMine(fogDoc) {
+    if (game.user.id !== fogDoc.user) return;
+    if (canvas.scene?.id !== fogDoc.scene) return;
+    canvas.fog.load();
+    canvas.perception.update({ refreshLighting: true, refreshVision: true }, true);
 }
 
 function isActorOnExpeditionScene(actor) {
@@ -55,13 +71,23 @@ function isActorOnExpeditionScene(actor) {
 }
 
 async function syncGroupVisionOwnership(actor) {
-    const memberActorIds = Array.from(actor.system?.members?.ids ?? []);
+    // Si le token du Groupe n'est pas (ou plus) sur la scène configurée,
+    // personne ne doit recevoir Owner via ce module pour cet acteur — mais
+    // la fonction continue quand même de tourner pour RETIRER les Owner
+    // précédemment accordés (sinon un Groupe qui quitte la scène configurée,
+    // ou dont les Members sont vidés après coup, garde ses joueurs Owner
+    // pour toujours).
+    const onScene = isActorOnExpeditionScene(actor);
+    const memberActorIds = onScene ? Array.from(actor.system?.members?.ids ?? []) : [];
 
-    const targetUserIds = game.users
-        .filter(u => !u.isGM && u.character && memberActorIds.includes(u.character.id))
-        .map(u => u.id);
+    const targetUserIds = onScene
+        ? game.users
+            .filter(u => !u.isGM && u.character && memberActorIds.includes(u.character.id))
+            .map(u => u.id)
+        : [];
 
     const previouslyAutoOwned = actor.getFlag("carte-expeditions", "autoOwners") ?? [];
+    if (previouslyAutoOwned.length === 0 && targetUserIds.length === 0) return;
 
     const newOwnership = foundry.utils.deepClone(actor.ownership);
 
@@ -116,10 +142,5 @@ async function swapFogForUserCharacter(scene, user, oldCharId, newCharId) {
             positions: saved.positions,
             timestamp: saved.timestamp
         });
-    }
-
-    if (game.user.id === user.id && canvas.scene?.id === scene.id) {
-        await canvas.fog.load();
-        canvas.perception.update({ refreshLighting: true, refreshVision: true }, true);
     }
 }
