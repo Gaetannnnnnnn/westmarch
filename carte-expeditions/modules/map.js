@@ -1,7 +1,7 @@
 // ============================================================
-// map.js — Copie de test, namespace "carte-expeditions" au lieu de
-// "westmarch" (settings + flags). Logique strictement identique à
-// modules/map.js. À renommer en "westmarch" lors de la fusion.
+// map.js — Logique du module autonome "carte-expeditions",
+// indépendant de westmarch (settings + flags namespacés
+// "carte-expeditions").
 // ============================================================
 
 export function MapHooks() {

@@ -37,7 +37,7 @@ activé indépendamment.
 
 - `modules/` (sous-dossier — **anciennement nommé `carte-expeditions/`**,
   renommé en `modules/`) — contient le **module Foundry autonome et
-  activable**, titre affiché "Map Ouvert Systèmes", namespace
+  activable**, titre affiché "Ashara - Map Ouvert Systèmes", namespace
   `carte-expeditions` (settings + flags). Contient `module.json`, `index.js`,
   `map.js`, `map-settings.js`.
   - `modules/map.js` — synchro des permissions (hook `updateActor` +
