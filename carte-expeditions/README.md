@@ -22,16 +22,41 @@ activé indépendamment.
   dans la liste. Foundry calcule la vision/brouillard de guerre d'un joueur
   à partir des tokens qu'il "owns" — Owner est donc nécessaire (Observer ne
   suffit pas) pour que le token du groupe éclaire la carte pour ses membres.
-- **Brouillard de guerre par personnage (pas par compte).** Nativement,
-  Foundry sauvegarde le fog exploré par (scène, compte joueur) — donc tous
-  les personnages d'un même joueur partageraient la même zone explorée.
-  Ce n'est pas ce qui est voulu : chaque personnage doit avoir ses propres
-  zones explorées, qui persistent même quand son joueur change de
-  personnage assigné (Configurer le profil) ou change d'expédition (donc de
-  token de Groupe). `map.js` intercepte le changement de `user.character`
-  (hooks `preUpdateUser` + `updateUser`) et swap le document `FogExploration`
-  du joueur : sauvegarde le fog actuel sous l'ancien personnage, restaure
-  (ou vide) le fog du nouveau personnage. Voir section technique plus bas.
+- **Brouillard de guerre par personnage ET par groupe actuel (pas par
+  compte).** Nativement, Foundry sauvegarde le fog exploré par (scène,
+  compte joueur) — donc tous les personnages d'un même joueur, et toutes
+  les expéditions d'un même personnage, partageraient la même zone
+  explorée. Ce n'est pas ce qui est voulu : chaque personnage doit avoir
+  ses propres zones explorées, isolées par expédition (Groupe), qui
+  persistent même quand son joueur change de personnage assigné
+  (Configurer le profil) ou que ce personnage change de Groupe (nouvelle
+  expédition, plusieurs Groupes permanents coexistant sur la carte). La
+  clé de sauvegarde est `<characterId>:<groupActorId>` : un même personnage
+  qui rejoint un nouveau Groupe repart avec une fog vide pour ce Groupe (ou
+  retrouve la sienne s'il l'a déjà rejoint par le passé), sans jamais
+  mélanger l'exploration de deux Groupes différents. `map.js` recalcule
+  cette clé à chaque changement de `user.character` (hook `updateUser`) et
+  à chaque modification des Members d'un Groupe sur la scène configurée
+  (hook `updateActor`), et swap le document `FogExploration` du joueur en
+  conséquence. Voir section technique plus bas.
+- **Ancre de vision (évite la révélation totale de la carte).** Comportement
+  natif Foundry, documenté : si un joueur ne possède (Owner) aucun token
+  avec vision active sur la scène, Foundry désactive la restriction de
+  vision pour lui et affiche **toute la carte sans filtre** (autres tokens,
+  leurs auras de vision/lumière compris). Cela arrive dès que son token de
+  Groupe est supprimé ou qu'il est retiré des Members sans rejoindre un
+  autre Groupe. Le module crée donc, sur la scène configurée, un token
+  permanent et invisible (`alpha: 0`), à portée de vision nulle, possédé en
+  Owner par tous les joueurs par défaut (`ownership.default: OWNER`) : il ne
+  révèle jamais rien par lui-même, mais sa seule présence empêche Foundry de
+  considérer le joueur comme "sans aucun token avec vision" — donc plus de
+  révélation totale. Ce token (nommé "Ancre de vision — ne pas supprimer")
+  est recréé automatiquement s'il est supprimé par erreur.
+- **Exclusivité entre Groupes.** Sur la scène configurée, un personnage ne
+  peut être Member que d'un seul Groupe à la fois : l'ajouter aux Members
+  d'un Groupe le retire automatiquement des Members de tous les autres
+  Groupes présents sur cette même scène (évite qu'une erreur de saisie du
+  GM fasse interférer deux Groupes — double Owner, fog mélangée).
 
 ## Fichiers
 
