@@ -1,7 +1,7 @@
 ================================================================================
                    ASHARA - MAP OUVERT SYSTÈMES — MODULE FOUNDRY VTT
                                Auteur : Soruta (Discord: s0ruta)
-                                       Version : 0.1.3
+                                       Version : 0.1.4
                               Compatibilité : Foundry VTT v13
 ================================================================================
 

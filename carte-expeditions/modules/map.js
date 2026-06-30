@@ -142,20 +142,31 @@ async function syncGroupVisionOwnership(actor) {
             .map(u => u.id)
         : [];
 
-    const previouslyAutoOwned = actor.getFlag("carte-expeditions", "autoOwners") ?? [];
-    if (previouslyAutoOwned.length === 0 && targetUserIds.length === 0) return;
-
     const newOwnership = foundry.utils.deepClone(actor.ownership);
+    let changed = false;
 
-    for (const userId of previouslyAutoOwned) {
-        if (!targetUserIds.includes(userId)) {
+    // Retire l'Owner de TOUT utilisateur non-GM qui ne devrait plus l'avoir —
+    // pas seulement ceux que ce module a lui-même accordés (flag "autoOwners").
+    // Sans ça, un Owner accordé manuellement sur la fiche, ou laissé par défaut
+    // à la création de l'acteur, n'est jamais nettoyé quand le joueur quitte
+    // les Members : il garde la vision/fog du Groupe pour toujours malgré le
+    // retrait. On ne touche jamais aux GM (ils voient tout de toute façon).
+    for (const userId of Object.keys(newOwnership)) {
+        if (userId === "default") continue;
+        const user = game.users.get(userId);
+        if (!user || user.isGM) continue;
+        if (newOwnership[userId] === CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER && !targetUserIds.includes(userId)) {
             delete newOwnership[userId];
+            changed = true;
         }
     }
 
     for (const userId of targetUserIds) {
+        if (newOwnership[userId] !== CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER) changed = true;
         newOwnership[userId] = CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER;
     }
+
+    if (!changed) return;
 
     await actor.update({
         ownership: newOwnership,
