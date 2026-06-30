@@ -1,7 +1,7 @@
 ================================================================================
                         WESTMARCH SYSTÈME — MODULE FOUNDRY VTT
                                Auteur : Soruta (Discord: s0ruta)
-                                       Version : 1.3.9
+                                       Version : 1.4.0
                               Compatibilité : Foundry VTT v13
 ================================================================================
 
@@ -32,6 +32,7 @@ westmarch/
 │   ├── image.js            Bouton "Show Party" sur les popouts d'image
 │   ├── items.js            Correction de la stat par défaut des outils (tool) à la création
 │   ├── journal.js          Menu contextuel sur les liens de scène dans les journaux
+│   ├── mejshop.js          Correctifs boutiques Monk's Enhanced Journal (groupe + objets cachés)
 │   ├── player.js           Liste des joueurs, menu contextuel et gestion des parties
 │   ├── rage.js             Passage en taille Large (2x2) pendant la Rage du Barbare
 │   ├── scenes.js           Téléportation de groupe depuis le répertoire de scènes
@@ -124,6 +125,25 @@ journal.js
    Ajoute un menu contextuel (clic droit) sur les liens de scène à l'intérieur
    des journaux, avec les options "Go Alone" (se téléporter seul) et "Go With
    Party" (téléporter toute la party).
+
+mejshop.js
+   Deux correctifs pour les boutiques de Monk's Enhanced Journal (module
+   tiers, jamais modifié directement) :
+   1) Ajoute un bouton "Groupe uniquement" dans la fenêtre native "Show to
+      Players" (patchée par MEJ pour ajouter le menu "Show As", mais sans
+      sélection rapide par groupe) : coche en un clic uniquement les
+      membres de la party du GM, au lieu de devoir décocher joueur par
+      joueur dans une fenêtre qui s'affiche trop grande. Réutilise la
+      même logique partyId que le bouton "Show Party" d'image.js.
+   2) Corrige côté affichage joueur un bug confirmé dans le code source
+      actuel de MEJ : la coche "cacher l'objet" d'une boutique écrit le
+      champ "hidden" sur l'objet, mais le filtre d'affichage de MEJ teste
+      un champ "hide" (jamais défini) — les objets censés être cachés
+      étaient donc toujours visibles aux joueurs. Sur le client de chaque
+      joueur (jamais sur celui du GM), les lignes d'objets marqués
+      "hidden" sont retirées de l'affichage de la boutique.
+   Géré par le setting "Correctifs boutiques Monk's Enhanced Journal"
+   (enableMejShopFix), indépendant du système de Party.
 
 player.js
    Cœur du système de party : ajoute le scroll et un bouton refresh sur la
@@ -290,6 +310,7 @@ FONCTIONNALITÉS
    - Webhook Discord (chat IC, par scène)
    - Log Discord (modifications : items, XP/niveau, monnaie, persos)
    - Anti-Cheat (combat)
+   - Correctifs boutiques Monk's Enhanced Journal (groupe + objets cachés)
 
    Paramètre maître :
    - Système de Party (enableParty) — affiche un symbole ⚠️ avec une infobulle
@@ -404,6 +425,17 @@ FONCTIONNALITÉS
    - Scroll sur la liste des joueurs (player.js), quand il y a beaucoup de joueurs connectés, la liste devient scrollable au lieu de déborder hors de l'écran
    - Scroll sur les fenêtres de propriété (document.js), quand tu ouvres la fenêtre de permissions/propriété d'un document (journal, acteur...), elle est limitée à 70% de la hauteur de l'écran avec un scroll si le contenu dépasse
 
+14. CORRECTIFS BOUTIQUES MONK'S ENHANCED JOURNAL (mejshop.js)
+   -----------------------------------------------------------------
+   - Bouton "Groupe uniquement" dans la fenêtre "Show to Players" (boutiques
+     MEJ) : coche en un clic les membres de sa party au lieu de décocher
+     joueur par joueur dans une fenêtre qui s'affiche trop grande
+   - Les objets de boutique marqués "cachés" par le GM ne s'affichent plus
+     aux joueurs (correction d'un bug confirmé côté MEJ, sans toucher à
+     ses fichiers)
+   - Géré par le setting indépendant "Correctifs boutiques Monk's Enhanced
+     Journal" (enableMejShopFix)
+
 
 --------------------------------------------------------------------------------
 INSTALLATION & CONFIGURATION
@@ -482,7 +514,23 @@ NOTES TECHNIQUES
                         WESTMARCH SYSTÈME — MISES À JOUR
 ================================================================================
 
-v1.4.2 | 2026-06-25
+v1.4.0 | 2026-06-30
+nouveauté
+- ajout de deux correctifs pour les boutiques de Monk's Enhanced Journal
+  (mejshop.js, module tiers — aucun fichier de MEJ modifié) :
+  1) bouton "Groupe uniquement" dans la fenêtre native "Show to Players" :
+     coche en un clic les membres de sa party, au lieu de devoir décocher
+     joueur par joueur dans une fenêtre qui s'affiche trop grande (réutilise
+     la logique partyId déjà utilisée par "Show Party" dans image.js)
+  2) les objets de boutique marqués "cachés" par le GM ne s'affichent plus
+     aux joueurs — bug confirmé dans le code source actuel de MEJ : son
+     filtre d'affichage teste un champ "hide" qui n'existe pas, au lieu du
+     champ "hidden" réellement écrit par la coche "cacher l'objet" ; corrigé
+     côté client joueur uniquement, sans modifier MEJ
+  Géré par le nouveau setting indépendant "Correctifs boutiques Monk's
+  Enhanced Journal" (enableMejShopFix)
+
+v1.4.0 | 2026-06-25
 nouveauté
 - ajout du combat lié à la party plutôt qu'à la scène (combat.js) : un
   combat créé par un GM est tagué avec sa party ; chaque joueur ET chaque
@@ -577,7 +625,7 @@ correctif
   du HUD (elles donneraient des informations sur un token qu'on ne
   possède pas), seul le bouton "Voir le portrait" reste visible
 
-v1.4.1 | 2026-06-24
+v1.4.0 | 2026-06-24
 nettoyage
 - suppression du setting "Masquage des stats sur la fiche de groupe"
   (enablePartyStats) : jamais lu par aucun code, fonctionnalité jamais

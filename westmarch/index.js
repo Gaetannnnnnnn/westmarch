@@ -16,6 +16,7 @@ import { CombatHooks } from './modules/combat.js';
 import { ItemHooks } from './modules/items.js';
 import { AudioHooks } from './modules/audio.js';
 import { RageHooks } from './modules/rage.js';
+import { MejShopHooks } from './modules/mejshop.js';
 
 Hooks.on("init", async () => {
     Handlebars.registerHelper('for', function(from, to, incr, block) {
@@ -47,4 +48,5 @@ Hooks.on("init", async () => {
     ItemHooks();
     AudioHooks();
     RageHooks();
+    MejShopHooks();
 });

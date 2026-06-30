@@ -158,6 +158,16 @@ export function registerSettings() {
         requiresReload: false
     });
 
+    game.settings.register("westmarch", "enableMejShopFix", {
+        name: "Correctifs boutiques Monk's Enhanced Journal",
+        hint: "Ajoute un bouton 'Groupe uniquement' dans la fenêtre 'Show to Players' de Monk's Enhanced Journal (sélection rapide de sa party, sans devoir décocher joueur par joueur), et corrige côté affichage joueur un bug de MEJ qui montrait quand même les objets de boutique marqués 'cachés'.",
+        scope: "world",
+        config: true,
+        type: Boolean,
+        default: true,
+        requiresReload: false
+    });
+
     game.settings.register("westmarch", "enableAntiCheat", {
         name: "Anti-Cheat (combat)",
         hint: "Pendant un combat actif, avertit les GM (en privé) lorsqu'un joueur modifie ses sorts préparés, son attunement, ou équipe/déséquipe une arme/armure sur un personnage engagé dans le combat.",
