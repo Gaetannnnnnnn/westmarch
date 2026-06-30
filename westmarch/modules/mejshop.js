@@ -26,6 +26,19 @@ export function MejShopHooks() {
             || !!element.querySelector?.(".journal-show-dialog");
         if (!isShowDialog) return;
 
+        // La fenêtre se positionne parfois trop haut (top négatif) et/ou
+        // plus haute que l'écran dès qu'il y a beaucoup de joueurs sur le
+        // serveur : son en-tête (la seule zone qui permet de la déplacer)
+        // se retrouve hors écran, et tout le contenu ne rentre pas. On la
+        // recale dans l'écran et on rend son contenu scrollable.
+        element.style.top = "5vh";
+        element.style.maxHeight = "90vh";
+        const windowContent = element.querySelector(".window-content");
+        if (windowContent) {
+            windowContent.style.maxHeight = "calc(90vh - 40px)";
+            windowContent.style.overflowY = "auto";
+        }
+
         if (element.querySelector(".party-only-show")) return;
 
         const checkboxes = element.querySelectorAll('[name="players"]');

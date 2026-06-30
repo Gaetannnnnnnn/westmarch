@@ -1,7 +1,7 @@
 ================================================================================
                         WESTMARCH SYSTÈME — MODULE FOUNDRY VTT
                                Auteur : Soruta (Discord: s0ruta)
-                                       Version : 1.4.0
+                                       Version : 1.4.1
                               Compatibilité : Foundry VTT v13
 ================================================================================
 
@@ -514,7 +514,7 @@ NOTES TECHNIQUES
                         WESTMARCH SYSTÈME — MISES À JOUR
 ================================================================================
 
-v1.4.0 | 2026-06-30
+v1.4.1 | 2026-06-30
 nouveauté
 - ajout de deux correctifs pour les boutiques de Monk's Enhanced Journal
   (mejshop.js, module tiers — aucun fichier de MEJ modifié) :
