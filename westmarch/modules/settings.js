@@ -159,8 +159,18 @@ export function registerSettings() {
     });
 
     game.settings.register("westmarch", "downtimeWebhookUrl", {
-        name: "URL du Webhook Discord (date / temps morts)",
-        hint: "Quand le GM avance la date dans Simple Calendar, envoie automatiquement un message sur ce webhook Discord avec la nouvelle date. Laisser vide pour désactiver.",
+        name: "URL du Webhook Discord (changement de date)",
+        hint: "Quand le GM avance la date dans Simple Calendar, envoie automatiquement un message sur ce webhook Discord avec la nouvelle date (salon joueurs). Laisser vide pour désactiver.",
+        scope: "world",
+        config: true,
+        type: String,
+        default: "",
+        requiresReload: false
+    });
+
+    game.settings.register("westmarch", "tmWebhookUrl", {
+        name: "URL du Webhook Discord (résultats temps morts)",
+        hint: "Quand le GM applique les gains de temps morts, envoie le récapitulatif sur ce webhook Discord (salon staff/MJ). Laisser vide pour désactiver.",
         scope: "world",
         config: true,
         type: String,
