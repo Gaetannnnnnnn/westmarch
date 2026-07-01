@@ -376,6 +376,10 @@ function buildActorRow(actor, startUnchecked = false) {
     <div style="display:flex; align-items:center; gap:6px; margin-bottom:6px;">
         <input type="checkbox" name="tm-active-${id}" ${startUnchecked ? "" : "checked"} style="margin:0;">
         <strong>${actor.name}</strong>${statusBadge}
+        <button type="button" class="tm-refuse-btn" data-actor-id="${id}"
+                style="margin-left:auto; padding:2px 8px; font-size:0.8em; color:#e74c3c; background:none; border:1px solid #e74c3c; border-radius:3px; cursor:pointer;">
+            Refuser
+        </button>
     </div>
     <div class="tm-controls-${id}" style="display:flex; flex-direction:column; gap:5px; opacity:${startUnchecked ? "0.4" : "1"};">
         ${skillRowHtml(id, preSkillId)}
@@ -446,6 +450,34 @@ function openDowntimeDialog() {
             });
             wireControls(html, actor, id);
         }
+
+        html.find(".tm-refuse-btn").on("click", async function () {
+            const actorId = this.dataset.actorId;
+            const actor   = game.actors.get(actorId);
+            if (!actor) return;
+
+            await actor.unsetFlag("westmarch", "tm");
+
+            const owners = getActorOwners(actor);
+            if (owners.length > 0) {
+                ChatMessage.create({
+                    content: `❌ Votre demande de temps mort a été refusée par le MJ.`,
+                    whisper: owners.map(u => u.id),
+                    speaker: { alias: "WestMarch — Temps morts" }
+                });
+            }
+
+            // Griser la ligne et décocher
+            html.find(`[data-actor-id="${actorId}"].tm-actor-row`).css("opacity", "0.4");
+            html.find(`[name="tm-active-${actorId}"]`).prop("checked", false);
+            html.find(`.tm-controls-${actorId}`).css("opacity", "0.4");
+            this.textContent = "Refusé";
+            this.disabled = true;
+            this.style.color = "#888";
+            this.style.borderColor = "#888";
+
+            ui.notifications.info(`Demande TM refusée pour ${actor.name}.`);
+        });
     });
 
     dlg.render(true);
@@ -479,17 +511,22 @@ async function applyDowntimeGains($html, actors) {
             const roll = await new Roll("1d20").evaluate();
             rollResult = roll.total;
             const mult = rollResult === 1 ? 0.8 : rollResult >= 20 ? 1.2 : rollResult >= 10 ? 1.1 : 1.0;
-            total = Math.round(total * mult);
+            total = total * mult; // garder le float, on sépare PO/PA ensuite
             await roll.toMessage({
                 speaker: { alias: `Temps mort — ${actor.name}` },
                 flavor: `Test de d20 — ${activityName} (${days} j)`
             });
-        } else {
-            total = Math.round(total);
         }
+        // Séparer PO (entier) et PA (décimale × 10, arrondie)
+        const totalGP = Math.floor(total);
+        const totalSP = Math.round((total - totalGP) * 10);
+        const gainStr = totalSP > 0 ? `+${totalGP} po ${totalSP} pa` : `+${totalGP} po`;
 
-        if (total > 0)
-            await actor.update({ "system.currency.gp": (actor.system.currency?.gp ?? 0) + total });
+        const currencyUpdate = {};
+        if (totalGP > 0) currencyUpdate["system.currency.gp"] = (actor.system.currency?.gp ?? 0) + totalGP;
+        if (totalSP > 0) currencyUpdate["system.currency.sp"] = (actor.system.currency?.sp ?? 0) + totalSP;
+        if (Object.keys(currencyUpdate).length > 0)
+            await actor.update(currencyUpdate);
 
         await actor.unsetFlag("westmarch", "tm");
 
@@ -502,7 +539,7 @@ async function applyDowntimeGains($html, actors) {
                 : ` (d20 : ${rollResult} → ±0 %)`;
             ChatMessage.create({
                 content: `🕰️ Temps mort appliqué pour <strong>${actor.name}</strong> : `
-                       + `${activityName}${profStr}, ${days} j (${dailyRate} po/j)${pctStr} → <strong>+${total} po</strong>`,
+                       + `${activityName}${profStr}, ${days} j (${dailyRate} po/j)${pctStr} → <strong>${gainStr}</strong>`,
                 whisper: owners.map(u => u.id),
                 speaker: { alias: "WestMarch — Temps morts" }
             });
@@ -515,8 +552,8 @@ async function applyDowntimeGains($html, actors) {
             line        += ` → d20 : ${rollResult} (${pct})`;
             discordLine += ` → d20 : ${rollResult} (${pct})`;
         }
-        line        += ` = <strong>+${total} po</strong>`;
-        discordLine += ` = **+${total} po**`;
+        line        += ` = <strong>${gainStr}</strong>`;
+        discordLine += ` = **${gainStr}**`;
         lines.push(line);
         discordLines.push(discordLine);
     }

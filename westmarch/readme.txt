@@ -1,7 +1,7 @@
 ================================================================================
                         WESTMARCH SYSTÈME — MODULE FOUNDRY VTT
                                Auteur : Soruta (Discord: s0ruta)
-                                       Version : 1.4.6
+                                       Version : 1.4.7
                               Compatibilité : Foundry VTT v13
 ================================================================================
 
@@ -572,14 +572,12 @@ NOTES TECHNIQUES
                         WESTMARCH SYSTÈME — MISES À JOUR
 ================================================================================
 
-v1.4.6 | 2026-07-01
-   tm.js — Déclaration joueur (jours + d20 dans le formulaire joueur)
-   tm.js — Grisage automatique du test d20 si < 5 jours
-   tm.js — Suppression du mode outil séparé : cases Maîtrise/Expertise/Tools
-            sur la même ligne, mutuellement exclusives
-   tm.js — Caractéristique associée affichée sous la liste de compétences
-   tm.js — Prévisualisation du gain total en temps réel (taux × jours)
-   tm.js — Proficiency mentionnée dans tous les messages ([Maîtrise]/[Expertise]/[Tools])
-   tm.js — Résumé temps morts aussi envoyé sur webhook Discord dédié (tmWebhookUrl)
-   settings.js — Séparation en deux webhooks : downtimeWebhookUrl (dates, joueurs)
-                 et tmWebhookUrl (résultats TM, staff)
+v1.4.7 | 2026-07-01
+   tm.js — Bouton "Refuser" par personnage dans le dialogue GM (efface le flag
+            joueur + whisper de refus)
+   tm.js — Gains crédités en PO + PA séparément au lieu d'arrondir à l'entier
+            (ex. 27,5 po → 27 po 5 pa sur la fiche)
+   tm.js — Correction affichage : titre du résumé en taille normale (h3 → p gras)
+   caldate.js — Correction bug webhook : la vérification activeGM bloquait l'envoi
+                si Foundry ne détectait aucun GM "actif" (null?.id !== userId → true)
+   caldate.js — Parsing data Simple Calendar plus robuste (data.date ?? data)
