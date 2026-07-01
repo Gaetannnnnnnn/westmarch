@@ -13,6 +13,10 @@
 // Stockage : page.flags["westmarch"]["restock"] = { itemId: worldTime }
 // ============================================================
 
+// IDs des pages en cours de mise à jour par westmarch — évite la récursion
+// dans le hook updateJournalEntryPage sans dépendre des options Foundry.
+const _restockingPages = new Set();
+
 // Retourne le nombre de secondes dans un jour de calendrier.
 // Utilise le calendrier natif Foundry v13 si disponible, sinon 86400.
 function getSecondsPerDay() {
@@ -43,8 +47,8 @@ export function MejRestockHooks() {
         // Un seul GM traite l'évènement
         const activeGM = game.users.activeGM;
         if (activeGM && activeGM.id !== game.user.id) return;
-        // Éviter la récursion : on ignore les updates posées par westmarch
-        if (options?.westmarchRestock) return;
+        // Éviter la récursion : on ignore les updates posées par westmarch lui-même
+        if (_restockingPages.has(page.id)) return;
 
         if (page.flags?.["monks-enhanced-journal"]?.type !== "shop") return;
 
@@ -73,7 +77,12 @@ export function MejRestockHooks() {
         }
 
         if (changed) {
-            await page.update({ "flags.westmarch.restock": timers }, { westmarchRestock: true });
+            _restockingPages.add(page.id);
+            try {
+                await page.update({ "flags.westmarch.restock": timers });
+            } finally {
+                _restockingPages.delete(page.id);
+            }
         }
     });
 
@@ -111,10 +120,12 @@ export function MejRestockHooks() {
                 }
 
                 if (anyExpired) {
-                    await page.update(
-                        { "flags.westmarch.restock": newTimers, ...updates },
-                        { westmarchRestock: true }
-                    );
+                    _restockingPages.add(page.id);
+                    try {
+                        await page.update({ "flags.westmarch.restock": newTimers, ...updates });
+                    } finally {
+                        _restockingPages.delete(page.id);
+                    }
                 }
             }
         }
@@ -125,19 +136,29 @@ export function MejRestockHooks() {
     //    Petit texte grisé à côté du chiffre de quantité.
     // ----------------------------------------------------------
     Hooks.on("renderApplicationV2", (application, element) => {
-        const doc = application.document;
-        if (!doc) return;
+        // MEJ stocke l'ID de la page courante dans application.options.pageId
+        // (application.document est undefined dans EnhancedJournal)
+        const pageId = application.options?.pageId;
+        if (!pageId) return;
 
-        const mejType = foundry.utils.getProperty(doc, "flags.monks-enhanced-journal.type");
+        let shopPage = null;
+        for (const journal of game.journal.contents) {
+            const p = journal.pages.get(pageId);
+            if (p) { shopPage = p; break; }
+        }
+        if (!shopPage) return;
+
+        const mejType = foundry.utils.getProperty(shopPage, "flags.monks-enhanced-journal.type");
         if (mejType !== "shop") return;
 
-        const timers = doc.getFlag("westmarch", "restock") ?? {};
+        const timers = shopPage.getFlag("westmarch", "restock") ?? {};
         if (Object.keys(timers).length === 0) return;
 
         const spd = getSecondsPerDay();
         const now = game.time.worldTime;
 
-        element.querySelectorAll("[data-id]").forEach(row => {
+        // Sélecteur précis basé sur la structure DOM réelle de MEJ
+        element.querySelectorAll(".items-list .item[data-id]").forEach(row => {
             const itemId    = row.dataset.id;
             const restockAt = timers[itemId];
             if (restockAt === undefined) return;
@@ -150,19 +171,13 @@ export function MejRestockHooks() {
 
             const span = document.createElement("span");
             span.className = "wm-restock-countdown";
-            span.style.cssText = "color:#888; font-size:0.78em; margin-left:5px; white-space:nowrap; font-style:italic;";
-            span.textContent = `(${label})`;
+            span.style.cssText = "color:#888; font-size:0.75em; white-space:nowrap; font-style:italic; display:block; text-align:center; line-height:1.2;";
+            span.textContent = label;
 
-            // On cherche l'élément qui affiche la quantité dans la ligne
-            const qtyEl = row.querySelector(".quantity, [data-field*='quantity'], .item-quantity, input[name*='quantity']");
-            if (qtyEl) {
-                qtyEl.after(span);
-            } else {
-                // Fallback : on ajoute après le nom de l'article
-                const nameEl = row.querySelector(".item-name, .name, .title");
-                if (nameEl) nameEl.appendChild(span);
-                else row.appendChild(span);
-            }
+            // La quantité est dans .item-detail.item-quantity
+            const qtyDiv = row.querySelector(".item-detail.item-quantity");
+            if (qtyDiv) qtyDiv.appendChild(span);
+            else row.appendChild(span);
         });
     });
 }

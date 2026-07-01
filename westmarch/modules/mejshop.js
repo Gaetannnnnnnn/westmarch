@@ -88,14 +88,21 @@ export function MejShopHooks() {
         if (game.user.isGM) return;
         if (!game.settings.get("westmarch", "enableMejShopFix")) return;
 
-        const doc = application.document;
-        if (!doc) return;
-        if (doc.isOwner) return;
+        const pageId = application.options?.pageId;
+        if (!pageId) return;
 
-        const mejType = foundry.utils.getProperty(doc, "flags.monks-enhanced-journal.type");
+        let shopPage = null;
+        for (const journal of game.journal.contents) {
+            const p = journal.pages.get(pageId);
+            if (p) { shopPage = p; break; }
+        }
+        if (!shopPage) return;
+        if (shopPage.isOwner) return;
+
+        const mejType = foundry.utils.getProperty(shopPage, "flags.monks-enhanced-journal.type");
         if (mejType !== "shop") return;
 
-        const items = doc.getFlag("monks-enhanced-journal", "items") || {};
+        const items = shopPage.getFlag("monks-enhanced-journal", "items") || {};
 
         element.querySelectorAll("[data-id]").forEach(row => {
             const item = items[row.dataset.id];
