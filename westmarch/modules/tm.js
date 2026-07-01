@@ -2,9 +2,8 @@
 // tm.js — Temps morts : déclaration joueur + validation GM
 //
 // Côté joueur : bouton sablier dans le header de sa fiche perso
-//   → fenêtre pour déclarer compétence/outil, maîtrise/expertise,
-//   nombre de jours et test de d20 optionnel
-//   (le test de d20 se grise automatiquement si < 5 jours)
+//   → fenêtre pour déclarer compétence, maîtrise/expertise/tools,
+//   nombre de jours et test de d20 optionnel (grisé si < 5 j)
 //
 // Côté GM : bouton dans le groupe WestMarch de la barre de gauche
 //   → fenêtre pré-remplie depuis les déclarations joueurs
@@ -93,12 +92,9 @@ function buildSkillOptionsHtml(selectedId = null) {
         .join("");
 }
 
-function buildToolOptionsHtml(actor, selectedId = null) {
-    const tools = actor.items
-        .filter(i => i.type === "tool" && ((i.system.prof?.multiplier ?? i.system.proficient ?? 0) >= 1))
-        .sort((a, b) => a.name.localeCompare(b.name));
-    if (tools.length === 0) return null;
-    return tools.map(i => `<option value="${i.id}" ${i.id === selectedId ? "selected" : ""}>${i.name}</option>`).join("");
+function getAbilityLabel(skillId) {
+    const abilityId = CONFIG.DND5E.skills[skillId]?.ability ?? "int";
+    return game.i18n.localize(CONFIG.DND5E.abilities[abilityId]?.label ?? abilityId);
 }
 
 function getPlayerActors() {
@@ -116,18 +112,10 @@ function getProfLevel(actor, skillId) {
     return s?.prof?.multiplier ?? s?.proficient ?? 0;
 }
 
-function calcDailyRate(actor, mode, skillId, toolId, hasMaitrise, hasExpertise) {
-    let abilityMod = 0, profBonus = 0;
-    if (mode === "skill") {
-        const abilityId = CONFIG.DND5E.skills[skillId]?.ability ?? "int";
-        abilityMod = actor.system.abilities[abilityId]?.mod ?? 0;
-        profBonus  = hasExpertise ? 4 : hasMaitrise ? 2 : 0;
-    } else {
-        const toolItem  = actor.items.get(toolId);
-        const abilityId = toolItem?.system?.ability ?? "int";
-        abilityMod = actor.system.abilities[abilityId]?.mod ?? 0;
-        profBonus  = 4;
-    }
+function calcDailyRate(actor, skillId, hasMaitrise, hasExpertise, hasTools) {
+    const abilityId  = CONFIG.DND5E.skills[skillId]?.ability ?? "int";
+    const abilityMod = actor.system.abilities[abilityId]?.mod ?? 0;
+    const profBonus  = hasTools ? 4 : hasExpertise ? 4 : hasMaitrise ? 2 : 0;
     return Math.max(0, 1 + abilityMod + profBonus);
 }
 
@@ -135,30 +123,62 @@ function calcDailyRate(actor, mode, skillId, toolId, hasMaitrise, hasExpertise) 
 // Blocs HTML réutilisables
 // ============================================================
 
-function profRowHtml(idPrefix, hasMaitrise, hasExpertise, isToolMode) {
-    const gray = isToolMode ? ' style="opacity:0.4; pointer-events:none;"' : '';
-    const expDisabled = (!hasMaitrise || isToolMode) ? " disabled" : "";
+function skillRowHtml(idPrefix, selectedSkillId) {
+    const abilityLabel = getAbilityLabel(selectedSkillId ?? Object.keys(CONFIG.DND5E.skills)[0]);
     return `
-<div class="tm-prof-row-${idPrefix}"${gray} style="display:flex; gap:16px; align-items:center; flex-wrap:wrap;">
-    <label style="display:flex; align-items:center; gap:5px; cursor:pointer;">
-        <input type="checkbox" name="tm-maitrise-${idPrefix}" ${hasMaitrise && !isToolMode ? "checked" : ""} ${isToolMode ? "disabled" : ""} style="margin:0;">
+<div style="display:flex; gap:6px; align-items:center;">
+    <label style="min-width:90px; white-space:nowrap;">Compétence :</label>
+    <select name="tm-skill-${idPrefix}" style="flex:1;">${buildSkillOptionsHtml(selectedSkillId)}</select>
+</div>
+<div class="tm-ability-${idPrefix}" style="font-size:0.85em; color:#888; margin-left:96px; margin-top:-2px;">
+    Caractéristique : ${abilityLabel}
+</div>`;
+}
+
+function profRowHtml(idPrefix, hasMaitrise, hasExpertise, hasTools) {
+    const profBlocked  = hasTools;
+    const toolsBlocked = hasMaitrise || hasExpertise;
+    const expBlocked   = profBlocked || !hasMaitrise;
+
+    const profOp  = profBlocked  ? "0.4" : "1";
+    const toolsOp = toolsBlocked ? "0.4" : "1";
+
+    return `
+<div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+    <label style="display:flex; align-items:center; gap:5px; cursor:pointer; opacity:${profOp};">
+        <input type="checkbox" name="tm-maitrise-${idPrefix}"
+               ${hasMaitrise && !hasTools ? "checked" : ""}
+               ${profBlocked ? "disabled" : ""} style="margin:0;">
         Maîtrise <em style="color:#888;">(+2 po/j)</em>
     </label>
-    <label style="display:flex; align-items:center; gap:5px; cursor:pointer;">
-        <input type="checkbox" name="tm-expertise-${idPrefix}" ${hasExpertise && !isToolMode ? "checked" : ""}${expDisabled} style="margin:0;">
+    <label style="display:flex; align-items:center; gap:5px; cursor:pointer; opacity:${profOp};">
+        <input type="checkbox" name="tm-expertise-${idPrefix}"
+               ${hasExpertise && !hasTools ? "checked" : ""}
+               ${expBlocked ? "disabled" : ""} style="margin:0;">
         Expertise <em style="color:#888;">(+2 po/j)</em>
+    </label>
+    <span style="color:#888; font-style:italic;">ou</span>
+    <label style="display:flex; align-items:center; gap:5px; cursor:pointer; opacity:${toolsOp};">
+        <input type="checkbox" name="tm-tools-${idPrefix}"
+               ${hasTools ? "checked" : ""}
+               ${toolsBlocked ? "disabled" : ""} style="margin:0;">
+        Tools <em style="color:#888;">(+4 po/j)</em>
     </label>
 </div>`;
 }
 
+function previewHtml(idPrefix) {
+    return `<div class="tm-preview-${idPrefix}" style="color:#888; font-style:italic; font-size:0.9em;">—</div>`;
+}
+
 function daysAndRollHtml(idPrefix, preDays, preDoRoll) {
-    const tooFew        = (preDays ?? 10) < 5;
-    const rollDisabled  = tooFew ? " disabled" : "";
-    const rollChecked   = preDoRoll && !tooFew ? " checked" : "";
-    const rollOpacity   = tooFew ? " opacity:0.4;" : "";
+    const tooFew       = (preDays ?? 10) < 5;
+    const rollDisabled = tooFew ? " disabled" : "";
+    const rollChecked  = preDoRoll && !tooFew ? " checked" : "";
+    const rollOpacity  = tooFew ? " opacity:0.4;" : "";
     return `
 <div style="display:flex; gap:6px; align-items:center;">
-    <label style="min-width:70px; white-space:nowrap;">Jours :</label>
+    <label style="min-width:90px; white-space:nowrap;">Jours :</label>
     <input type="number" name="tm-days-${idPrefix}" value="${preDays ?? 10}" min="1" style="width:70px;">
 </div>
 <div class="tm-d20-row-${idPrefix}" style="display:flex; gap:6px; align-items:center;${rollOpacity}">
@@ -167,80 +187,100 @@ function daysAndRollHtml(idPrefix, preDays, preDoRoll) {
 </div>`;
 }
 
-function previewHtml(idPrefix) {
-    return `<div class="tm-preview-${idPrefix}" style="color:#888; font-style:italic; font-size:0.9em; margin-top:2px;">—</div>`;
-}
-
 // ============================================================
-// Câblage dynamique commun (preview + grisage d20)
+// Câblage dynamique (grisage d20 + proficiencies)
 // ============================================================
 
 function wireControls(html, actor, idPrefix) {
+
     function getDays() {
         return Math.max(1, parseInt(html.find(`[name="tm-days-${idPrefix}"]`).val()) || 1);
     }
 
+    function refreshD20() {
+        const tooFew = getDays() < 5;
+        const d20box = html.find(`[name="tm-roll-${idPrefix}"]`);
+        d20box.prop("disabled", tooFew);
+        if (tooFew) d20box.prop("checked", false);
+        html.find(`.tm-d20-row-${idPrefix}`).css("opacity", tooFew ? "0.4" : "1");
+    }
+
     function refreshPreview() {
-        const mode         = html.find(`[name="tm-mode-${idPrefix}"]`).val();
         const skillId      = html.find(`[name="tm-skill-${idPrefix}"]`).val();
-        const toolId       = html.find(`[name="tm-tool-${idPrefix}"]`).val();
         const hasMaitrise  = html.find(`[name="tm-maitrise-${idPrefix}"]`).prop("checked");
         const hasExpertise = html.find(`[name="tm-expertise-${idPrefix}"]`).prop("checked");
+        const hasTools     = html.find(`[name="tm-tools-${idPrefix}"]`).prop("checked");
         const days         = getDays();
-        const rate         = calcDailyRate(actor, mode, skillId, toolId, hasMaitrise, hasExpertise);
+        const rate         = calcDailyRate(actor, skillId, hasMaitrise, hasExpertise, hasTools);
         html.find(`.tm-preview-${idPrefix}`)
             .text(`≈ ${rate} po/jour → ${Math.round(rate * days)} po sur ${days} jour${days > 1 ? "s" : ""}`);
     }
 
-    function refreshD20() {
-        const days     = getDays();
-        const tooFew   = days < 5;
-        const d20box   = html.find(`[name="tm-roll-${idPrefix}"]`);
-        const d20row   = html.find(`.tm-d20-row-${idPrefix}`);
-        d20box.prop("disabled", tooFew);
-        if (tooFew) d20box.prop("checked", false);
-        d20row.css("opacity", tooFew ? "0.4" : "1");
+    function refreshAbility() {
+        const skillId = html.find(`[name="tm-skill-${idPrefix}"]`).val();
+        html.find(`.tm-ability-${idPrefix}`).text(`Caractéristique : ${getAbilityLabel(skillId)}`);
     }
 
-    function refresh() { refreshPreview(); refreshD20(); }
+    function refreshProf() {
+        const hasMaitrise  = html.find(`[name="tm-maitrise-${idPrefix}"]`).prop("checked");
+        const hasExpertise = html.find(`[name="tm-expertise-${idPrefix}"]`).prop("checked");
+        const hasTools     = html.find(`[name="tm-tools-${idPrefix}"]`).prop("checked");
+        const profBlocked  = hasTools;
+        const toolsBlocked = hasMaitrise || hasExpertise;
 
-    function onModeChange() {
-        const isToolMode = html.find(`[name="tm-mode-${idPrefix}"]`).val() === "tool";
-        html.find(`.tm-skill-row-${idPrefix}`).css("display", isToolMode ? "none" : "flex");
-        html.find(`.tm-tool-row-${idPrefix}`).css("display", isToolMode ? "flex" : "none");
-        html.find(`.tm-prof-row-${idPrefix}`)
-            .css({ opacity: isToolMode ? "0.4" : "1", "pointer-events": isToolMode ? "none" : "" });
-        html.find(`[name="tm-maitrise-${idPrefix}"]`).prop("disabled", isToolMode);
-        html.find(`[name="tm-expertise-${idPrefix}"]`).prop("disabled",
-            isToolMode || !html.find(`[name="tm-maitrise-${idPrefix}"]`).prop("checked"));
-        refresh();
+        html.find(`[name="tm-maitrise-${idPrefix}"]`)
+            .prop("disabled", profBlocked)
+            .closest("label").css("opacity", profBlocked ? "0.4" : "1");
+
+        html.find(`[name="tm-expertise-${idPrefix}"]`)
+            .prop("disabled", profBlocked || !hasMaitrise)
+            .closest("label").css("opacity", profBlocked ? "0.4" : "1");
+
+        html.find(`[name="tm-tools-${idPrefix}"]`)
+            .prop("disabled", toolsBlocked)
+            .closest("label").css("opacity", toolsBlocked ? "0.4" : "1");
     }
 
-    function onSkillChange() {
+    // Changement de compétence → met à jour la caractéristique affichée
+    // et préremplit les cases de maîtrise/expertise depuis la fiche
+    html.find(`[name="tm-skill-${idPrefix}"]`).on("change", () => {
         const skillId   = html.find(`[name="tm-skill-${idPrefix}"]`).val();
         const profLevel = getProfLevel(actor, skillId);
         html.find(`[name="tm-maitrise-${idPrefix}"]`).prop("checked", profLevel >= 1);
-        const expBox = html.find(`[name="tm-expertise-${idPrefix}"]`);
-        expBox.prop("checked", profLevel >= 2).prop("disabled", profLevel < 1);
-        refresh();
-    }
+        html.find(`[name="tm-expertise-${idPrefix}"]`).prop("checked", profLevel >= 2);
+        if (profLevel >= 1) html.find(`[name="tm-tools-${idPrefix}"]`).prop("checked", false);
+        refreshAbility();
+        refreshProf();
+        refreshPreview();
+    });
 
-    function onMaitriseChange() {
-        const checked = html.find(`[name="tm-maitrise-${idPrefix}"]`).prop("checked");
-        const expBox  = html.find(`[name="tm-expertise-${idPrefix}"]`);
-        if (!checked) expBox.prop("checked", false);
-        expBox.prop("disabled", !checked);
-        refresh();
-    }
+    // Décocher maîtrise → décoche aussi expertise
+    html.find(`[name="tm-maitrise-${idPrefix}"]`).on("change", () => {
+        if (!html.find(`[name="tm-maitrise-${idPrefix}"]`).prop("checked"))
+            html.find(`[name="tm-expertise-${idPrefix}"]`).prop("checked", false);
+        refreshProf();
+        refreshPreview();
+    });
 
-    html.find(`[name="tm-mode-${idPrefix}"]`).on("change", onModeChange);
-    html.find(`[name="tm-skill-${idPrefix}"]`).on("change", onSkillChange);
-    html.find(`[name="tm-tool-${idPrefix}"]`).on("change", refresh);
-    html.find(`[name="tm-maitrise-${idPrefix}"]`).on("change", onMaitriseChange);
-    html.find(`[name="tm-expertise-${idPrefix}"]`).on("change", refresh);
-    html.find(`[name="tm-days-${idPrefix}"]`).on("input", refresh);
+    html.find(`[name="tm-expertise-${idPrefix}"]`).on("change", () => { refreshProf(); refreshPreview(); });
 
-    refresh(); // état initial
+    // Cocher Tools → décoche maîtrise et expertise
+    html.find(`[name="tm-tools-${idPrefix}"]`).on("change", () => {
+        if (html.find(`[name="tm-tools-${idPrefix}"]`).prop("checked")) {
+            html.find(`[name="tm-maitrise-${idPrefix}"]`).prop("checked", false);
+            html.find(`[name="tm-expertise-${idPrefix}"]`).prop("checked", false);
+        }
+        refreshProf();
+        refreshPreview();
+    });
+
+    html.find(`[name="tm-days-${idPrefix}"]`).on("input", () => { refreshD20(); refreshPreview(); });
+
+    // État initial
+    refreshAbility();
+    refreshProf();
+    refreshD20();
+    refreshPreview();
 }
 
 // ============================================================
@@ -249,18 +289,15 @@ function wireControls(html, actor, idPrefix) {
 
 function openDeclarationDialog(actor) {
     const existing   = actor.getFlag("westmarch", "tm");
-    const isToolMode = existing?.mode === "tool";
+    const preSkillId = existing?.skillId ?? null;
+    const preSkill   = preSkillId ?? Object.keys(CONFIG.DND5E.skills).sort()[0];
+    const profLevel  = getProfLevel(actor, preSkill);
 
-    const toolOptionsHtml = buildToolOptionsHtml(actor, isToolMode ? existing.choice : null);
-    const hasTools = toolOptionsHtml !== null;
-
-    const preSkillId   = !isToolMode ? (existing?.choice ?? null) : null;
-    const preSkill     = preSkillId ?? Object.keys(CONFIG.DND5E.skills).sort()[0];
-    const profLevel    = getProfLevel(actor, preSkill);
     const preMaitrise  = existing?.hasMaitrise  ?? (profLevel >= 1);
     const preExpertise = existing?.hasExpertise ?? (profLevel >= 2);
-    const preDays      = existing?.days   ?? 10;
-    const preDoRoll    = existing?.doRoll ?? false;
+    const preTools     = existing?.hasTools     ?? false;
+    const preDays      = existing?.days         ?? 10;
+    const preDoRoll    = existing?.doRoll       ?? false;
 
     const dlg = new Dialog({
         title: `Temps mort — ${actor.name}`,
@@ -269,22 +306,8 @@ function openDeclarationDialog(actor) {
     ${existing?.declared
         ? `<p style="color:#2ecc71; margin:0 0 4px;"><em>✓ Déjà déclaré : <strong>${existing.choiceLabel}</strong>. Modifiable ci-dessous.</em></p>`
         : ""}
-    <div style="display:flex; gap:6px; align-items:center;">
-        <label style="min-width:70px;">Mode :</label>
-        <select name="tm-mode-decl" style="flex:1;">
-            <option value="skill" ${!isToolMode ? "selected" : ""}>Compétence</option>
-            <option value="tool"  ${isToolMode  ? "selected" : ""} ${!hasTools ? "disabled" : ""}>Outil${!hasTools ? " (aucun maîtrisé)" : ""}</option>
-        </select>
-    </div>
-    <div class="tm-skill-row-decl" style="display:${isToolMode ? "none" : "flex"}; gap:6px; align-items:center;">
-        <label style="min-width:70px;">Compétence :</label>
-        <select name="tm-skill-decl" style="flex:1;">${buildSkillOptionsHtml(preSkillId)}</select>
-    </div>
-    <div class="tm-tool-row-decl" style="display:${isToolMode ? "flex" : "none"}; gap:6px; align-items:center;">
-        <label style="min-width:70px;">Outil :</label>
-        <select name="tm-tool-decl" style="flex:1;">${hasTools ? toolOptionsHtml : '<option disabled>Aucun</option>'}</select>
-    </div>
-    ${profRowHtml("decl", preMaitrise, preExpertise, isToolMode)}
+    ${skillRowHtml("decl", preSkillId)}
+    ${profRowHtml("decl", preMaitrise, preExpertise, preTools)}
     ${daysAndRollHtml("decl", preDays, preDoRoll)}
     ${previewHtml("decl")}
 </div>`,
@@ -294,28 +317,20 @@ function openDeclarationDialog(actor) {
                 label: "Déclarer",
                 callback: async (html) => {
                     const $h = $(html);
-                    const mode         = $h.find('[name="tm-mode-decl"]').val();
+                    const skillId      = $h.find('[name="tm-skill-decl"]').val();
                     const hasMaitrise  = $h.find('[name="tm-maitrise-decl"]').prop("checked");
                     const hasExpertise = $h.find('[name="tm-expertise-decl"]').prop("checked");
+                    const hasTools     = $h.find('[name="tm-tools-decl"]').prop("checked");
                     const days         = Math.max(1, parseInt($h.find('[name="tm-days-decl"]').val()) || 1);
                     const doRoll       = $h.find('[name="tm-roll-decl"]').prop("checked");
-                    let choice, choiceLabel, abilityId;
-
-                    if (mode === "skill") {
-                        choice = $h.find('[name="tm-skill-decl"]').val();
-                        const sc = CONFIG.DND5E.skills[choice];
-                        choiceLabel = game.i18n.localize(sc?.label ?? choice);
-                        abilityId   = sc?.ability ?? "int";
-                    } else {
-                        choice = $h.find('[name="tm-tool-decl"]').val();
-                        const ti = actor.items.get(choice);
-                        choiceLabel = ti?.name ?? "Outil";
-                        abilityId   = ti?.system?.ability ?? "int";
-                    }
+                    const sc           = CONFIG.DND5E.skills[skillId];
+                    const choiceLabel  = game.i18n.localize(sc?.label ?? skillId);
+                    const abilityId    = sc?.ability ?? "int";
 
                     await actor.setFlag("westmarch", "tm", {
-                        mode, choice, choiceLabel, abilityId,
-                        hasMaitrise, hasExpertise, days, doRoll, declared: true
+                        skillId, choiceLabel, abilityId,
+                        hasMaitrise, hasExpertise, hasTools,
+                        days, doRoll, declared: true
                     });
                     ui.notifications.info(`Activité TM déclarée : ${choiceLabel} — ${days} jour${days > 1 ? "s" : ""}.`);
                 }
@@ -338,22 +353,17 @@ function openDeclarationDialog(actor) {
 // ============================================================
 
 function buildActorRow(actor, startUnchecked = false) {
-    const flag       = actor.getFlag("westmarch", "tm");
-    const declared   = flag?.declared ?? false;
-    const preMode    = flag?.mode ?? "skill";
-    const isToolMode = preMode === "tool";
-    const preSkill   = flag?.mode === "skill" ? flag.choice : null;
-    const preTool    = flag?.mode === "tool"  ? flag.choice : null;
-    const preDays    = flag?.days   ?? 10;
-    const preDoRoll  = flag?.doRoll ?? false;
+    const flag     = actor.getFlag("westmarch", "tm");
+    const declared = flag?.declared ?? false;
 
-    const toolOptionsHtml = buildToolOptionsHtml(actor, preTool);
-    const hasTools = toolOptionsHtml !== null;
-
-    const preSkillId   = preSkill ?? Object.keys(CONFIG.DND5E.skills).sort()[0];
-    const profLevel    = getProfLevel(actor, preSkillId);
+    const preSkillId   = flag?.skillId     ?? null;
+    const preSkill     = preSkillId        ?? Object.keys(CONFIG.DND5E.skills).sort()[0];
+    const profLevel    = getProfLevel(actor, preSkill);
     const preMaitrise  = flag?.hasMaitrise  ?? (profLevel >= 1);
     const preExpertise = flag?.hasExpertise ?? (profLevel >= 2);
+    const preTools     = flag?.hasTools     ?? false;
+    const preDays      = flag?.days         ?? 10;
+    const preDoRoll    = flag?.doRoll       ?? false;
 
     const statusBadge = declared
         ? `<span style="color:#2ecc71; font-size:0.85em; margin-left:6px;">✓ ${flag.choiceLabel} — ${preDays} j</span>`
@@ -368,22 +378,8 @@ function buildActorRow(actor, startUnchecked = false) {
         <strong>${actor.name}</strong>${statusBadge}
     </div>
     <div class="tm-controls-${id}" style="display:flex; flex-direction:column; gap:5px; opacity:${startUnchecked ? "0.4" : "1"};">
-        <div style="display:flex; gap:6px; align-items:center;">
-            <label style="min-width:70px; white-space:nowrap;">Mode :</label>
-            <select name="tm-mode-${id}" style="flex:1;">
-                <option value="skill" ${!isToolMode ? "selected" : ""}>Compétence</option>
-                <option value="tool"  ${isToolMode  ? "selected" : ""} ${!hasTools ? "disabled" : ""}>Outil${!hasTools ? " (aucun maîtrisé)" : ""}</option>
-            </select>
-        </div>
-        <div class="tm-skill-row-${id}" style="display:${isToolMode ? "none" : "flex"}; gap:6px; align-items:center;">
-            <label style="min-width:70px; white-space:nowrap;">Compétence :</label>
-            <select name="tm-skill-${id}" style="flex:1;">${buildSkillOptionsHtml(preSkill)}</select>
-        </div>
-        <div class="tm-tool-row-${id}" style="display:${isToolMode ? "flex" : "none"}; gap:6px; align-items:center;">
-            <label style="min-width:70px; white-space:nowrap;">Outil :</label>
-            <select name="tm-tool-${id}" style="flex:1;">${hasTools ? toolOptionsHtml : '<option disabled>Aucun outil maîtrisé</option>'}</select>
-        </div>
-        ${profRowHtml(id, preMaitrise, preExpertise, isToolMode)}
+        ${skillRowHtml(id, preSkillId)}
+        ${profRowHtml(id, preMaitrise, preExpertise, preTools)}
         ${daysAndRollHtml(id, preDays, preDoRoll)}
         ${previewHtml(id)}
     </div>
@@ -460,29 +456,23 @@ function openDowntimeDialog() {
 // ============================================================
 
 async function applyDowntimeGains($html, actors) {
-    const lines = [];
+    const lines        = [];
     const discordLines = [];
 
     for (const actor of actors) {
         const id = actor.id;
         if (!$html.find(`[name="tm-active-${id}"]`).prop("checked")) continue;
 
-        const mode         = $html.find(`[name="tm-mode-${id}"]`).val();
+        const skillId      = $html.find(`[name="tm-skill-${id}"]`).val();
         const days         = Math.max(1, parseInt($html.find(`[name="tm-days-${id}"]`).val()) || 1);
         const doRoll       = $html.find(`[name="tm-roll-${id}"]`).prop("checked");
         const hasMaitrise  = $html.find(`[name="tm-maitrise-${id}"]`).prop("checked");
         const hasExpertise = $html.find(`[name="tm-expertise-${id}"]`).prop("checked");
+        const hasTools     = $html.find(`[name="tm-tools-${id}"]`).prop("checked");
 
-        let activityName = "", skillId = null, toolId = null;
-        if (mode === "skill") {
-            skillId      = $html.find(`[name="tm-skill-${id}"]`).val();
-            activityName = game.i18n.localize(CONFIG.DND5E.skills[skillId]?.label ?? skillId);
-        } else {
-            toolId       = $html.find(`[name="tm-tool-${id}"]`).val();
-            activityName = actor.items.get(toolId)?.name ?? "Outil";
-        }
-
-        const dailyRate = calcDailyRate(actor, mode, skillId, toolId, hasMaitrise, hasExpertise);
+        const activityName = game.i18n.localize(CONFIG.DND5E.skills[skillId]?.label ?? skillId);
+        const profStr      = hasTools ? " [Tools]" : hasExpertise ? " [Expertise]" : hasMaitrise ? " [Maîtrise]" : "";
+        const dailyRate    = calcDailyRate(actor, skillId, hasMaitrise, hasExpertise, hasTools);
         let total = dailyRate * days, rollResult = null;
 
         if (doRoll && days >= 5) {
@@ -506,20 +496,20 @@ async function applyDowntimeGains($html, actors) {
         const owners = getActorOwners(actor);
         if (owners.length > 0) {
             const pctStr = rollResult === null ? ""
-                : rollResult === 1     ? " (d20 : 1 → −20 %)"
-                : rollResult >= 20    ? ` (d20 : ${rollResult} → +20 %)`
-                : rollResult >= 10    ? ` (d20 : ${rollResult} → +10 %)`
+                : rollResult === 1    ? " (d20 : 1 → −20 %)"
+                : rollResult >= 20   ? ` (d20 : ${rollResult} → +20 %)`
+                : rollResult >= 10   ? ` (d20 : ${rollResult} → +10 %)`
                 : ` (d20 : ${rollResult} → ±0 %)`;
             ChatMessage.create({
                 content: `🕰️ Temps mort appliqué pour <strong>${actor.name}</strong> : `
-                       + `${activityName}, ${days} j (${dailyRate} po/j)${pctStr} → <strong>+${total} po</strong>`,
+                       + `${activityName}${profStr}, ${days} j (${dailyRate} po/j)${pctStr} → <strong>+${total} po</strong>`,
                 whisper: owners.map(u => u.id),
                 speaker: { alias: "WestMarch — Temps morts" }
             });
         }
 
-        let line        = `<strong>${actor.name}</strong> — ${activityName} — ${days} j (${dailyRate} po/j)`;
-        let discordLine = `**${actor.name}** — ${activityName} — ${days} j (${dailyRate} po/j)`;
+        let line        = `<strong>${actor.name}</strong> — ${activityName}${profStr} — ${days} j (${dailyRate} po/j)`;
+        let discordLine = `**${actor.name}** — ${activityName}${profStr} — ${days} j (${dailyRate} po/j)`;
         if (rollResult !== null) {
             const pct = rollResult === 1 ? "−20 %" : rollResult >= 20 ? "+20 %" : rollResult >= 10 ? "+10 %" : "±0 %";
             line        += ` → d20 : ${rollResult} (${pct})`;
@@ -534,7 +524,7 @@ async function applyDowntimeGains($html, actors) {
     if (lines.length === 0) { ui.notifications.info("Aucun personnage traité."); return; }
 
     ChatMessage.create({
-        content: `<h3>Résumé des temps morts</h3><ul>${lines.map(l => `<li>${l}</li>`).join("")}</ul>`,
+        content: `<p style="margin:0 0 4px; font-weight:bold;">Résumé des temps morts</p><ul style="margin:0; padding-left:16px;">${lines.map(l => `<li>${l}</li>`).join("")}</ul>`,
         whisper: ChatMessage.getWhisperRecipients("GM"),
         speaker: { alias: "WestMarch — Temps morts" }
     });

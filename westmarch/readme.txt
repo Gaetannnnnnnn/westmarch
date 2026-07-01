@@ -1,7 +1,7 @@
 ================================================================================
                         WESTMARCH SYSTÈME — MODULE FOUNDRY VTT
                                Auteur : Soruta (Discord: s0ruta)
-                                       Version : 1.4.5
+                                       Version : 1.4.6
                               Compatibilité : Foundry VTT v13
 ================================================================================
 
@@ -130,11 +130,11 @@ journal.js
 
 caldate.js
    Quand le GM avance la date dans Simple Calendar, envoie automatiquement
-   un message sur un webhook Discord dédié (configurable dans les paramètres
-   du module : "URL du Webhook Discord (date / temps morts)"). Le message
-   indique la nouvelle date. Ne se déclenche qu'en cas de changement de jour
-   (pas à chaque seconde ou minute). Un seul message est envoyé même si
-   plusieurs GM sont connectés (le GM actif est élu pour l'envoi).
+   un message sur le webhook Discord "changement de date" (paramètre
+   "URL du Webhook Discord (changement de date)"). Le message indique la
+   nouvelle date. Ne se déclenche qu'en cas de changement de jour (pas à
+   chaque seconde ou minute). Un seul message est envoyé même si plusieurs
+   GM sont connectés (le GM actif est élu pour l'envoi).
 
 mejshop.js
    Deux correctifs pour les boutiques de Monk's Enhanced Journal (module
@@ -321,7 +321,8 @@ FONCTIONNALITÉS
    - Log Discord (modifications : items, XP/niveau, monnaie, persos)
    - Anti-Cheat (combat)
    - Correctifs boutiques Monk's Enhanced Journal (groupe + objets cachés)
-   - URL du Webhook Discord (date / temps morts)
+   - URL du Webhook Discord (changement de date) — salon joueurs
+   - URL du Webhook Discord (résultats temps morts) — salon staff/MJ
 
    Paramètre maître :
    - Système de Party (enableParty) — affiche un symbole ⚠️ avec une infobulle
@@ -439,24 +440,48 @@ FONCTIONNALITÉS
 14. NOTIFICATION DISCORD — CHANGEMENT DE DATE (caldate.js)
    ---------------------------------------------------------------
    Quand le GM avance la date dans Simple Calendar, un message est envoyé
-   automatiquement sur un webhook Discord dédié ("📅 La date est maintenant
-   le X."). Ne s'envoie qu'une fois par changement de jour (pas à chaque
-   seconde). URL à configurer dans les paramètres du module.
+   automatiquement sur un webhook Discord dédié (paramètre "URL du Webhook
+   Discord (changement de date)", salon joueurs) : "📅 La date est maintenant
+   le X." Ne s'envoie qu'une fois par changement de jour. URL à configurer
+   dans les paramètres du module.
 
 15. TEMPS MORTS — GAINS D'ARGENT (tm.js)
    -------------------------------------------
-   Bouton "Temps morts" dans le groupe WestMarch de la barre d'outils de
-   gauche (GM uniquement). Ouvre une fenêtre listant tous les personnages
-   joueurs. Pour chaque perso le GM choisit :
-   - une compétence (liste déroulante avec la caractéristique associée)
-   - ou un outil maîtrisé par le perso (liste déroulante, +4 po fixe,
-     non cumulable avec les bonus de compétence)
-   - le nombre de jours de la période
-   Formule : (1 + modif_carac + 2 si maîtrise + 2 si expertise OU +4 outil)
+   Flux en deux temps :
+
+   Côté joueur : bouton sablier ⏳ dans le header de sa fiche personnage.
+   Ouvre une fenêtre de déclaration où le joueur choisit :
+   - une compétence (liste déroulante ; la caractéristique associée est
+     affichée juste en dessous et se met à jour à chaque changement)
+   - cases de proficiency : Maîtrise (+2 po/j), Expertise (+2 po/j),
+     ou Tools (+4 po/j) — les deux groupes sont mutuellement exclusifs
+     (cocher Tools grise Maîtrise/Expertise, et inversement) ; pré-remplies
+     automatiquement depuis la fiche du personnage
+   - nombre de jours (valeur par défaut : 10)
+   - test de d20 optionnel (grisé et non coché automatiquement si < 5 jours)
+   Une prévisualisation du gain total se met à jour en temps réel.
+   La déclaration est stockée dans un flag sur l'acteur.
+
+   Côté GM : bouton ⏳ dans le groupe WestMarch de la barre de gauche.
+   Ouvre une fenêtre listant uniquement les personnages ayant déclaré
+   (option d'afficher aussi les non-déclarés). Tout est pré-rempli depuis
+   la déclaration du joueur. Le GM peut corriger si besoin, puis clique
+   "Appliquer les gains".
+
+   Formule : (1 + modif_carac + 2 si maîtrise + 2 si expertise OU +4 tools)
    × jours, puis modificateur d20 optionnel sur le total.
-   Test de d20 optionnel (≥ 5 jours) : −20 % sur 1, rien sur 2-9, +10 %
-   sur 10-19, +20 % sur 20. Les gains sont appliqués directement sur la
-   monnaie (PO) de l'acteur, et un rapport est posté en message privé GM.
+   Test de d20 (≥ 5 jours) : −20 % sur 1, rien sur 2-9, +10 % sur 10-19,
+   +20 % sur 20+.
+
+   À l'application :
+   - Les PO sont créditées directement sur la fiche de l'acteur
+   - Un whisper est envoyé aux joueurs propriétaires du personnage
+   - Un résumé est posté en message privé GM dans le chat Foundry
+   - Le résumé est aussi envoyé sur le webhook Discord "résultats temps morts"
+     (paramètre "URL du Webhook Discord (résultats temps morts)", salon staff)
+   - Les messages indiquent la compétence, la proficiency utilisée
+     ([Maîtrise], [Expertise] ou [Tools]), le nombre de jours, le taux
+     journalier, le résultat du d20 si applicable, et le total final
 
 16. CORRECTIFS BOUTIQUES MONK'S ENHANCED JOURNAL (mejshop.js)
    -----------------------------------------------------------------
@@ -547,4 +572,14 @@ NOTES TECHNIQUES
                         WESTMARCH SYSTÈME — MISES À JOUR
 ================================================================================
 
-v1.4.5 | 2026-07-01
+v1.4.6 | 2026-07-01
+   tm.js — Déclaration joueur (jours + d20 dans le formulaire joueur)
+   tm.js — Grisage automatique du test d20 si < 5 jours
+   tm.js — Suppression du mode outil séparé : cases Maîtrise/Expertise/Tools
+            sur la même ligne, mutuellement exclusives
+   tm.js — Caractéristique associée affichée sous la liste de compétences
+   tm.js — Prévisualisation du gain total en temps réel (taux × jours)
+   tm.js — Proficiency mentionnée dans tous les messages ([Maîtrise]/[Expertise]/[Tools])
+   tm.js — Résumé temps morts aussi envoyé sur webhook Discord dédié (tmWebhookUrl)
+   settings.js — Séparation en deux webhooks : downtimeWebhookUrl (dates, joueurs)
+                 et tmWebhookUrl (résultats TM, staff)
