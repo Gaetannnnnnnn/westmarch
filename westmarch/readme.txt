@@ -1,7 +1,7 @@
 ================================================================================
                         WESTMARCH SYSTÈME — MODULE FOUNDRY VTT
                                Auteur : Soruta (Discord: s0ruta)
-                                       Version : 1.4.7
+                                       Version : 1.4.8
                               Compatibilité : Foundry VTT v13
 ================================================================================
 
@@ -572,12 +572,7 @@ NOTES TECHNIQUES
                         WESTMARCH SYSTÈME — MISES À JOUR
 ================================================================================
 
-v1.4.7 | 2026-07-01
-   tm.js — Bouton "Refuser" par personnage dans le dialogue GM (efface le flag
-            joueur + whisper de refus)
-   tm.js — Gains crédités en PO + PA séparément au lieu d'arrondir à l'entier
-            (ex. 27,5 po → 27 po 5 pa sur la fiche)
-   tm.js — Correction affichage : titre du résumé en taille normale (h3 → p gras)
-   caldate.js — Correction bug webhook : la vérification activeGM bloquait l'envoi
-                si Foundry ne détectait aucun GM "actif" (null?.id !== userId → true)
-   caldate.js — Parsing data Simple Calendar plus robuste (data.date ?? data)
+v1.4.8 | 2026-07-01
+   caldate.js — Correction critique : Simple Calendar utilise le hook Foundry natif
+                "updateWorldTime" et non "simple-calendar.dateTimeChange" sur cette
+                installation — le webhook date ne se déclenchait jamais
