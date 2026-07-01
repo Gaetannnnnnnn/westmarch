@@ -1,7 +1,7 @@
 ================================================================================
                         WESTMARCH SYSTÈME — MODULE FOUNDRY VTT
                                Auteur : Soruta (Discord: s0ruta)
-                                       Version : 1.4.1
+                                       Version : 1.4.4
                               Compatibilité : Foundry VTT v13
 ================================================================================
 
@@ -32,7 +32,9 @@ westmarch/
 │   ├── image.js            Bouton "Show Party" sur les popouts d'image
 │   ├── items.js            Correction de la stat par défaut des outils (tool) à la création
 │   ├── journal.js          Menu contextuel sur les liens de scène dans les journaux
+│   ├── caldate.js          Notification Discord lors d'un changement de date (Simple Calendar)
 │   ├── mejshop.js          Correctifs boutiques Monk's Enhanced Journal (groupe + objets cachés)
+│   ├── tm.js               Temps morts : calcul des gains d'argent par personnage
 │   ├── player.js           Liste des joueurs, menu contextuel et gestion des parties
 │   ├── rage.js             Passage en taille Large (2x2) pendant la Rage du Barbare
 │   ├── scenes.js           Téléportation de groupe depuis le répertoire de scènes
@@ -125,6 +127,14 @@ journal.js
    Ajoute un menu contextuel (clic droit) sur les liens de scène à l'intérieur
    des journaux, avec les options "Go Alone" (se téléporter seul) et "Go With
    Party" (téléporter toute la party).
+
+caldate.js
+   Quand le GM avance la date dans Simple Calendar, envoie automatiquement
+   un message sur un webhook Discord dédié (configurable dans les paramètres
+   du module : "URL du Webhook Discord (date / temps morts)"). Le message
+   indique la nouvelle date. Ne se déclenche qu'en cas de changement de jour
+   (pas à chaque seconde ou minute). Un seul message est envoyé même si
+   plusieurs GM sont connectés (le GM actif est élu pour l'envoi).
 
 mejshop.js
    Deux correctifs pour les boutiques de Monk's Enhanced Journal (module
@@ -311,6 +321,7 @@ FONCTIONNALITÉS
    - Log Discord (modifications : items, XP/niveau, monnaie, persos)
    - Anti-Cheat (combat)
    - Correctifs boutiques Monk's Enhanced Journal (groupe + objets cachés)
+   - URL du Webhook Discord (date / temps morts)
 
    Paramètre maître :
    - Système de Party (enableParty) — affiche un symbole ⚠️ avec une infobulle
@@ -425,7 +436,29 @@ FONCTIONNALITÉS
    - Scroll sur la liste des joueurs (player.js), quand il y a beaucoup de joueurs connectés, la liste devient scrollable au lieu de déborder hors de l'écran
    - Scroll sur les fenêtres de propriété (document.js), quand tu ouvres la fenêtre de permissions/propriété d'un document (journal, acteur...), elle est limitée à 70% de la hauteur de l'écran avec un scroll si le contenu dépasse
 
-14. CORRECTIFS BOUTIQUES MONK'S ENHANCED JOURNAL (mejshop.js)
+14. NOTIFICATION DISCORD — CHANGEMENT DE DATE (caldate.js)
+   ---------------------------------------------------------------
+   Quand le GM avance la date dans Simple Calendar, un message est envoyé
+   automatiquement sur un webhook Discord dédié ("📅 La date est maintenant
+   le X."). Ne s'envoie qu'une fois par changement de jour (pas à chaque
+   seconde). URL à configurer dans les paramètres du module.
+
+15. TEMPS MORTS — GAINS D'ARGENT (tm.js)
+   -------------------------------------------
+   Bouton "Temps morts" dans le groupe WestMarch de la barre d'outils de
+   gauche (GM uniquement). Ouvre une fenêtre listant tous les personnages
+   joueurs. Pour chaque perso le GM choisit :
+   - une compétence (liste déroulante avec la caractéristique associée)
+   - ou un outil maîtrisé par le perso (liste déroulante, +4 po fixe,
+     non cumulable avec les bonus de compétence)
+   - le nombre de jours de la période
+   Formule : (1 + modif_carac + 2 si maîtrise + 2 si expertise OU +4 outil)
+   × jours, puis modificateur d20 optionnel sur le total.
+   Test de d20 optionnel (≥ 5 jours) : −20 % sur 1, rien sur 2-9, +10 %
+   sur 10-19, +20 % sur 20. Les gains sont appliqués directement sur la
+   monnaie (PO) de l'acteur, et un rapport est posté en message privé GM.
+
+16. CORRECTIFS BOUTIQUES MONK'S ENHANCED JOURNAL (mejshop.js)
    -----------------------------------------------------------------
    - Bouton "Groupe uniquement" dans la fenêtre "Show to Players" (boutiques
      MEJ) : coche en un clic les membres de sa party au lieu de décocher
@@ -514,7 +547,24 @@ NOTES TECHNIQUES
                         WESTMARCH SYSTÈME — MISES À JOUR
 ================================================================================
 
-v1.4.1 | 2026-06-30
+v1.4.4 | 2026-06-30
+nouveauté
+- ajout de la notification Discord lors d'un changement de date (caldate.js) :
+  quand le GM avance la date dans Simple Calendar, un message est envoyé
+  automatiquement sur un nouveau webhook Discord dédié (URL à configurer dans
+  les paramètres du module) avec la nouvelle date. Ne se déclenche qu'une fois
+  par changement de jour, même si plusieurs GM sont connectés
+
+- ajout du calcul des temps morts — gains d'argent (tm.js) : nouveau bouton
+  "Temps morts" (sablier) dans le groupe WestMarch de la barre d'outils de
+  gauche. Le GM sélectionne pour chaque personnage joueur sa compétence (ou
+  son outil maîtrisé) et le nombre de jours ; le module calcule les gains selon
+  la formule (1 + modif_carac + bonus_maîtrise) × jours, avec test de d20
+  optionnel (−20 % sur 1, rien sur 2-9, +10 % sur 10-19, +20 % sur 20 et +),
+  applique les PO directement sur la fiche de l'acteur et poste un rapport en
+  message privé GM dans le chat
+
+v1.4.3 | 2026-06-30
 nouveauté
 - ajout de deux correctifs pour les boutiques de Monk's Enhanced Journal
   (mejshop.js, module tiers — aucun fichier de MEJ modifié) :

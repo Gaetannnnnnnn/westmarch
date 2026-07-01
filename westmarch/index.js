@@ -17,6 +17,8 @@ import { ItemHooks } from './modules/items.js';
 import { AudioHooks } from './modules/audio.js';
 import { RageHooks } from './modules/rage.js';
 import { MejShopHooks } from './modules/mejshop.js';
+import { CalDateHooks } from './modules/caldate.js';
+import { TmHooks } from './modules/tm.js';
 
 Hooks.on("init", async () => {
     Handlebars.registerHelper('for', function(from, to, incr, block) {
@@ -49,4 +51,6 @@ Hooks.on("init", async () => {
     AudioHooks();
     RageHooks();
     MejShopHooks();
+    CalDateHooks();
+    TmHooks();
 });

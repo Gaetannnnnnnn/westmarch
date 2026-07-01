@@ -158,6 +158,16 @@ export function registerSettings() {
         requiresReload: false
     });
 
+    game.settings.register("westmarch", "downtimeWebhookUrl", {
+        name: "URL du Webhook Discord (date / temps morts)",
+        hint: "Quand le GM avance la date dans Simple Calendar, envoie automatiquement un message sur ce webhook Discord avec la nouvelle date. Laisser vide pour désactiver.",
+        scope: "world",
+        config: true,
+        type: String,
+        default: "",
+        requiresReload: false
+    });
+
     game.settings.register("westmarch", "enableMejShopFix", {
         name: "Correctifs boutiques Monk's Enhanced Journal",
         hint: "Ajoute un bouton 'Groupe uniquement' dans la fenêtre 'Show to Players' de Monk's Enhanced Journal (sélection rapide de sa party, sans devoir décocher joueur par joueur), et corrige côté affichage joueur un bug de MEJ qui montrait quand même les objets de boutique marqués 'cachés'.",
