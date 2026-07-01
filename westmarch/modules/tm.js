@@ -3,7 +3,7 @@
 //
 // Côté joueur : bouton sablier dans le header de sa fiche perso
 //   → fenêtre pour déclarer compétence, maîtrise/expertise/tools,
-//   nombre de jours et test de d20 optionnel (grisé si < 5 j)
+//   dates de début/fin et test de compétence optionnel (grisé si < 5 j)
 //
 // Côté GM : bouton dans le groupe WestMarch de la barre de gauche
 //   → fenêtre pré-remplie depuis les déclarations joueurs
@@ -43,7 +43,7 @@ export function TmHooks() {
         btn.classList.add("header-control", "icon", "fa-solid", "fa-hourglass-half", "westmarch-tm-declare");
         btn.setAttribute("aria-label", "Temps mort");
         btn.dataset.tooltip = tmFlag?.declared
-            ? `TM déclaré : ${tmFlag.choiceLabel} (${tmFlag.days ?? "?"} j)`
+            ? `TM déclaré : ${tmFlag.choiceLabel} (${tmFlag.dateRangeLabel ?? (tmFlag.days ?? "?") + " j"})`
             : "Déclarer mon activité TM";
         if (tmFlag?.declared) btn.style.color = "#2ecc71";
         btn.addEventListener("click", () => openDeclarationDialog(actor));
@@ -64,7 +64,7 @@ export function TmHooks() {
         const tmFlag = actor.getFlag("westmarch", "tm");
         const color  = tmFlag?.declared ? ' style="color:#2ecc71;"' : '';
         const tip    = tmFlag?.declared
-            ? `TM déclaré : ${tmFlag.choiceLabel} (${tmFlag.days ?? "?"} j)`
+            ? `TM déclaré : ${tmFlag.choiceLabel} (${tmFlag.dateRangeLabel ?? (tmFlag.days ?? "?") + " j"})`
             : "Déclarer mon activité TM";
         const btn = $(`<button type="button" class="header-control icon fa-solid fa-hourglass-half westmarch-tm-declare" data-tooltip="${tip}" aria-label="Temps mort"${color}></button>`);
         btn.on("click", () => openDeclarationDialog(actor));
@@ -92,9 +92,26 @@ function buildSkillOptionsHtml(selectedId = null) {
         .join("");
 }
 
+function buildMonthOptionsHtml(selectedMonth = 0) {
+    const cal = game.time?.calendar;
+    if (!cal?.months?.values) {
+        return `<option value="${selectedMonth}">Mois ${selectedMonth + 1}</option>`;
+    }
+    return Array.from(cal.months.values).map((m, i) => {
+        const name = game.i18n.localize(m?.name ?? `Mois ${i + 1}`);
+        return `<option value="${i}"${i === selectedMonth ? " selected" : ""}>${name}</option>`;
+    }).join("");
+}
+
 function getAbilityLabel(skillId) {
     const abilityId = CONFIG.DND5E.skills[skillId]?.ability ?? "int";
     return game.i18n.localize(CONFIG.DND5E.abilities[abilityId]?.label ?? abilityId);
+}
+
+function getMonthName(monthIndex) {
+    const cal = game.time?.calendar;
+    if (!cal?.months?.values) return `Mois ${monthIndex + 1}`;
+    return game.i18n.localize(cal.months.values[monthIndex]?.name ?? `Mois ${monthIndex + 1}`);
 }
 
 function getPlayerActors() {
@@ -117,6 +134,37 @@ function calcDailyRate(actor, skillId, hasMaitrise, hasExpertise, hasTools) {
     const abilityMod = actor.system.abilities[abilityId]?.mod ?? 0;
     const profBonus  = hasTools ? 4 : hasExpertise ? 4 : hasMaitrise ? 2 : 0;
     return Math.max(0, 1 + abilityMod + profBonus);
+}
+
+// Convertit une date du calendrier en nombre total de jours depuis l'an 0
+// (pour calculer des différences). month0 = 0-indexé, day = 1-indexé.
+function calDateToTotalDays(year, month0, day) {
+    const cal    = game.time?.calendar;
+    const months = cal?.months?.values ? Array.from(cal.months.values) : [];
+    const daysPerYear = months.reduce((s, m) => s + (m?.days ?? 30), 0) || 360;
+
+    let total = year * daysPerYear;
+    for (let i = 0; i < month0; i++) {
+        total += months[i]?.days ?? 30;
+    }
+    return total + (day - 1); // day est 1-indexé
+}
+
+function getDaysFromDates(sDay, sMonth, sYear, eDay, eMonth, eYear) {
+    const start = calDateToTotalDays(sYear, sMonth, sDay);
+    const end   = calDateToTotalDays(eYear, eMonth, eDay);
+    return Math.max(1, end - start + 1);
+}
+
+function getCurrentCalDate() {
+    try {
+        const cal = game.time?.calendar;
+        if (!cal) return null;
+        const c = cal.timeToComponents(game.time.worldTime);
+        return { day: c.dayOfMonth + 1, month: c.month, year: c.year };
+    } catch(e) {
+        return null;
+    }
 }
 
 // ============================================================
@@ -171,30 +219,53 @@ function previewHtml(idPrefix) {
     return `<div class="tm-preview-${idPrefix}" style="color:#888; font-style:italic; font-size:0.9em;">—</div>`;
 }
 
-function daysAndRollHtml(idPrefix, preDays, preDoRoll) {
-    const tooFew       = (preDays ?? 10) < 5;
+function dateAndRollHtml(idPrefix, sDay, sMonth, sYear, eDay, eMonth, eYear, preDoRoll) {
+    const days         = getDaysFromDates(sDay, sMonth, sYear, eDay, eMonth, eYear);
+    const tooFew       = days < 5;
     const rollDisabled = tooFew ? " disabled" : "";
     const rollChecked  = preDoRoll && !tooFew ? " checked" : "";
     const rollOpacity  = tooFew ? " opacity:0.4;" : "";
     return `
-<div style="display:flex; gap:6px; align-items:center;">
-    <label style="min-width:90px; white-space:nowrap;">Jours :</label>
-    <input type="number" name="tm-days-${idPrefix}" value="${preDays ?? 10}" min="1" style="width:70px;">
+<div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+    <label style="min-width:90px; white-space:nowrap;">Date début :</label>
+    <input type="number" name="tm-sday-${idPrefix}" value="${sDay}" min="1" max="30" style="width:50px;">
+    <select name="tm-smonth-${idPrefix}">${buildMonthOptionsHtml(sMonth)}</select>
+    <input type="number" name="tm-syear-${idPrefix}" value="${sYear}" min="1" style="width:70px;">
+</div>
+<div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+    <label style="min-width:90px; white-space:nowrap;">Date fin :</label>
+    <input type="number" name="tm-eday-${idPrefix}" value="${eDay}" min="1" max="30" style="width:50px;">
+    <select name="tm-emonth-${idPrefix}">${buildMonthOptionsHtml(eMonth)}</select>
+    <input type="number" name="tm-eyear-${idPrefix}" value="${eYear}" min="1" style="width:70px;">
+</div>
+<div class="tm-daycount-${idPrefix}" style="font-size:0.85em; color:#888; margin-left:96px; margin-top:-2px;">
+    → ${days} jour${days > 1 ? "s" : ""}
 </div>
 <div class="tm-d20-row-${idPrefix}" style="display:flex; gap:6px; align-items:center;${rollOpacity}">
     <input type="checkbox" name="tm-roll-${idPrefix}"${rollChecked}${rollDisabled} style="margin:0;">
-    <label style="margin:0;">Test de d20 <em style="color:#888;">(≥ 5 jours requis)</em></label>
+    <label style="margin:0;">Test de compétence <em style="color:#888;">(≥ 5 jours requis)</em></label>
 </div>`;
 }
 
 // ============================================================
-// Câblage dynamique (grisage d20 + proficiencies)
+// Câblage dynamique (dates, d20, proficiencies, preview)
 // ============================================================
 
 function wireControls(html, actor, idPrefix) {
 
     function getDays() {
-        return Math.max(1, parseInt(html.find(`[name="tm-days-${idPrefix}"]`).val()) || 1);
+        const sDay   = Math.max(1, parseInt(html.find(`[name="tm-sday-${idPrefix}"]`).val())   || 1);
+        const sMonth = parseInt(html.find(`[name="tm-smonth-${idPrefix}"]`).val()) || 0;
+        const sYear  = Math.max(1, parseInt(html.find(`[name="tm-syear-${idPrefix}"]`).val())  || 1);
+        const eDay   = Math.max(1, parseInt(html.find(`[name="tm-eday-${idPrefix}"]`).val())   || 1);
+        const eMonth = parseInt(html.find(`[name="tm-emonth-${idPrefix}"]`).val()) || 0;
+        const eYear  = Math.max(1, parseInt(html.find(`[name="tm-eyear-${idPrefix}"]`).val())  || 1);
+        return getDaysFromDates(sDay, sMonth, sYear, eDay, eMonth, eYear);
+    }
+
+    function refreshDayCount() {
+        const days = getDays();
+        html.find(`.tm-daycount-${idPrefix}`).text(`→ ${days} jour${days > 1 ? "s" : ""}`);
     }
 
     function refreshD20() {
@@ -241,8 +312,7 @@ function wireControls(html, actor, idPrefix) {
             .closest("label").css("opacity", toolsBlocked ? "0.4" : "1");
     }
 
-    // Changement de compétence → met à jour la caractéristique affichée
-    // et préremplit les cases de maîtrise/expertise depuis la fiche
+    // Changement de compétence → caractéristique + maîtrise/expertise auto
     html.find(`[name="tm-skill-${idPrefix}"]`).on("change", () => {
         const skillId   = html.find(`[name="tm-skill-${idPrefix}"]`).val();
         const profLevel = getProfLevel(actor, skillId);
@@ -274,11 +344,17 @@ function wireControls(html, actor, idPrefix) {
         refreshPreview();
     });
 
-    html.find(`[name="tm-days-${idPrefix}"]`).on("input", () => { refreshD20(); refreshPreview(); });
+    // Changement de date → recalcule tout
+    const dateFields = [
+        `[name="tm-sday-${idPrefix}"]`, `[name="tm-smonth-${idPrefix}"]`, `[name="tm-syear-${idPrefix}"]`,
+        `[name="tm-eday-${idPrefix}"]`, `[name="tm-emonth-${idPrefix}"]`, `[name="tm-eyear-${idPrefix}"]`
+    ].join(", ");
+    html.find(dateFields).on("change input", () => { refreshDayCount(); refreshD20(); refreshPreview(); });
 
     // État initial
     refreshAbility();
     refreshProf();
+    refreshDayCount();
     refreshD20();
     refreshPreview();
 }
@@ -296,8 +372,15 @@ function openDeclarationDialog(actor) {
     const preMaitrise  = existing?.hasMaitrise  ?? (profLevel >= 1);
     const preExpertise = existing?.hasExpertise ?? (profLevel >= 2);
     const preTools     = existing?.hasTools     ?? false;
-    const preDays      = existing?.days         ?? 10;
     const preDoRoll    = existing?.doRoll       ?? false;
+
+    const today        = getCurrentCalDate() ?? { day: 1, month: 0, year: 1 };
+    const preStartDay  = existing?.startDay   ?? today.day;
+    const preStartMth  = existing?.startMonth ?? today.month;
+    const preStartYear = existing?.startYear  ?? today.year;
+    const preEndDay    = existing?.endDay     ?? today.day;
+    const preEndMth    = existing?.endMonth   ?? today.month;
+    const preEndYear   = existing?.endYear    ?? today.year;
 
     const dlg = new Dialog({
         title: `Temps mort — ${actor.name}`,
@@ -308,7 +391,7 @@ function openDeclarationDialog(actor) {
         : ""}
     ${skillRowHtml("decl", preSkillId)}
     ${profRowHtml("decl", preMaitrise, preExpertise, preTools)}
-    ${daysAndRollHtml("decl", preDays, preDoRoll)}
+    ${dateAndRollHtml("decl", preStartDay, preStartMth, preStartYear, preEndDay, preEndMth, preEndYear, preDoRoll)}
     ${previewHtml("decl")}
 </div>`,
         buttons: {
@@ -321,24 +404,34 @@ function openDeclarationDialog(actor) {
                     const hasMaitrise  = $h.find('[name="tm-maitrise-decl"]').prop("checked");
                     const hasExpertise = $h.find('[name="tm-expertise-decl"]').prop("checked");
                     const hasTools     = $h.find('[name="tm-tools-decl"]').prop("checked");
-                    const days         = Math.max(1, parseInt($h.find('[name="tm-days-decl"]').val()) || 1);
                     const doRoll       = $h.find('[name="tm-roll-decl"]').prop("checked");
-                    const sc           = CONFIG.DND5E.skills[skillId];
-                    const choiceLabel  = game.i18n.localize(sc?.label ?? skillId);
-                    const abilityId    = sc?.ability ?? "int";
+                    const sDay   = Math.max(1, parseInt($h.find('[name="tm-sday-decl"]').val())   || 1);
+                    const sMonth = parseInt($h.find('[name="tm-smonth-decl"]').val()) || 0;
+                    const sYear  = Math.max(1, parseInt($h.find('[name="tm-syear-decl"]').val())  || 1);
+                    const eDay   = Math.max(1, parseInt($h.find('[name="tm-eday-decl"]').val())   || 1);
+                    const eMonth = parseInt($h.find('[name="tm-emonth-decl"]').val()) || 0;
+                    const eYear  = Math.max(1, parseInt($h.find('[name="tm-eyear-decl"]').val())  || 1);
+                    const days   = getDaysFromDates(sDay, sMonth, sYear, eDay, eMonth, eYear);
+
+                    const sc             = CONFIG.DND5E.skills[skillId];
+                    const choiceLabel    = game.i18n.localize(sc?.label ?? skillId);
+                    const abilityId      = sc?.ability ?? "int";
+                    const dateRangeLabel = `${sDay} ${getMonthName(sMonth)} → ${eDay} ${getMonthName(eMonth)}`;
 
                     await actor.setFlag("westmarch", "tm", {
                         skillId, choiceLabel, abilityId,
                         hasMaitrise, hasExpertise, hasTools,
-                        days, doRoll, declared: true
+                        startDay: sDay, startMonth: sMonth, startYear: sYear,
+                        endDay: eDay, endMonth: eMonth, endYear: eYear,
+                        days, dateRangeLabel, doRoll, declared: true
                     });
-                    ui.notifications.info(`Activité TM déclarée : ${choiceLabel} — ${days} jour${days > 1 ? "s" : ""}.`);
+                    ui.notifications.info(`Activité TM déclarée : ${choiceLabel} — ${dateRangeLabel} (${days} j).`);
                 }
             },
             cancel: { icon: '<i class="fas fa-times"></i>', label: "Annuler" }
         },
         default: "declare"
-    }, { width: 440 });
+    }, { width: 480 });
 
     Hooks.once("renderDialog", (app, html) => {
         if (app !== dlg) return;
@@ -356,17 +449,25 @@ function buildActorRow(actor, startUnchecked = false) {
     const flag     = actor.getFlag("westmarch", "tm");
     const declared = flag?.declared ?? false;
 
-    const preSkillId   = flag?.skillId     ?? null;
-    const preSkill     = preSkillId        ?? Object.keys(CONFIG.DND5E.skills).sort()[0];
+    const preSkillId   = flag?.skillId    ?? null;
+    const preSkill     = preSkillId       ?? Object.keys(CONFIG.DND5E.skills).sort()[0];
     const profLevel    = getProfLevel(actor, preSkill);
     const preMaitrise  = flag?.hasMaitrise  ?? (profLevel >= 1);
     const preExpertise = flag?.hasExpertise ?? (profLevel >= 2);
     const preTools     = flag?.hasTools     ?? false;
-    const preDays      = flag?.days         ?? 10;
     const preDoRoll    = flag?.doRoll       ?? false;
 
+    const today        = getCurrentCalDate() ?? { day: 1, month: 0, year: 1 };
+    const preStartDay  = flag?.startDay   ?? today.day;
+    const preStartMth  = flag?.startMonth ?? today.month;
+    const preStartYear = flag?.startYear  ?? today.year;
+    const preEndDay    = flag?.endDay     ?? today.day;
+    const preEndMth    = flag?.endMonth   ?? today.month;
+    const preEndYear   = flag?.endYear    ?? today.year;
+    const preDays      = flag?.days ?? getDaysFromDates(preStartDay, preStartMth, preStartYear, preEndDay, preEndMth, preEndYear);
+
     const statusBadge = declared
-        ? `<span style="color:#2ecc71; font-size:0.85em; margin-left:6px;">✓ ${flag.choiceLabel} — ${preDays} j</span>`
+        ? `<span style="color:#2ecc71; font-size:0.85em; margin-left:6px;">✓ ${flag.choiceLabel} — ${flag.dateRangeLabel ?? preDays + " j"}</span>`
         : `<span style="color:#e67e22; font-size:0.85em; margin-left:6px;">(non déclaré)</span>`;
 
     const id = actor.id;
@@ -384,7 +485,7 @@ function buildActorRow(actor, startUnchecked = false) {
     <div class="tm-controls-${id}" style="display:flex; flex-direction:column; gap:5px; opacity:${startUnchecked ? "0.4" : "1"};">
         ${skillRowHtml(id, preSkillId)}
         ${profRowHtml(id, preMaitrise, preExpertise, preTools)}
-        ${daysAndRollHtml(id, preDays, preDoRoll)}
+        ${dateAndRollHtml(id, preStartDay, preStartMth, preStartYear, preEndDay, preEndMth, preEndYear, preDoRoll)}
         ${previewHtml(id)}
     </div>
 </div>`;
@@ -434,7 +535,7 @@ function openDowntimeDialog() {
             cancel: { icon: '<i class="fas fa-times"></i>', label: "Annuler" }
         },
         default: "apply"
-    }, { width: 540 });
+    }, { width: 560 });
 
     Hooks.once("renderDialog", (app, html) => {
         if (app !== dlg) return;
@@ -467,7 +568,6 @@ function openDowntimeDialog() {
                 });
             }
 
-            // Griser la ligne et décocher
             html.find(`[data-actor-id="${actorId}"].tm-actor-row`).css("opacity", "0.4");
             html.find(`[name="tm-active-${actorId}"]`).prop("checked", false);
             html.find(`.tm-controls-${actorId}`).css("opacity", "0.4");
@@ -496,27 +596,46 @@ async function applyDowntimeGains($html, actors) {
         if (!$html.find(`[name="tm-active-${id}"]`).prop("checked")) continue;
 
         const skillId      = $html.find(`[name="tm-skill-${id}"]`).val();
-        const days         = Math.max(1, parseInt($html.find(`[name="tm-days-${id}"]`).val()) || 1);
         const doRoll       = $html.find(`[name="tm-roll-${id}"]`).prop("checked");
         const hasMaitrise  = $html.find(`[name="tm-maitrise-${id}"]`).prop("checked");
         const hasExpertise = $html.find(`[name="tm-expertise-${id}"]`).prop("checked");
         const hasTools     = $html.find(`[name="tm-tools-${id}"]`).prop("checked");
 
+        const sDay   = Math.max(1, parseInt($html.find(`[name="tm-sday-${id}"]`).val())   || 1);
+        const sMonth = parseInt($html.find(`[name="tm-smonth-${id}"]`).val()) || 0;
+        const sYear  = Math.max(1, parseInt($html.find(`[name="tm-syear-${id}"]`).val())  || 1);
+        const eDay   = Math.max(1, parseInt($html.find(`[name="tm-eday-${id}"]`).val())   || 1);
+        const eMonth = parseInt($html.find(`[name="tm-emonth-${id}"]`).val()) || 0;
+        const eYear  = Math.max(1, parseInt($html.find(`[name="tm-eyear-${id}"]`).val())  || 1);
+        const days   = getDaysFromDates(sDay, sMonth, sYear, eDay, eMonth, eYear);
+
         const activityName = game.i18n.localize(CONFIG.DND5E.skills[skillId]?.label ?? skillId);
         const profStr      = hasTools ? " [Tools]" : hasExpertise ? " [Expertise]" : hasMaitrise ? " [Maîtrise]" : "";
         const dailyRate    = calcDailyRate(actor, skillId, hasMaitrise, hasExpertise, hasTools);
+        const dateLabel    = `${sDay} ${getMonthName(sMonth)} → ${eDay} ${getMonthName(eMonth)}`;
         let total = dailyRate * days, rollResult = null;
 
         if (doRoll && days >= 5) {
-            const roll = await new Roll("1d20").evaluate();
+            // Test de compétence : d20 + mod de caractéristique + bonus de maîtrise/expertise
+            const abilityId  = CONFIG.DND5E.skills[skillId]?.ability ?? "int";
+            const abilityMod = actor.system.abilities[abilityId]?.mod ?? 0;
+            const prof       = actor.system.attributes?.prof ?? 2;
+            const checkMod   = abilityMod + (hasExpertise ? prof * 2 : (hasMaitrise || hasTools) ? prof : 0);
+
+            const roll = await new Roll("1d20 + @mod", { mod: checkMod }).evaluate();
             rollResult = roll.total;
-            const mult = rollResult === 1 ? 0.8 : rollResult >= 20 ? 1.2 : rollResult >= 10 ? 1.1 : 1.0;
-            total = total * mult; // garder le float, on sépare PO/PA ensuite
+            const mult = rollResult <= 1 ? 0.8 : rollResult >= 20 ? 1.2 : rollResult >= 10 ? 1.1 : 1.0;
+            total = total * mult;
+
+            const abilityAbbr = game.i18n.localize(
+                CONFIG.DND5E.abilities[abilityId]?.abbreviation ?? abilityId
+            ).toUpperCase();
             await roll.toMessage({
                 speaker: { alias: `Temps mort — ${actor.name}` },
-                flavor: `Test de d20 — ${activityName} (${days} j)`
+                flavor: `Test de compétence : ${activityName} (${abilityAbbr}) — ${days} j`
             });
         }
+
         // Séparer PO (entier) et PA (décimale × 10, arrondie)
         const totalGP = Math.floor(total);
         const totalSP = Math.round((total - totalGP) * 10);
@@ -533,24 +652,24 @@ async function applyDowntimeGains($html, actors) {
         const owners = getActorOwners(actor);
         if (owners.length > 0) {
             const pctStr = rollResult === null ? ""
-                : rollResult === 1    ? " (d20 : 1 → −20 %)"
-                : rollResult >= 20   ? ` (d20 : ${rollResult} → +20 %)`
-                : rollResult >= 10   ? ` (d20 : ${rollResult} → +10 %)`
-                : ` (d20 : ${rollResult} → ±0 %)`;
+                : rollResult <= 1  ? " (test : ≤1 → −20 %)"
+                : rollResult >= 20 ? ` (test : ${rollResult} → +20 %)`
+                : rollResult >= 10 ? ` (test : ${rollResult} → +10 %)`
+                :                   ` (test : ${rollResult} → ±0 %)`;
             ChatMessage.create({
                 content: `🕰️ Temps mort appliqué pour <strong>${actor.name}</strong> : `
-                       + `${activityName}${profStr}, ${days} j (${dailyRate} po/j)${pctStr} → <strong>${gainStr}</strong>`,
+                       + `${activityName}${profStr}, ${dateLabel} — ${days} j (${dailyRate} po/j)${pctStr} → <strong>${gainStr}</strong>`,
                 whisper: owners.map(u => u.id),
                 speaker: { alias: "WestMarch — Temps morts" }
             });
         }
 
-        let line        = `<strong>${actor.name}</strong> — ${activityName}${profStr} — ${days} j (${dailyRate} po/j)`;
-        let discordLine = `**${actor.name}** — ${activityName}${profStr} — ${days} j (${dailyRate} po/j)`;
+        let line        = `<strong>${actor.name}</strong> — ${activityName}${profStr} — ${dateLabel} (${days} j, ${dailyRate} po/j)`;
+        let discordLine = `**${actor.name}** — ${activityName}${profStr} — ${dateLabel} (${days} j, ${dailyRate} po/j)`;
         if (rollResult !== null) {
-            const pct = rollResult === 1 ? "−20 %" : rollResult >= 20 ? "+20 %" : rollResult >= 10 ? "+10 %" : "±0 %";
-            line        += ` → d20 : ${rollResult} (${pct})`;
-            discordLine += ` → d20 : ${rollResult} (${pct})`;
+            const pct = rollResult <= 1 ? "−20 %" : rollResult >= 20 ? "+20 %" : rollResult >= 10 ? "+10 %" : "±0 %";
+            line        += ` → test : ${rollResult} (${pct})`;
+            discordLine += ` → test : ${rollResult} (${pct})`;
         }
         line        += ` = <strong>${gainStr}</strong>`;
         discordLine += ` = **${gainStr}**`;

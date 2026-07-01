@@ -158,6 +158,16 @@ export function registerSettings() {
         requiresReload: false
     });
 
+    game.settings.register("westmarch", "shopRestockDays", {
+        name: "Réapprovisionnement automatique des boutiques (jours)",
+        hint: "Nombre de jours de calendrier avant qu'un article à 0 en boutique MEJ soit automatiquement remis à 1. Mettre 0 pour désactiver.",
+        scope: "world",
+        config: true,
+        type: Number,
+        default: 7,
+        requiresReload: false
+    });
+
     game.settings.register("westmarch", "downtimeWebhookUrl", {
         name: "URL du Webhook Discord (changement de date)",
         hint: "Quand le GM avance la date dans Simple Calendar, envoie automatiquement un message sur ce webhook Discord avec la nouvelle date (salon joueurs). Laisser vide pour désactiver.",

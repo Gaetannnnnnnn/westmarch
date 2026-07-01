@@ -1,7 +1,7 @@
 ================================================================================
                         WESTMARCH SYSTÈME — MODULE FOUNDRY VTT
                                Auteur : Soruta (Discord: s0ruta)
-                                       Version : 1.4.8
+                                       Version : 1.4.13
                               Compatibilité : Foundry VTT v13
 ================================================================================
 
@@ -34,6 +34,7 @@ westmarch/
 │   ├── journal.js          Menu contextuel sur les liens de scène dans les journaux
 │   ├── caldate.js          Notification Discord lors d'un changement de date (Simple Calendar)
 │   ├── mejshop.js          Correctifs boutiques Monk's Enhanced Journal (groupe + objets cachés)
+│   ├── mejrestock.js       Réapprovisionnement automatique des boutiques MEJ (timer par article)
 │   ├── tm.js               Temps morts : calcul des gains d'argent par personnage
 │   ├── player.js           Liste des joueurs, menu contextuel et gestion des parties
 │   ├── rage.js             Passage en taille Large (2x2) pendant la Rage du Barbare
@@ -439,11 +440,21 @@ FONCTIONNALITÉS
 
 14. NOTIFICATION DISCORD — CHANGEMENT DE DATE (caldate.js)
    ---------------------------------------------------------------
-   Quand le GM avance la date dans Simple Calendar, un message est envoyé
+   Quand le GM avance la date dans le calendrier, un message est envoyé
    automatiquement sur un webhook Discord dédié (paramètre "URL du Webhook
    Discord (changement de date)", salon joueurs) : "📅 La date est maintenant
    le X." Ne s'envoie qu'une fois par changement de jour. URL à configurer
    dans les paramètres du module.
+
+   Le message inclut la saison courante (ex. "17 Blanche Brebis 1496 — Printemps").
+   Quand la date correspond à un événement astronomique ou à un festival, une
+   ligne supplémentaire est ajoutée au message :
+   - 19 Blanche Brebis → 🌸 Équinoxe de printemps
+   - 1 Moisson Dorée   → 🌿 Greengrass
+   - 20 Douce Vie      → ☀️ Solstice d'été
+   - 1 Sombrebois      → 🌞 Midsummer
+   - 1 Grise Lumière   → 🛡️ Shieldmeet
+   - 1 Findefroid      → ❄️ Midwinter
 
 15. TEMPS MORTS — GAINS D'ARGENT (tm.js)
    -------------------------------------------
@@ -457,8 +468,9 @@ FONCTIONNALITÉS
      ou Tools (+4 po/j) — les deux groupes sont mutuellement exclusifs
      (cocher Tools grise Maîtrise/Expertise, et inversement) ; pré-remplies
      automatiquement depuis la fiche du personnage
-   - nombre de jours (valeur par défaut : 10)
-   - test de d20 optionnel (grisé et non coché automatiquement si < 5 jours)
+   - dates de début et de fin (jour, mois, année — le nombre de jours est
+     calculé et affiché automatiquement)
+   - test de compétence optionnel (grisé automatiquement si < 5 jours)
    Une prévisualisation du gain total se met à jour en temps réel.
    La déclaration est stockée dans un flag sur l'acteur.
 
@@ -470,8 +482,10 @@ FONCTIONNALITÉS
 
    Formule : (1 + modif_carac + 2 si maîtrise + 2 si expertise OU +4 tools)
    × jours, puis modificateur d20 optionnel sur le total.
-   Test de d20 (≥ 5 jours) : −20 % sur 1, rien sur 2-9, +10 % sur 10-19,
-   +20 % sur 20+.
+   Test de compétence optionnel (≥ 5 jours) : le joueur coche la case, le MJ
+   lance un d20 + modificateur de caractéristique + bonus de maîtrise/expertise.
+   Le résultat total détermine le modificateur : ≤1 → −20 %, 2-9 → ±0 %,
+   10-19 → +10 %, ≥20 → +20 %.
 
    À l'application :
    - Les PO sont créditées directement sur la fiche de l'acteur
@@ -572,7 +586,18 @@ NOTES TECHNIQUES
                         WESTMARCH SYSTÈME — MISES À JOUR
 ================================================================================
 
-v1.4.8 | 2026-07-01
-   caldate.js — Correction critique : Simple Calendar utilise le hook Foundry natif
-                "updateWorldTime" et non "simple-calendar.dateTimeChange" sur cette
-                installation — le webhook date ne se déclenchait jamais
+v1.4.13 | 2026-07-01
+   mejrestock.js — Nouveau : réapprovisionnement automatique des boutiques MEJ.
+                   Quand un article tombe à 0, un timer de N jours (configurable
+                   dans les paramètres du module, défaut 7) se lance. À expiration,
+                   l'article repasse à 1 automatiquement. Le décompte restant
+                   s'affiche en petit et grisé à côté de la quantité dans la vue
+                   boutique. Stocker 0 dans le paramètre désactive la feature.
+
+v1.4.12 | 2026-07-01
+   tm.js      — Le champ "Jours" est remplacé par deux champs de date (début/fin)
+                avec un dropdown de mois et un affichage automatique du nombre de
+                jours calculé. Le test optionnel est maintenant un vrai test de
+                compétence (d20 + mod de caractéristique + bonus de maîtrise) ;
+                les seuils s'appliquent au total : ≤1 → −20 %, 2-9 → ±0 %,
+                10-19 → +10 %, ≥20 → +20 %.
