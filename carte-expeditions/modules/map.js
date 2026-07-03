@@ -28,22 +28,6 @@ export function MapHooks() {
             .filter(a => a.type === "group")
             .forEach(syncGroupVisionOwnership);
         resyncAllCharacterFog();
-        await ensureVisionAnchor();
-    });
-
-    // ---- Si l'ancre de vision est supprimée par erreur (purge de scène,
-    // suppression manuelle...), on la recrée : sans elle, dès qu'un joueur
-    // n'a plus aucun token possédé avec vision active sur la scène, Foundry
-    // lui montre TOUTE la carte sans restriction (comportement natif,
-    // documenté : "You do not own any Tokens with vision on this scene"). ----
-    Hooks.on("deleteToken", (tokenDoc) => {
-        if (!game.user.isGM) return;
-        if (!game.settings.get("carte-expeditions", "enableExpeditionMap")) return;
-        const sceneId = game.settings.get("carte-expeditions", "expeditionMapSceneId");
-        if (!sceneId || tokenDoc.parent?.id !== sceneId) return;
-        if (tokenDoc.getFlag("carte-expeditions", "isVisionAnchor")) {
-            ensureVisionAnchor();
-        }
     });
 
     Hooks.on("updateUser", (user, changes, options, userId) => {
@@ -72,51 +56,6 @@ function refreshFogIfMine(fogDoc) {
     canvas.perception.update({ refreshLighting: true, refreshVision: true }, true);
 }
 
-// ============================================================
-// Ancre de vision : un token caché, à portée de vision nulle, présent
-// en permanence sur la scène des expéditions et possédé (Owner) par
-// TOUS les joueurs par défaut. Son seul rôle est d'éviter que Foundry
-// ne considère un joueur comme "ne possédant aucun token avec vision
-// sur cette scène" — cas dans lequel il affiche toute la carte sans
-// restriction (token de Groupe supprimé, joueur retiré des Members,
-// etc.). Comme sa portée est 0, il ne révèle jamais rien par
-// lui-même : il sert uniquement à garder la restriction de vision
-// active. Ne pas supprimer manuellement ce token sur la scène.
-// ============================================================
-async function ensureVisionAnchor() {
-    if (!game.user.isGM) return;
-    if (!game.settings.get("carte-expeditions", "enableExpeditionMap")) return;
-
-    const sceneId = game.settings.get("carte-expeditions", "expeditionMapSceneId");
-    if (!sceneId) return;
-    const scene = game.scenes.get(sceneId);
-    if (!scene) return;
-
-    const existing = scene.tokens.find(t => t.getFlag("carte-expeditions", "isVisionAnchor"));
-    if (existing) return;
-
-    let anchorActor = game.actors.find(a => a.getFlag("carte-expeditions", "isVisionAnchor"));
-    if (!anchorActor) {
-        anchorActor = await Actor.create({
-            name: "(Ancre de vision — carte-expéditions, ne pas supprimer)",
-            type: "character",
-            ownership: { default: CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER },
-            flags: { "carte-expeditions": { isVisionAnchor: true } }
-        });
-    }
-
-    await scene.createEmbeddedDocuments("Token", [{
-        name: "Ancre de vision (ne pas supprimer)",
-        actorId: anchorActor.id,
-        x: 0,
-        y: 0,
-        alpha: 0,
-        hidden: false,
-        sight: { enabled: true, range: 0 },
-        ownership: { default: CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER },
-        flags: { "carte-expeditions": { isVisionAnchor: true } }
-    }]);
-}
 
 function isActorOnExpeditionScene(actor) {
     const sceneId = game.settings.get("carte-expeditions", "expeditionMapSceneId");
@@ -144,6 +83,15 @@ async function syncGroupVisionOwnership(actor) {
 
     const newOwnership = foundry.utils.deepClone(actor.ownership);
     let changed = false;
+
+    // Force default à NONE : si default reste à Observer (2, valeur du template),
+    // tous les joueurs voient la fog du Groupe même sans être Members — car
+    // Observer donne aussi la vision dans Foundry v13. NONE garantit que seuls
+    // les Members explicitement en OWNER ont accès.
+    if (newOwnership.default !== CONST.DOCUMENT_OWNERSHIP_LEVELS.NONE) {
+        newOwnership.default = CONST.DOCUMENT_OWNERSHIP_LEVELS.NONE;
+        changed = true;
+    }
 
     // Retire l'Owner de TOUT utilisateur non-GM qui ne devrait plus l'avoir —
     // pas seulement ceux que ce module a lui-même accordés (flag "autoOwners").

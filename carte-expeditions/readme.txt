@@ -1,7 +1,7 @@
 ================================================================================
                    ASHARA - MAP OUVERT SYSTÈMES — MODULE FOUNDRY VTT
                                Auteur : Soruta (Discord: s0ruta)
-                                       Version : 0.1.4
+                                       Version : 0.1.5
                               Compatibilité : Foundry VTT v13
 ================================================================================
 
@@ -34,7 +34,7 @@ carte-expeditions/
 └── modules/
     ├── index.js             Point d'entrée — initialise les réglages et les hooks
     ├── map.js                Cœur du module : synchro Owner, exclusivité entre
-    │                         Groupes, fog par personnage/groupe, ancre de vision
+    │                         Groupes, fog par personnage/groupe
     └── map-settings.js       Déclare les réglages et le bandeau d'info des paramètres
 
 Pour l'installer, le dossier `modules/` doit être renommé en `carte-expeditions`
@@ -55,7 +55,6 @@ map.js
    - Synchro de la permission Owner sur les acteurs Groupe (vision/fog)
    - Exclusivité entre Groupes (un personnage = un seul Groupe à la fois)
    - Fog par personnage ET par Groupe actuel (isolation par expédition)
-   - Ancre de vision (évite que Foundry révèle toute la carte)
    - Rafraîchissement live du fog côté client concerné
 
 map-settings.js
@@ -106,27 +105,14 @@ FONCTIONNALITÉS
    changement de personnage assigné ET à chaque modification des Members
    d'un Groupe sur la scène configurée.
 
-4. ANCRE DE VISION — ÉVITE LA RÉVÉLATION TOTALE DE LA CARTE (map.js)
-   -----------------------------------------------------------------------
-   Comportement natif Foundry : si un joueur ne possède (Owner) aucun token
-   avec vision active sur la scène, Foundry désactive toute restriction de
-   vision pour lui et affiche TOUTE la carte sans filtre (autres tokens, et
-   leurs auras de vision/lumière, compris) — ce qui arrive dès qu'un token
-   de Groupe est supprimé ou qu'un joueur en est retiré sans rejoindre un
-   autre Groupe. Le module crée donc sur la scène configurée un token
-   permanent, invisible (alpha 0) et à portée de vision nulle, possédé en
-   Owner par tous les joueurs par défaut : il ne révèle jamais rien par
-   lui-même, mais sa seule présence empêche ce comportement de bascule.
-   Recréé automatiquement s'il est supprimé par erreur.
-
-5. RAFRAÎCHISSEMENT LIVE DU FOG (map.js)
+4. RAFRAÎCHISSEMENT LIVE DU FOG (map.js)
    --------------------------------------------
    Quand le document FogExploration d'un joueur est créé/modifié/supprimé
-   (swap de fog par le GM, ancre de vision...), le client concerné recharge
-   immédiatement sa texture de fog et rafraîchit sa vision, sans nécessiter
-   de rechargement manuel de la page.
+   (swap de fog par le GM...), le client concerné recharge immédiatement sa
+   texture de fog et rafraîchit sa vision, sans nécessiter de rechargement
+   manuel de la page.
 
-6. RÉGLAGES ET BANDEAU D'INFO (map-settings.js)
+5. RÉGLAGES ET BANDEAU D'INFO (map-settings.js)
    ----------------------------------------------------
    - "Carte des expéditions" (enableExpeditionMap) : active/désactive tout
      le module.
@@ -134,8 +120,7 @@ FONCTIONNALITÉS
      pour choisir la scène concernée (peuplé dynamiquement au rendu, car la
      liste des scènes n'est pas encore chargée au moment de l'enregistrement
      du réglage). C'est cette scène qui sert à la fois au filtre de synchro
-     Owner, à l'exclusivité entre Groupes, à la fog par personnage/groupe et
-     à l'ancre de vision.
+     Owner, à l'exclusivité entre Groupes et à la fog par personnage/groupe.
    Un bandeau d'info (version, description, auteur, mention "Module
    propriétaire Ashara") est affiché en haut de la page de paramètres.
 
@@ -201,7 +186,23 @@ NOTES TECHNIQUES
             ASHARA - MAP OUVERT SYSTÈMES — MISES À JOUR
 ================================================================================
 
-v0.1.3 | 2026-06-28
+v0.1.5 | 2026-07-03
+correctif
+- suppression de l'ancre de vision : créait des acteurs PJ en boucle sur le
+  serveur lorsque plusieurs GM étaient connectés simultanément (race condition
+  au démarrage) ; le comportement natif Foundry "carte entière révélée" est
+  désormais évité en forçant la permission default des acteurs Groupe à NONE
+  plutôt qu'en ajoutant un token fantôme
+- synchro Owner : le nettoyage s'applique désormais à TOUT Owner non-GM
+  superflu sur un acteur Groupe, pas seulement à ceux accordés par le module
+  — un Owner accordé manuellement sur la fiche ou hérité du template n'était
+  jamais retiré au retrait d'un joueur des Members
+- synchro Owner : la permission default des acteurs Groupe est forcée à NONE
+  (0) lors de chaque synchro — en Foundry v13, Observer (2, valeur par défaut
+  du template) donne également accès à la vision/fog, ce qui faisait voir la
+  fog de tous les Groupes à tous les joueurs indépendamment de leur membership
+
+v0.1.4 | 2026-06-28
 nouveauté
 - ajout de l'exclusivité entre Groupes (map.js) : un personnage ajouté aux
   Members d'un Groupe est automatiquement retiré des Members de tous les
@@ -216,6 +217,7 @@ nouveauté
   carte (autres tokens et leurs auras compris) quand un joueur ne possède
   plus aucun token avec vision sur la scène (token de Groupe supprimé)
 
+v0.1.3
 correctif
 - la fog ne se rafraîchissait pas automatiquement sur le client du joueur
   concerné après un swap de personnage (le contrôle se faisait côté GM,
