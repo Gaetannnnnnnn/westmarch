@@ -35,8 +35,29 @@ function getSecondsPerDay() {
     }
 }
 
-function getRestockDays() {
-    return game.settings.get("westmarch", "shopRestockDays") ?? 7;
+const _raritySettingKey = {
+    "common":    "shopRestockDaysCommon",
+    "uncommon":  "shopRestockDaysUncommon",
+    "rare":      "shopRestockDaysRare",
+    "veryrare":  "shopRestockDaysVeryRare",
+    "legendary": "shopRestockDaysLegendary",
+};
+
+function getRestockDays(rarity = "") {
+    const globalDefault = game.settings.get("westmarch", "shopRestockDays") ?? 7;
+    if (globalDefault <= 0) return 0; // feature désactivée globalement
+    const norm = String(rarity).toLowerCase().replace(/[\s_-]/g, "");
+    const key  = _raritySettingKey[norm];
+    if (key) {
+        const val = game.settings.get("westmarch", key) ?? 0;
+        if (val > 0) return val;
+    }
+    return globalDefault;
+}
+
+function getItemRarity(item) {
+    // MEJ copie la rareté soit directement sur l'item, soit dans system.rarity
+    return item?.rarity ?? item?.system?.rarity ?? "";
 }
 
 // ============================================================
@@ -57,8 +78,8 @@ export function MejRestockHooks() {
 
         if (page.flags?.["monks-enhanced-journal"]?.type !== "shop") return;
 
-        const days = getRestockDays();
-        if (days <= 0) return;
+        // Vérification globale : si le délai par défaut est 0, feature désactivée
+        if ((game.settings.get("westmarch", "shopRestockDays") ?? 7) <= 0) return;
 
         const items   = page.flags?.["monks-enhanced-journal"]?.items ?? {};
         const timers  = foundry.utils.deepClone(page.flags?.["westmarch"]?.restock        ?? {});
@@ -71,9 +92,11 @@ export function MejRestockHooks() {
 
             if (qty === 0 && !(itemId in timers) && enabled[itemId]) {
                 // Démarrer le timer seulement si la case est cochée
-                timers[itemId] = game.time.worldTime + days * spd;
+                const itemDays = getRestockDays(getItemRarity(item));
+                if (itemDays <= 0) continue; // rareté désactivée
+                timers[itemId] = game.time.worldTime + itemDays * spd;
                 changed = true;
-                console.log(`westmarch | MejRestock : timer lancé pour "${item.name}" (${days} j)`);
+                console.log(`westmarch | MejRestock : timer lancé pour "${item.name}" (${itemDays} j)`);
             } else if (qty > 0 && (itemId in timers)) {
                 // Remis en stock manuellement → annuler le timer
                 delete timers[itemId];
@@ -237,28 +260,26 @@ export function MejRestockHooks() {
                     btn.title       = newEnabled[itemId] ? "Réapprovisionnement auto : activé" : "Réapprovisionnement auto : désactivé";
 
                     if (!newEnabled[itemId]) {
-                        // Désactivé → annuler le timer s'il existe
-                        const newTimers = foundry.utils.deepClone(freshPg.getFlag("westmarch", "restock") ?? {});
-                        if (itemId in newTimers) {
-                            delete newTimers[itemId];
-                            updates["flags.westmarch.restock"] = newTimers;
-                            row.querySelector(".wm-restock-countdown")?.remove();
-                        }
+                        // Désactivé → supprimer le timer via clé explicite (évite le merge Foundry)
+                        updates[`flags.westmarch.restock.${itemId}`] = null;
+                        row.querySelector(".wm-restock-countdown")?.remove();
                     } else {
-                        // Activé → si l'article est déjà à 0 et sans timer, lancer immédiatement
+                        // Activé → si l'article est à 0, (re)lancer le timer (overwrite si existant)
                         const mejItems = freshPg.getFlag("monks-enhanced-journal", "items") ?? {};
-                        const qty      = mejItems[itemId]?.flags?.["monks-enhanced-journal"]?.quantity ?? 1;
+                        const itemData = mejItems[itemId];
+                        const qty      = itemData?.flags?.["monks-enhanced-journal"]?.quantity ?? 1;
                         if (qty === 0) {
-                            const newTimers = foundry.utils.deepClone(freshPg.getFlag("westmarch", "restock") ?? {});
-                            if (!(itemId in newTimers)) {
-                                const days = getRestockDays();
-                                newTimers[itemId] = game.time.worldTime + days * getSecondsPerDay();
-                                updates["flags.westmarch.restock"] = newTimers;
-                                if (qtyDiv && !row.querySelector(".wm-restock-countdown")) {
+                            const days = getRestockDays(getItemRarity(itemData));
+                            updates[`flags.westmarch.restock.${itemId}`] = game.time.worldTime + days * getSecondsPerDay();
+                            if (qtyDiv) {
+                                const existing = row.querySelector(".wm-restock-countdown");
+                                if (existing) {
+                                    existing.textContent = `dans ${days} j`;
+                                } else {
                                     const s = document.createElement("span");
-                                    s.className    = "wm-restock-countdown";
+                                    s.className     = "wm-restock-countdown";
                                     s.style.cssText = "color:#888; font-size:0.7em; font-style:italic; display:block; line-height:1.2; white-space:nowrap; text-align:center;";
-                                    s.textContent  = `dans ${days} j`;
+                                    s.textContent   = `dans ${days} j`;
                                     qtyDiv.appendChild(s);
                                 }
                             }

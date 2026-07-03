@@ -1,7 +1,7 @@
 ================================================================================
                         WESTMARCH SYSTÈME — MODULE FOUNDRY VTT
                                Auteur : Soruta (Discord: s0ruta)
-                                       Version : 1.4.16
+                                       Version : 1.5.0
                               Compatibilité : Foundry VTT v13
 ================================================================================
 
@@ -139,16 +139,21 @@ caldate.js
 
 mejrestock.js
    Réapprovisionnement automatique des articles de boutique MEJ. Chaque
-   article dispose d'une case "auto" (injectée dans la colonne Qté) :
-   - Case cochée : dès que l'article tombe à 0, un timer de N jours
-     démarre (N = paramètre "Réapprovisionnement automatique des
-     boutiques", défaut 7 jours). À expiration, la quantité repasse
-     à 1 automatiquement.
-   - Case cochée sur un article déjà à 0 : le timer démarre immédiatement.
-   - Case décochée : annule le timer en cours s'il existe.
+   article dispose d'un bouton toggle 🔄 dans la zone des contrôles
+   (à côté des boutons masquer/éditer/supprimer) :
+   - Bouton actif (teal) : dès que l'article tombe à 0, un timer de N
+     jours démarre. À expiration, la quantité repasse à 1 automatiquement.
+   - Activer sur un article déjà à 0 : le timer démarre immédiatement.
+   - Désactiver : annule le timer en cours s'il existe.
+   - Réactiver après désactivation : le timer repart depuis zéro.
    - Quand un timer est actif, un décompte "dans X j" s'affiche en
-     petit et grisé sous la case, dans la colonne Qté.
-   Stocker 0 dans le paramètre désactive entièrement la feature.
+     petit et grisé sous la quantité, dans la colonne Qté.
+   Le délai N est configurable par rareté (Commun, Peu commun, Rare,
+   Très rare, Légendaire) dans les paramètres du module ; si une rareté
+   vaut 0, c'est le délai par défaut (paramètre "Délai par défaut") qui
+   s'applique. Mettre 0 dans le délai par défaut désactive la feature.
+   Stockage : flags westmarch "restock" {itemId: expiry} et
+   "restockEnabled" {itemId: bool} sur la page MEJ concernée.
 
 mejshop.js
    Deux correctifs pour les boutiques de Monk's Enhanced Journal (module
@@ -598,6 +603,24 @@ NOTES TECHNIQUES
 ================================================================================
                         WESTMARCH SYSTÈME — MISES À JOUR
 ================================================================================
+
+v1.5.0 | 2026-07-03
+   mejrestock.js — Bouton toggle 🔄 par article dans la zone des contrôles
+                   (icône fa-rotate, teal si actif / gris si inactif),
+                   remplace l'ancienne case à cocher dans la colonne Qté.
+                 — Délai par rareté : 5 nouveaux paramètres module
+                   (Commun, Peu commun, Rare, Très rare, Légendaire) ;
+                   0 = utilise le délai par défaut.
+                 — Correction : après désactivation puis réactivation du
+                   bouton, le timer ne repartait pas (Foundry mergait les
+                   flags sans supprimer l'ancienne clé ; fix : suppression
+                   explicite par clé pointée, et overwrite systématique
+                   du timer à l'activation).
+   mejshop.js    — Correction FIX 2 déjà en v1.4.15 : confirmé que
+                   application.options.pageId est bien utilisé.
+   settings.js   — 5 nouveaux settings shopRestockDaysCommon/Uncommon/
+                   Rare/VeryRare/Legendary (scope world, config true,
+                   default 0, requiresReload false).
 
 v1.4.15 | 2026-07-03
    mejrestock.js — Case à cocher "auto" par article dans la colonne Qté de la

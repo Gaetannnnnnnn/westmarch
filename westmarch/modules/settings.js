@@ -159,12 +159,62 @@ export function registerSettings() {
     });
 
     game.settings.register("westmarch", "shopRestockDays", {
-        name: "Réapprovisionnement automatique des boutiques (jours)",
-        hint: "Nombre de jours de calendrier avant qu'un article à 0 en boutique MEJ soit automatiquement remis à 1. Mettre 0 pour désactiver.",
+        name: "Réapprovisionnement boutiques — Délai par défaut (jours)",
+        hint: "Nombre de jours de calendrier par défaut avant qu'un article à 0 soit remis à 1. Utilisé si aucune valeur par rareté n'est définie. Mettre 0 pour désactiver la fonctionnalité.",
         scope: "world",
         config: true,
         type: Number,
         default: 7,
+        requiresReload: false
+    });
+
+    game.settings.register("westmarch", "shopRestockDaysCommon", {
+        name: "Réapprovisionnement boutiques — Commun (jours)",
+        hint: "Délai pour les articles de rareté Commun. 0 = utilise le délai par défaut.",
+        scope: "world",
+        config: true,
+        type: Number,
+        default: 0,
+        requiresReload: false
+    });
+
+    game.settings.register("westmarch", "shopRestockDaysUncommon", {
+        name: "Réapprovisionnement boutiques — Peu commun (jours)",
+        hint: "Délai pour les articles de rareté Peu commun. 0 = utilise le délai par défaut.",
+        scope: "world",
+        config: true,
+        type: Number,
+        default: 0,
+        requiresReload: false
+    });
+
+    game.settings.register("westmarch", "shopRestockDaysRare", {
+        name: "Réapprovisionnement boutiques — Rare (jours)",
+        hint: "Délai pour les articles de rareté Rare. 0 = utilise le délai par défaut.",
+        scope: "world",
+        config: true,
+        type: Number,
+        default: 0,
+        requiresReload: false
+    });
+
+    game.settings.register("westmarch", "shopRestockDaysVeryRare", {
+        name: "Réapprovisionnement boutiques — Très rare (jours)",
+        hint: "Délai pour les articles de rareté Très rare. 0 = utilise le délai par défaut.",
+        scope: "world",
+        config: true,
+        type: Number,
+        default: 0,
+        requiresReload: false
+    });
+
+    game.settings.register("westmarch", "shopRestockDaysLegendary", {
+        name: "Réapprovisionnement boutiques — Légendaire (jours)",
+        hint: "Délai pour les articles de rareté Légendaire. 0 = utilise le délai par défaut.",
+        scope: "world",
+        config: true,
+        type: Number,
+        default: 0,
         requiresReload: false
     });
 
