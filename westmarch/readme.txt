@@ -1,7 +1,7 @@
 ================================================================================
                         WESTMARCH SYSTÈME — MODULE FOUNDRY VTT
                                Auteur : Soruta (Discord: s0ruta)
-                                       Version : 1.4.14
+                                       Version : 1.4.15
                               Compatibilité : Foundry VTT v13
 ================================================================================
 
@@ -136,6 +136,19 @@ caldate.js
    nouvelle date. Ne se déclenche qu'en cas de changement de jour (pas à
    chaque seconde ou minute). Un seul message est envoyé même si plusieurs
    GM sont connectés (le GM actif est élu pour l'envoi).
+
+mejrestock.js
+   Réapprovisionnement automatique des articles de boutique MEJ. Chaque
+   article dispose d'une case "auto" (injectée dans la colonne Qté) :
+   - Case cochée : dès que l'article tombe à 0, un timer de N jours
+     démarre (N = paramètre "Réapprovisionnement automatique des
+     boutiques", défaut 7 jours). À expiration, la quantité repasse
+     à 1 automatiquement.
+   - Case cochée sur un article déjà à 0 : le timer démarre immédiatement.
+   - Case décochée : annule le timer en cours s'il existe.
+   - Quand un timer est actif, un décompte "dans X j" s'affiche en
+     petit et grisé sous la case, dans la colonne Qté.
+   Stocker 0 dans le paramètre désactive entièrement la feature.
 
 mejshop.js
    Deux correctifs pour les boutiques de Monk's Enhanced Journal (module
@@ -585,6 +598,17 @@ NOTES TECHNIQUES
 ================================================================================
                         WESTMARCH SYSTÈME — MISES À JOUR
 ================================================================================
+
+v1.4.15 | 2026-07-03
+   mejrestock.js — Case à cocher "auto" par article dans la colonne Qté de la
+                   boutique MEJ. Le timer ne démarre que si la case est cochée.
+                   Cocher sur un article déjà à 0 lance le timer immédiatement ;
+                   décocher annule le timer en cours. Correction du bug d'affichage
+                   du décompte (application.document = undefined dans MEJ, remplacé
+                   par application.options.pageId + MutationObserver pour l'injection
+                   après le rendu asynchrone des items).
+   mejshop.js    — Correction FIX 2 (objets cachés) : même correctif
+                   application.options.pageId au lieu de application.document.
 
 v1.4.13 | 2026-07-01
    mejrestock.js — Nouveau : réapprovisionnement automatique des boutiques MEJ.

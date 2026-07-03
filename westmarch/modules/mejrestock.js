@@ -1,16 +1,20 @@
 // ============================================================
 // mejrestock.js — Réapprovisionnement automatique des boutiques MEJ
 //
-// Quand un article tombe à 0 en boutique (Monk's Enhanced Journal),
-// un timer est lancé (en jours de calendrier). Au bout du délai,
-// l'article repasse automatiquement à 1.
-// Le décompte restant est affiché en petit et en grisé à côté
-// de la quantité dans la vue boutique.
+// Quand un article tombe à 0 en boutique (Monk's Enhanced Journal)
+// ET que la case "auto" est cochée par le GM, un timer est lancé
+// (en jours de calendrier). Au bout du délai, l'article repasse
+// automatiquement à 1.
+//
+// Le décompte restant est affiché en petit et en grisé sous la
+// quantité dans la vue boutique, avec une case à cocher par article.
 //
 // Paramètre : "Réapprovisionnement automatique des boutiques (jours)"
 //   → 0 = fonctionnalité désactivée
 //
-// Stockage : page.flags["westmarch"]["restock"] = { itemId: worldTime }
+// Stockage :
+//   page.flags["westmarch"]["restock"]        = { itemId: worldTimeExpiry }
+//   page.flags["westmarch"]["restockEnabled"] = { itemId: true/false }
 // ============================================================
 
 // IDs des pages en cours de mise à jour par westmarch — évite la récursion
@@ -41,6 +45,7 @@ export function MejRestockHooks() {
     // ----------------------------------------------------------
     // 1. Détecter le passage à 0 lors d'une mise à jour de page
     //    (déclenché quand MEJ enregistre un achat)
+    //    Le timer ne démarre QUE si la case "auto" est cochée.
     // ----------------------------------------------------------
     Hooks.on("updateJournalEntryPage", async (page, change, options, userId) => {
         if (!game.user.isGM) return;
@@ -56,15 +61,16 @@ export function MejRestockHooks() {
         if (days <= 0) return;
 
         const items   = page.flags?.["monks-enhanced-journal"]?.items ?? {};
-        const timers  = foundry.utils.deepClone(page.flags?.["westmarch"]?.restock ?? {});
+        const timers  = foundry.utils.deepClone(page.flags?.["westmarch"]?.restock        ?? {});
+        const enabled = page.flags?.["westmarch"]?.restockEnabled ?? {};
         const spd     = getSecondsPerDay();
         let   changed = false;
 
         for (const [itemId, item] of Object.entries(items)) {
             const qty = item.flags?.["monks-enhanced-journal"]?.quantity ?? 1;
 
-            if (qty === 0 && !(itemId in timers)) {
-                // Démarrer le timer
+            if (qty === 0 && !(itemId in timers) && enabled[itemId]) {
+                // Démarrer le timer seulement si la case est cochée
                 timers[itemId] = game.time.worldTime + days * spd;
                 changed = true;
                 console.log(`westmarch | MejRestock : timer lancé pour "${item.name}" (${days} j)`);
@@ -132,52 +138,151 @@ export function MejRestockHooks() {
     });
 
     // ----------------------------------------------------------
-    // 3. Afficher le décompte restant dans la vue boutique MEJ
-    //    Petit texte grisé à côté du chiffre de quantité.
+    // 3. Afficher la case "auto" et le décompte dans la vue boutique.
+    //
+    //    Problème de timing MEJ : au moment où renderApplicationV2
+    //    fire, l'items-list n'est pas encore dans l'élément (MEJ
+    //    la rend en asynchrone). On pose un MutationObserver sur
+    //    l'élément app entier et on injecte dès que les items
+    //    apparaissent (debounce 50 ms). Filet à 1,5 s en backup.
     // ----------------------------------------------------------
     Hooks.on("renderApplicationV2", (application, element) => {
+        if (getRestockDays() <= 0) return;
+
         // MEJ stocke l'ID de la page courante dans application.options.pageId
         // (application.document est undefined dans EnhancedJournal)
         const pageId = application.options?.pageId;
         if (!pageId) return;
 
-        let shopPage = null;
+        // Vérifier que c'est bien une page de type shop
+        let shopType = false;
         for (const journal of game.journal.contents) {
             const p = journal.pages.get(pageId);
-            if (p) { shopPage = p; break; }
+            if (p) {
+                shopType = foundry.utils.getProperty(p, "flags.monks-enhanced-journal.type") === "shop";
+                break;
+            }
         }
-        if (!shopPage) return;
+        if (!shopType) return;
 
-        const mejType = foundry.utils.getProperty(shopPage, "flags.monks-enhanced-journal.type");
-        if (mejType !== "shop") return;
+        // ----------------------------------------------------------
+        // Injection : case à cocher "auto" + décompte si timer actif
+        // Relit les flags à chaque appel pour avoir des données fraîches.
+        // ----------------------------------------------------------
+        function injectRestockUI() {
+            let pg = null;
+            for (const journal of game.journal.contents) {
+                const p = journal.pages.get(pageId);
+                if (p) { pg = p; break; }
+            }
+            if (!pg) return;
 
-        const timers = shopPage.getFlag("westmarch", "restock") ?? {};
-        if (Object.keys(timers).length === 0) return;
+            const currentTimers  = pg.getFlag("westmarch", "restock")        ?? {};
+            const currentEnabled = pg.getFlag("westmarch", "restockEnabled")  ?? {};
+            const spd = getSecondsPerDay();
+            const now = game.time.worldTime;
 
-        const spd = getSecondsPerDay();
-        const now = game.time.worldTime;
+            element.querySelectorAll(".items-list .item[data-id]").forEach(row => {
+                const itemId = row.dataset.id;
+                if (!itemId) return;
+                if (row.querySelector(".wm-restock-toggle")) return; // déjà injecté
 
-        // Sélecteur précis basé sur la structure DOM réelle de MEJ
-        element.querySelectorAll(".items-list .item[data-id]").forEach(row => {
-            const itemId    = row.dataset.id;
-            const restockAt = timers[itemId];
-            if (restockAt === undefined) return;
+                const qtyDiv = row.querySelector(".item-detail.item-quantity");
+                if (!qtyDiv) return;
 
-            // Éviter les doublons si le hook se déclenche plusieurs fois
-            if (row.querySelector(".wm-restock-countdown")) return;
+                // ---- Case à cocher "auto" ----
+                const wrapper = document.createElement("div");
+                wrapper.style.cssText = "display:flex; align-items:center; gap:2px; margin-top:2px;";
 
-            const daysLeft = Math.ceil((restockAt - now) / spd);
-            const label    = daysLeft <= 0 ? "réapro imminent" : `réapro dans ${daysLeft} j`;
+                const cb = document.createElement("input");
+                cb.type      = "checkbox";
+                cb.className = "wm-restock-toggle";
+                cb.checked   = !!currentEnabled[itemId];
+                cb.title     = "Réapprovisionnement automatique";
+                cb.style.cssText = "width:11px; height:11px; cursor:pointer; flex-shrink:0;";
 
-            const span = document.createElement("span");
-            span.className = "wm-restock-countdown";
-            span.style.cssText = "color:#888; font-size:0.75em; white-space:nowrap; font-style:italic; display:block; text-align:center; line-height:1.2;";
-            span.textContent = label;
+                const cbText = document.createElement("span");
+                cbText.style.cssText = "color:#888; font-size:0.7em; font-style:italic; line-height:1; user-select:none;";
+                cbText.textContent   = "auto";
 
-            // La quantité est dans .item-detail.item-quantity
-            const qtyDiv = row.querySelector(".item-detail.item-quantity");
-            if (qtyDiv) qtyDiv.appendChild(span);
-            else row.appendChild(span);
+                wrapper.appendChild(cb);
+                wrapper.appendChild(cbText);
+                qtyDiv.appendChild(wrapper);
+
+                // ---- Décompte si timer actif ----
+                const restockAt = currentTimers[itemId];
+                if (restockAt !== undefined) {
+                    const daysLeft = Math.ceil((restockAt - now) / spd);
+                    const span     = document.createElement("span");
+                    span.className = "wm-restock-countdown";
+                    span.style.cssText = "color:#888; font-size:0.7em; font-style:italic; display:block; line-height:1.2; white-space:nowrap;";
+                    span.textContent   = daysLeft <= 0 ? "réapro imminent" : `dans ${daysLeft} j`;
+                    qtyDiv.appendChild(span);
+                }
+
+                // ---- Gestion du clic ----
+                cb.addEventListener("change", async () => {
+                    let freshPg = null;
+                    for (const j of game.journal.contents) { const p = j.pages.get(pageId); if (p) { freshPg = p; break; } }
+                    if (!freshPg) return;
+
+                    const newEnabled = foundry.utils.deepClone(freshPg.getFlag("westmarch", "restockEnabled") ?? {});
+                    newEnabled[itemId] = cb.checked;
+                    const updates = { "flags.westmarch.restockEnabled": newEnabled };
+
+                    if (!cb.checked) {
+                        // Décoché → annuler le timer s'il existe
+                        const newTimers = foundry.utils.deepClone(freshPg.getFlag("westmarch", "restock") ?? {});
+                        if (itemId in newTimers) {
+                            delete newTimers[itemId];
+                            updates["flags.westmarch.restock"] = newTimers;
+                            row.querySelector(".wm-restock-countdown")?.remove();
+                        }
+                    } else {
+                        // Coché → si l'article est déjà à 0 et sans timer, lancer immédiatement
+                        const mejItems = freshPg.getFlag("monks-enhanced-journal", "items") ?? {};
+                        const qty      = mejItems[itemId]?.flags?.["monks-enhanced-journal"]?.quantity ?? 1;
+                        if (qty === 0) {
+                            const newTimers = foundry.utils.deepClone(freshPg.getFlag("westmarch", "restock") ?? {});
+                            if (!(itemId in newTimers)) {
+                                const days = getRestockDays();
+                                newTimers[itemId] = game.time.worldTime + days * getSecondsPerDay();
+                                updates["flags.westmarch.restock"] = newTimers;
+                                // Afficher le décompte immédiatement dans le DOM
+                                if (!row.querySelector(".wm-restock-countdown")) {
+                                    const s = document.createElement("span");
+                                    s.className    = "wm-restock-countdown";
+                                    s.style.cssText = "color:#888; font-size:0.7em; font-style:italic; display:block; line-height:1.2; white-space:nowrap;";
+                                    s.textContent  = `dans ${days} j`;
+                                    qtyDiv.appendChild(s);
+                                }
+                            }
+                        }
+                    }
+
+                    _restockingPages.add(freshPg.id);
+                    try { await freshPg.update(updates); }
+                    finally { _restockingPages.delete(freshPg.id); }
+                });
+            });
+        }
+
+        let debounceTimer = null;
+        let safetyTimer   = null;
+        const observer = new MutationObserver(() => {
+            if (!element.querySelector(".items-list .item[data-id]")) return;
+            clearTimeout(debounceTimer);
+            debounceTimer = setTimeout(() => {
+                observer.disconnect();
+                clearTimeout(safetyTimer);
+                injectRestockUI();
+            }, 50);
         });
+        observer.observe(element, { childList: true, subtree: true });
+        safetyTimer = setTimeout(() => {
+            observer.disconnect();
+            clearTimeout(debounceTimer);
+            injectRestockUI();
+        }, 1500);
     });
 }
