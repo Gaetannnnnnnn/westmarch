@@ -187,51 +187,57 @@ export function MejRestockHooks() {
                 if (!itemId) return;
                 if (row.querySelector(".wm-restock-toggle")) return; // déjà injecté
 
-                const qtyDiv = row.querySelector(".item-detail.item-quantity");
-                if (!qtyDiv) return;
+                const qtyDiv     = row.querySelector(".item-detail.item-quantity");
+                const controlsDiv = row.querySelector(".item-controls")
+                    ?? row.querySelector("[data-action='delete']")?.parentElement
+                    ?? row.querySelector("[data-action='edit']")?.parentElement;
+                if (!qtyDiv && !controlsDiv) return;
 
-                // ---- Case à cocher "auto" ----
-                const wrapper = document.createElement("div");
-                wrapper.style.cssText = "display:flex; align-items:center; gap:2px; margin-top:2px;";
+                const isEnabled = !!currentEnabled[itemId];
 
-                const cb = document.createElement("input");
-                cb.type      = "checkbox";
-                cb.className = "wm-restock-toggle";
-                cb.checked   = !!currentEnabled[itemId];
-                cb.title     = "Réapprovisionnement automatique";
-                cb.style.cssText = "width:11px; height:11px; cursor:pointer; flex-shrink:0;";
+                // ---- Bouton icône dans les contrôles (style identique aux autres) ----
+                const btn = document.createElement("a");
+                btn.className = "item-control wm-restock-toggle";
+                btn.title     = isEnabled ? "Réapprovisionnement auto : activé" : "Réapprovisionnement auto : désactivé";
+                btn.style.cssText = isEnabled
+                    ? "color:#4db6ac; cursor:pointer;"
+                    : "color:#888; cursor:pointer;";
+                btn.innerHTML = '<i class="fa-solid fa-rotate"></i>';
 
-                const cbText = document.createElement("span");
-                cbText.style.cssText = "color:#888; font-size:0.7em; font-style:italic; line-height:1; user-select:none;";
-                cbText.textContent   = "auto";
+                if (controlsDiv) controlsDiv.prepend(btn);
+                else row.appendChild(btn);
 
-                wrapper.appendChild(cb);
-                wrapper.appendChild(cbText);
-                qtyDiv.appendChild(wrapper);
-
-                // ---- Décompte si timer actif ----
+                // ---- Décompte sous la quantité si timer actif ----
                 const restockAt = currentTimers[itemId];
-                if (restockAt !== undefined) {
+                if (restockAt !== undefined && qtyDiv) {
                     const daysLeft = Math.ceil((restockAt - now) / spd);
                     const span     = document.createElement("span");
                     span.className = "wm-restock-countdown";
-                    span.style.cssText = "color:#888; font-size:0.7em; font-style:italic; display:block; line-height:1.2; white-space:nowrap;";
+                    span.style.cssText = "color:#888; font-size:0.7em; font-style:italic; display:block; line-height:1.2; white-space:nowrap; text-align:center;";
                     span.textContent   = daysLeft <= 0 ? "réapro imminent" : `dans ${daysLeft} j`;
                     qtyDiv.appendChild(span);
                 }
 
                 // ---- Gestion du clic ----
-                cb.addEventListener("change", async () => {
+                btn.addEventListener("click", async (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+
                     let freshPg = null;
                     for (const j of game.journal.contents) { const p = j.pages.get(pageId); if (p) { freshPg = p; break; } }
                     if (!freshPg) return;
 
+                    const nowEnabled = !!((freshPg.getFlag("westmarch", "restockEnabled") ?? {})[itemId]);
                     const newEnabled = foundry.utils.deepClone(freshPg.getFlag("westmarch", "restockEnabled") ?? {});
-                    newEnabled[itemId] = cb.checked;
+                    newEnabled[itemId] = !nowEnabled;
                     const updates = { "flags.westmarch.restockEnabled": newEnabled };
 
-                    if (!cb.checked) {
-                        // Décoché → annuler le timer s'il existe
+                    // Mise à jour visuelle immédiate du bouton
+                    btn.style.color = newEnabled[itemId] ? "#4db6ac" : "#888";
+                    btn.title       = newEnabled[itemId] ? "Réapprovisionnement auto : activé" : "Réapprovisionnement auto : désactivé";
+
+                    if (!newEnabled[itemId]) {
+                        // Désactivé → annuler le timer s'il existe
                         const newTimers = foundry.utils.deepClone(freshPg.getFlag("westmarch", "restock") ?? {});
                         if (itemId in newTimers) {
                             delete newTimers[itemId];
@@ -239,7 +245,7 @@ export function MejRestockHooks() {
                             row.querySelector(".wm-restock-countdown")?.remove();
                         }
                     } else {
-                        // Coché → si l'article est déjà à 0 et sans timer, lancer immédiatement
+                        // Activé → si l'article est déjà à 0 et sans timer, lancer immédiatement
                         const mejItems = freshPg.getFlag("monks-enhanced-journal", "items") ?? {};
                         const qty      = mejItems[itemId]?.flags?.["monks-enhanced-journal"]?.quantity ?? 1;
                         if (qty === 0) {
@@ -248,11 +254,10 @@ export function MejRestockHooks() {
                                 const days = getRestockDays();
                                 newTimers[itemId] = game.time.worldTime + days * getSecondsPerDay();
                                 updates["flags.westmarch.restock"] = newTimers;
-                                // Afficher le décompte immédiatement dans le DOM
-                                if (!row.querySelector(".wm-restock-countdown")) {
+                                if (qtyDiv && !row.querySelector(".wm-restock-countdown")) {
                                     const s = document.createElement("span");
                                     s.className    = "wm-restock-countdown";
-                                    s.style.cssText = "color:#888; font-size:0.7em; font-style:italic; display:block; line-height:1.2; white-space:nowrap;";
+                                    s.style.cssText = "color:#888; font-size:0.7em; font-style:italic; display:block; line-height:1.2; white-space:nowrap; text-align:center;";
                                     s.textContent  = `dans ${days} j`;
                                     qtyDiv.appendChild(s);
                                 }
