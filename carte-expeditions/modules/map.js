@@ -130,37 +130,46 @@ async function syncGroupVisionOwnership(actor) {
     const previouslyAutoOwned = baseActor.getFlag("carte-expeditions", "autoOwners") ?? [];
     if (targetUserIds.length === 0 && previouslyAutoOwned.length === 0) return;
 
-    const newOwnership = foundry.utils.deepClone(baseActor.ownership);
-    let changed = false;
+    const currentOwnership = baseActor.ownership;
+    const toGrant = [];
+    const toRevoke = [];
 
     // Retire Observer ET Owner de tout utilisateur non-GM qui ne devrait plus
-    // avoir accès, quelle que soit l'origine de la permission (manuelle, héritée
-    // du template...). On ne touche jamais aux GM.
-    for (const userId of Object.keys(newOwnership)) {
+    // avoir accès, quelle que soit l'origine de la permission.
+    for (const userId of Object.keys(currentOwnership)) {
         if (userId === "default") continue;
         const user = game.users.get(userId);
         if (!user || user.isGM) continue;
-        const lvl = newOwnership[userId];
+        const lvl = currentOwnership[userId];
         if ((lvl === CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER || lvl === CONST.DOCUMENT_OWNERSHIP_LEVELS.OBSERVER)
             && !targetUserIds.includes(userId)) {
-            delete newOwnership[userId];
-            changed = true;
+            toRevoke.push(userId);
         }
     }
 
     // Accorde Observer aux membres : suffit pour la vision/fog en v13,
     // sans donner les droits de contrôle du token au joueur.
     for (const userId of targetUserIds) {
-        if (newOwnership[userId] !== CONST.DOCUMENT_OWNERSHIP_LEVELS.OBSERVER) changed = true;
-        newOwnership[userId] = CONST.DOCUMENT_OWNERSHIP_LEVELS.OBSERVER;
+        if (currentOwnership[userId] !== CONST.DOCUMENT_OWNERSHIP_LEVELS.OBSERVER) {
+            toGrant.push(userId);
+        }
     }
 
-    if (!changed) return;
+    if (toGrant.length === 0 && toRevoke.length === 0) return;
 
-    await baseActor.update({
-        ownership: newOwnership,
-        "flags.carte-expeditions.autoOwners": targetUserIds
-    });
+    // IMPORTANT : update({ ownership: fullObject }) fait un MERGE dans Foundry v13 —
+    // les clés absentes du nouvel objet NE sont PAS supprimées de la base.
+    // On doit utiliser la syntaxe "ownership.-=userId" pour supprimer explicitement
+    // une entrée, et "ownership.userId" pour ajouter/modifier.
+    const updateData = { "flags.carte-expeditions.autoOwners": targetUserIds };
+    for (const userId of toGrant) {
+        updateData[`ownership.${userId}`] = CONST.DOCUMENT_OWNERSHIP_LEVELS.OBSERVER;
+    }
+    for (const userId of toRevoke) {
+        updateData[`ownership.-=${userId}`] = null;
+    }
+
+    await baseActor.update(updateData);
 }
 
 // ============================================================

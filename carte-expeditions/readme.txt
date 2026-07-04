@@ -1,7 +1,7 @@
 ================================================================================
                    ASHARA - MAP OUVERT SYSTÈMES — MODULE FOUNDRY VTT
                                Auteur : Soruta (Discord: s0ruta)
-                                       Version : 0.1.10
+                                       Version : 0.1.11
                               Compatibilité : Foundry VTT v13
 ================================================================================
 
@@ -185,6 +185,15 @@ NOTES TECHNIQUES
 ================================================================================
             ASHARA - MAP OUVERT SYSTÈMES — MISES À JOUR
 ================================================================================
+
+v0.1.11 | 2026-07-04
+correctif
+- correction du retrait des permissions Observer/Owner : update({ ownership:
+  fullObject }) effectue un merge dans Foundry v13 — les clés absentes ne
+  sont pas supprimées de la base, donc la permission persistait même après
+  retrait du joueur des Members ; on utilise désormais la syntaxe Foundry
+  "ownership.-=userId" pour supprimer explicitement chaque entrée à révoquer,
+  et "ownership.userId" pour accorder, au lieu de remplacer l'objet entier
 
 v0.1.10 | 2026-07-04
 correctif
