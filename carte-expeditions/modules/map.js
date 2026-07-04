@@ -30,16 +30,18 @@ export function MapHooks() {
         resyncAllCharacterFog();
     });
 
-    Hooks.on("updateUser", (user, changes, options, userId) => {
+    Hooks.on("updateUser", async (user, changes, options, userId) => {
         if (!game.settings.get("carte-expeditions", "enableExpeditionMap")) return;
         if (!("character" in changes)) return;
         if (!game.user.isGM) return;
 
         // Resynchronise les permissions Observer sur TOUS les Groupes : l'ancien
         // Groupe du joueur doit perdre son Observer, le nouveau doit l'obtenir.
-        game.actors
-            .filter(a => a.type === "group")
-            .forEach(syncGroupVisionOwnership);
+        // Séquentiel (for...of + await) pour éviter les race conditions entre
+        // les mises à jour concurrentes d'acteurs différents.
+        for (const actor of game.actors.filter(a => a.type === "group")) {
+            await syncGroupVisionOwnership(actor);
+        }
 
         recomputeFogForCharacter(changes.character ?? null);
     });
@@ -89,15 +91,6 @@ async function syncGroupVisionOwnership(actor) {
 
     const newOwnership = foundry.utils.deepClone(actor.ownership);
     let changed = false;
-
-    // Force default à NONE : NONE garantit que seuls les Members explicitement
-    // en Observer ont accès — en Foundry v13, Observer suffit pour la vision/fog
-    // et est moins permissif qu'Owner (le joueur ne peut pas déplacer ni
-    // supprimer le token de Groupe).
-    if (newOwnership.default !== CONST.DOCUMENT_OWNERSHIP_LEVELS.NONE) {
-        newOwnership.default = CONST.DOCUMENT_OWNERSHIP_LEVELS.NONE;
-        changed = true;
-    }
 
     // Retire Observer ET Owner de tout utilisateur non-GM qui ne devrait plus
     // avoir accès, quelle que soit l'origine de la permission (manuelle, héritée

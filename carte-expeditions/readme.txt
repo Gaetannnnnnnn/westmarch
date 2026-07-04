@@ -1,7 +1,7 @@
 ================================================================================
                    ASHARA - MAP OUVERT SYSTÈMES — MODULE FOUNDRY VTT
                                Auteur : Soruta (Discord: s0ruta)
-                                       Version : 0.1.6
+                                       Version : 0.1.8
                               Compatibilité : Foundry VTT v13
 ================================================================================
 
@@ -185,6 +185,18 @@ NOTES TECHNIQUES
 ================================================================================
             ASHARA - MAP OUVERT SYSTÈMES — MISES À JOUR
 ================================================================================
+
+v0.1.8 | 2026-07-04
+correctif
+- updateUser : la resynchronisation des permissions Observer au changement de
+  personnage est désormais séquentielle (for...of + await au lieu de forEach)
+  pour éviter les race conditions entre mises à jour concurrentes d'acteurs
+
+v0.1.7 | 2026-07-04
+correctif
+- le module ne modifie plus la permission "default" des acteurs Groupe — cette
+  valeur est désormais gérée manuellement sur le template et laissée intacte
+  par la synchro
 
 v0.1.6 | 2026-07-04
 correctif
