@@ -35,6 +35,12 @@ export function MapHooks() {
         if (!("character" in changes)) return;
         if (!game.user.isGM) return;
 
+        // Resynchronise les permissions Observer sur TOUS les Groupes : l'ancien
+        // Groupe du joueur doit perdre son Observer, le nouveau doit l'obtenir.
+        game.actors
+            .filter(a => a.type === "group")
+            .forEach(syncGroupVisionOwnership);
+
         recomputeFogForCharacter(changes.character ?? null);
     });
 
@@ -84,34 +90,35 @@ async function syncGroupVisionOwnership(actor) {
     const newOwnership = foundry.utils.deepClone(actor.ownership);
     let changed = false;
 
-    // Force default à NONE : si default reste à Observer (2, valeur du template),
-    // tous les joueurs voient la fog du Groupe même sans être Members — car
-    // Observer donne aussi la vision dans Foundry v13. NONE garantit que seuls
-    // les Members explicitement en OWNER ont accès.
+    // Force default à NONE : NONE garantit que seuls les Members explicitement
+    // en Observer ont accès — en Foundry v13, Observer suffit pour la vision/fog
+    // et est moins permissif qu'Owner (le joueur ne peut pas déplacer ni
+    // supprimer le token de Groupe).
     if (newOwnership.default !== CONST.DOCUMENT_OWNERSHIP_LEVELS.NONE) {
         newOwnership.default = CONST.DOCUMENT_OWNERSHIP_LEVELS.NONE;
         changed = true;
     }
 
-    // Retire l'Owner de TOUT utilisateur non-GM qui ne devrait plus l'avoir —
-    // pas seulement ceux que ce module a lui-même accordés (flag "autoOwners").
-    // Sans ça, un Owner accordé manuellement sur la fiche, ou laissé par défaut
-    // à la création de l'acteur, n'est jamais nettoyé quand le joueur quitte
-    // les Members : il garde la vision/fog du Groupe pour toujours malgré le
-    // retrait. On ne touche jamais aux GM (ils voient tout de toute façon).
+    // Retire Observer ET Owner de tout utilisateur non-GM qui ne devrait plus
+    // avoir accès, quelle que soit l'origine de la permission (manuelle, héritée
+    // du template...). On ne touche jamais aux GM.
     for (const userId of Object.keys(newOwnership)) {
         if (userId === "default") continue;
         const user = game.users.get(userId);
         if (!user || user.isGM) continue;
-        if (newOwnership[userId] === CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER && !targetUserIds.includes(userId)) {
+        const lvl = newOwnership[userId];
+        if ((lvl === CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER || lvl === CONST.DOCUMENT_OWNERSHIP_LEVELS.OBSERVER)
+            && !targetUserIds.includes(userId)) {
             delete newOwnership[userId];
             changed = true;
         }
     }
 
+    // Accorde Observer (et non Owner) aux membres : suffit pour la vision/fog
+    // en v13, sans donner les droits de contrôle du token au joueur.
     for (const userId of targetUserIds) {
-        if (newOwnership[userId] !== CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER) changed = true;
-        newOwnership[userId] = CONST.DOCUMENT_OWNERSHIP_LEVELS.OWNER;
+        if (newOwnership[userId] !== CONST.DOCUMENT_OWNERSHIP_LEVELS.OBSERVER) changed = true;
+        newOwnership[userId] = CONST.DOCUMENT_OWNERSHIP_LEVELS.OBSERVER;
     }
 
     if (!changed) return;
@@ -125,7 +132,7 @@ async function syncGroupVisionOwnership(actor) {
 // ============================================================
 // Exclusivité : sur la carte des expéditions, un même personnage ne
 // doit jamais être Member de deux Groupes en même temps (sinon les
-// deux Groupes lui donnent Owner, et sa vision/fog se mélange avec
+// deux Groupes lui donnent Observer, et sa vision/fog se mélange avec
 // celle de tokens dont il ne devrait pas faire partie). Quand un
 // personnage est ajouté aux Members d'un Groupe présent sur la
 // scène configurée, on le retire des Members de tous les AUTRES

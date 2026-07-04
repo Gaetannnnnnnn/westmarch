@@ -1,7 +1,7 @@
 ================================================================================
                    ASHARA - MAP OUVERT SYSTÈMES — MODULE FOUNDRY VTT
                                Auteur : Soruta (Discord: s0ruta)
-                                       Version : 0.1.5
+                                       Version : 0.1.6
                               Compatibilité : Foundry VTT v13
 ================================================================================
 
@@ -186,7 +186,19 @@ NOTES TECHNIQUES
             ASHARA - MAP OUVERT SYSTÈMES — MISES À JOUR
 ================================================================================
 
-v0.1.5 | 2026-07-03
+v0.1.6 | 2026-07-04
+correctif
+- les membres reçoivent désormais Observer au lieu de Owner sur les acteurs
+  Groupe — Observer suffit pour la vision/fog en Foundry v13 et évite que les
+  joueurs puissent déplacer ou supprimer le token de Groupe
+- le nettoyage des permissions retire désormais aussi les entrées Observer
+  résiduelles (pas seulement Owner) pour les non-membres
+- changement de personnage assigné (updateUser) : les permissions Observer sont
+  maintenant resynchronisées sur tous les Groupes au moment du switch — l'ancien
+  Groupe perdait son Observer du joueur seulement au prochain redémarrage ou
+  changement de Members, pas immédiatement
+
+v0.1.5 | 2026-07-04
 correctif
 - suppression de l'ancre de vision : créait des acteurs PJ en boucle sur le
   serveur lorsque plusieurs GM étaient connectés simultanément (race condition
