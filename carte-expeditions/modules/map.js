@@ -24,9 +24,22 @@ export function MapHooks() {
     Hooks.once("ready", async () => {
         if (!game.user.isGM) return;
         if (!game.settings.get("carte-expeditions", "enableExpeditionMap")) return;
-        game.actors
-            .filter(a => a.type === "group")
-            .forEach(syncGroupVisionOwnership);
+
+        const sceneId = game.settings.get("carte-expeditions", "expeditionMapSceneId");
+        const scene = sceneId ? game.scenes.get(sceneId) : null;
+
+        // Utilise les acteurs synthétiques des tokens sur la scène (actorLink: false
+        // stocke les Members dans le delta du token, pas dans l'acteur de base).
+        if (scene) {
+            for (const token of scene.tokens.filter(t => t.actor?.type === "group")) {
+                await syncGroupVisionOwnership(token.actor);
+            }
+        }
+        // Nettoie aussi les acteurs Groupe hors-scène (retire les permissions résiduelles).
+        for (const actor of game.actors.filter(a => a.type === "group" && !scene?.tokens.some(t => t.actorId === a.id))) {
+            await syncGroupVisionOwnership(actor);
+        }
+
         resyncAllCharacterFog();
     });
 
@@ -35,11 +48,17 @@ export function MapHooks() {
         if (!("character" in changes)) return;
         if (!game.user.isGM) return;
 
-        // Resynchronise les permissions Observer sur TOUS les Groupes : l'ancien
-        // Groupe du joueur doit perdre son Observer, le nouveau doit l'obtenir.
-        // Séquentiel (for...of + await) pour éviter les race conditions entre
-        // les mises à jour concurrentes d'acteurs différents.
-        for (const actor of game.actors.filter(a => a.type === "group")) {
+        const sceneId = game.settings.get("carte-expeditions", "expeditionMapSceneId");
+        const scene = sceneId ? game.scenes.get(sceneId) : null;
+
+        // Resynchronise les permissions Observer sur TOUS les Groupes (acteurs
+        // synthétiques pour les tokens non-liés, acteurs de base pour les hors-scène).
+        if (scene) {
+            for (const token of scene.tokens.filter(t => t.actor?.type === "group")) {
+                await syncGroupVisionOwnership(token.actor);
+            }
+        }
+        for (const actor of game.actors.filter(a => a.type === "group" && !scene?.tokens.some(t => t.actorId === a.id))) {
             await syncGroupVisionOwnership(actor);
         }
 
@@ -64,6 +83,16 @@ function refreshFogIfMine(fogDoc) {
     canvas.perception.update({ refreshLighting: true, refreshVision: true }, true);
 }
 
+// ============================================================
+// Retourne l'acteur effectif à utiliser pour lire system.members
+// d'un acteur Groupe : pour les tokens non-liés (actorLink: false),
+// les Members sont stockés dans le delta du token (acteur synthétique),
+// pas dans l'acteur de base. On préfère donc token.actor si disponible.
+// ============================================================
+function getEffectiveGroupActor(actorId, scene) {
+    const token = scene?.tokens.find(t => t.actorId === actorId);
+    return token?.actor ?? game.actors.get(actorId);
+}
 
 function isActorOnExpeditionScene(actor) {
     const sceneId = game.settings.get("carte-expeditions", "expeditionMapSceneId");
@@ -74,14 +103,17 @@ function isActorOnExpeditionScene(actor) {
 }
 
 async function syncGroupVisionOwnership(actor) {
-    // Si le token du Groupe n'est pas (ou plus) sur la scène configurée,
-    // personne ne doit recevoir Owner via ce module pour cet acteur — mais
-    // la fonction continue quand même de tourner pour RETIRER les Owner
-    // précédemment accordés (sinon un Groupe qui quitte la scène configurée,
-    // ou dont les Members sont vidés après coup, garde ses joueurs Owner
-    // pour toujours).
-    const onScene = isActorOnExpeditionScene(actor);
-    const memberActorIds = onScene ? Array.from(actor.system?.members?.ids ?? []) : [];
+    // actor peut être un acteur synthétique (token non-lié) ou un acteur de base.
+    // Dans tous les cas, actor.id est l'id de l'acteur de base, et actor.ownership
+    // est lu/écrit sur l'acteur de base (les permissions ne sont jamais dans le delta).
+    const sceneId = game.settings.get("carte-expeditions", "expeditionMapSceneId");
+    const scene = game.scenes.get(sceneId);
+
+    const onScene = !!scene?.tokens.some(t => t.actorId === actor.id);
+
+    // Lit les Members depuis l'acteur synthétique du token si présent.
+    const effectiveActor = getEffectiveGroupActor(actor.id, scene);
+    const memberActorIds = onScene ? Array.from(effectiveActor.system?.members?.ids ?? []) : [];
 
     const targetUserIds = onScene
         ? game.users
@@ -89,7 +121,16 @@ async function syncGroupVisionOwnership(actor) {
             .map(u => u.id)
         : [];
 
-    const newOwnership = foundry.utils.deepClone(actor.ownership);
+    // L'ownership est toujours sur l'acteur de base — on récupère le bon objet.
+    const baseActor = game.actors.get(actor.id) ?? actor;
+
+    // Si aucun joueur n'est actuellement Member ET que le module n'en a jamais
+    // géré sur cet acteur, on ne touche à rien : groupes de ville, tokens
+    // décoratifs, etc. restent intacts (default Observer préservé).
+    const previouslyAutoOwned = baseActor.getFlag("carte-expeditions", "autoOwners") ?? [];
+    if (targetUserIds.length === 0 && previouslyAutoOwned.length === 0) return;
+
+    const newOwnership = foundry.utils.deepClone(baseActor.ownership);
     let changed = false;
 
     // Retire Observer ET Owner de tout utilisateur non-GM qui ne devrait plus
@@ -107,8 +148,8 @@ async function syncGroupVisionOwnership(actor) {
         }
     }
 
-    // Accorde Observer (et non Owner) aux membres : suffit pour la vision/fog
-    // en v13, sans donner les droits de contrôle du token au joueur.
+    // Accorde Observer aux membres : suffit pour la vision/fog en v13,
+    // sans donner les droits de contrôle du token au joueur.
     for (const userId of targetUserIds) {
         if (newOwnership[userId] !== CONST.DOCUMENT_OWNERSHIP_LEVELS.OBSERVER) changed = true;
         newOwnership[userId] = CONST.DOCUMENT_OWNERSHIP_LEVELS.OBSERVER;
@@ -116,7 +157,7 @@ async function syncGroupVisionOwnership(actor) {
 
     if (!changed) return;
 
-    await actor.update({
+    await baseActor.update({
         ownership: newOwnership,
         "flags.carte-expeditions.autoOwners": targetUserIds
     });
@@ -145,6 +186,7 @@ function getRawMemberId(entry) {
 async function enforceGroupExclusivity(actor) {
     if (!game.user.isGM) return;
 
+    // Lit les Members depuis l'acteur synthétique (token non-lié).
     const memberActorIds = Array.from(actor.system?.members?.ids ?? []);
     if (!memberActorIds.length) return;
 
@@ -152,16 +194,10 @@ async function enforceGroupExclusivity(actor) {
     const scene = game.scenes.get(sceneId);
     if (!scene) return;
 
-    const otherGroupActorIds = new Set(
-        scene.tokens
-            .filter(t => t.actorId && t.actorId !== actor.id)
-            .map(t => t.actorId)
-    );
+    const otherGroupTokens = scene.tokens.filter(t => t.actorId && t.actorId !== actor.id && t.actor?.type === "group");
 
-    for (const otherId of otherGroupActorIds) {
-        const other = game.actors.get(otherId);
-        if (!other || other.type !== "group") continue;
-
+    for (const otherToken of otherGroupTokens) {
+        const other = otherToken.actor; // acteur synthétique pour lire/écrire les Members
         const rawMembers = other.toObject().system?.members ?? [];
         if (!Array.isArray(rawMembers) || !rawMembers.length) continue;
 
@@ -188,10 +224,11 @@ function findGroupIdForCharacter(characterId, scene) {
     if (!characterId) return null;
     for (const token of scene.tokens) {
         if (!token.actorId) continue;
-        const actor = game.actors.get(token.actorId);
+        // Utilise l'acteur synthétique pour lire les Members (token non-lié).
+        const actor = token.actor;
         if (!actor || actor.type !== "group") continue;
         const ids = Array.from(actor.system?.members?.ids ?? []);
-        if (ids.includes(characterId)) return actor.id;
+        if (ids.includes(characterId)) return actor.id; // actor.id = id de l'acteur de base
     }
     return null;
 }

@@ -1,7 +1,7 @@
 ================================================================================
                    ASHARA - MAP OUVERT SYSTÈMES — MODULE FOUNDRY VTT
                                Auteur : Soruta (Discord: s0ruta)
-                                       Version : 0.1.8
+                                       Version : 0.1.10
                               Compatibilité : Foundry VTT v13
 ================================================================================
 
@@ -185,6 +185,26 @@ NOTES TECHNIQUES
 ================================================================================
             ASHARA - MAP OUVERT SYSTÈMES — MISES À JOUR
 ================================================================================
+
+v0.1.10 | 2026-07-04
+correctif
+- syncGroupVisionOwnership ne touche plus aux acteurs Groupe qui n'ont aucun
+  joueur actuellement Member ET que le module n'a jamais gérés (flag
+  autoOwners absent/vide) : les tokens de ville/décoratifs avec un default
+  Observer volontaire ne sont plus réinitialisés à NONE au redémarrage de
+  Foundry ; seuls les Groupes d'expédition (où des joueurs ont déjà été ou
+  sont actuellement Members) sont synchronisés par le module
+
+v0.1.9 | 2026-07-04
+correctif
+- correction architecture : les tokens de Groupe ont actorLink: false, ce qui
+  signifie que les Members sont stockés dans le delta du token (acteur
+  synthétique), pas dans l'acteur de base — toutes les lectures de
+  system.members utilisent désormais token.actor (acteur synthétique) plutôt
+  que game.actors.get(id) (acteur de base vide), ce qui corrige la synchro
+  Observer et l'isolation de fog dans tous les cas (ready, updateUser,
+  enforceGroupExclusivity, findGroupIdForCharacter)
+- ajout de la fonction getEffectiveGroupActor() pour centraliser cette logique
 
 v0.1.8 | 2026-07-04
 correctif
