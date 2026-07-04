@@ -1,7 +1,7 @@
 ================================================================================
                    ASHARA - MAP OUVERT SYSTÈMES — MODULE FOUNDRY VTT
                                Auteur : Soruta (Discord: s0ruta)
-                                       Version : 0.1.11
+                                       Version : 0.1.12
                               Compatibilité : Foundry VTT v13
 ================================================================================
 
@@ -185,6 +185,15 @@ NOTES TECHNIQUES
 ================================================================================
             ASHARA - MAP OUVERT SYSTÈMES — MISES À JOUR
 ================================================================================
+
+v0.1.12 | 2026-07-04
+correctif
+- recomputeFogForCharacter distingue désormais undefined (flag jamais posé =
+  première exécution du module) de null (pas de groupe actif) : au premier
+  lancement, la clé activeFogKey est initialisée sans déclencher de swap ni
+  supprimer le doc FogExploration existant — la fog exploratoire du personnage
+  courant n'est plus perdue au premier redémarrage ou au premier changement de
+  personnage après déploiement
 
 v0.1.11 | 2026-07-04
 correctif

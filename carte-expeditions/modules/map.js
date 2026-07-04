@@ -263,8 +263,19 @@ async function recomputeFogForCharacter(characterId) {
 
     const newGroupId = findGroupIdForCharacter(characterId, scene);
     const newKey = newGroupId ? `${characterId}:${newGroupId}` : null;
-    const oldKey = user.getFlag("carte-expeditions", "activeFogKey") ?? null;
 
+    // getFlag renvoie undefined si le flag n'a JAMAIS été posé (première exécution
+    // du module pour ce joueur), null si explicitement réglé à null (pas de groupe),
+    // ou une string (clé précédente). On ne fait un swap que si le flag était déjà
+    // initialisé : au premier lancement, on pose juste la clé sans supprimer la fog
+    // existante (le doc FogExploration actuel est attribué au personnage courant).
+    const rawFlag = user.getFlag("carte-expeditions", "activeFogKey");
+    if (rawFlag === undefined) {
+        await user.setFlag("carte-expeditions", "activeFogKey", newKey);
+        return;
+    }
+
+    const oldKey = rawFlag ?? null;
     if (oldKey === newKey) return;
 
     await swapFogForUserKey(scene, user, oldKey, newKey);
