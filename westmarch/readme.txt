@@ -1,7 +1,7 @@
 ================================================================================
                         WESTMARCH SYSTÈME — MODULE FOUNDRY VTT
                                Auteur : Soruta (Discord: s0ruta)
-                                       Version : 1.5.0
+                                       Version : 1.5.5
                               Compatibilité : Foundry VTT v13
 ================================================================================
 
@@ -35,7 +35,7 @@ westmarch/
 │   ├── caldate.js          Notification Discord lors d'un changement de date (Simple Calendar)
 │   ├── mejshop.js          Correctifs boutiques Monk's Enhanced Journal (groupe + objets cachés)
 │   ├── mejrestock.js       Réapprovisionnement automatique des boutiques MEJ (timer par article)
-│   ├── tm.js               Temps morts : calcul des gains d'argent par personnage
+│   ├── tm.js               Temps morts : gains d'argent et craft par personnage
 │   ├── player.js           Liste des joueurs, menu contextuel et gestion des parties
 │   ├── rage.js             Passage en taille Large (2x2) pendant la Rage du Barbare
 │   ├── scenes.js           Téléportation de groupe depuis le répertoire de scènes
@@ -474,12 +474,15 @@ FONCTIONNALITÉS
    - 1 Grise Lumière   → 🛡️ Shieldmeet
    - 1 Findefroid      → ❄️ Midwinter
 
-15. TEMPS MORTS — GAINS D'ARGENT (tm.js)
+15. TEMPS MORTS — GAINS D'ARGENT ET CRAFT (tm.js)
    -------------------------------------------
-   Flux en deux temps :
+   Flux en deux temps (pour les deux types d'activité) :
 
    Côté joueur : bouton sablier ⏳ dans le header de sa fiche personnage.
-   Ouvre une fenêtre de déclaration où le joueur choisit :
+   Le joueur choisit d'abord le type d'activité via un sélecteur en haut
+   du dialog :
+
+   ● Gain de compétence :
    - une compétence (liste déroulante ; la caractéristique associée est
      affichée juste en dessous et se met à jour à chaque changement)
    - cases de proficiency : Maîtrise (+2 po/j), Expertise (+2 po/j),
@@ -490,30 +493,50 @@ FONCTIONNALITÉS
      calculé et affiché automatiquement)
    - test de compétence optionnel (grisé automatiquement si < 5 jours)
    Une prévisualisation du gain total se met à jour en temps réel.
-   La déclaration est stockée dans un flag sur l'acteur.
+
+   ● Craft (fabrication d'objet) :
+   - type : Non-magique / Parchemin de sort / Objet magique
+   - nom de l'objet (libre)
+   - paramètre selon le type :
+     · Non-magique : prix d'achat → coût = prix/2, durée = ceil(prix/10) j
+     · Parchemin : niveau de sort (0-9) → coût et durée selon le tableau
+     · Objet magique : rareté (Courant à Légendaire) → coût et durée selon
+       le tableau ; option "usage unique" divise les deux par 2
+   - jours déjà travaillés (pour les crafts multi-sessions)
+   Preview live : coût, durée totale, jours restants.
+   Le flag de craft persiste entre les TM si l'objet n'est pas terminé ;
+   le joueur re-déclare juste les dates de la prochaine période.
+   Le bouton sablier passe en bleu si un craft est en cours.
 
    Côté GM : bouton ⏳ dans le groupe WestMarch de la barre de gauche.
    Ouvre une fenêtre listant uniquement les personnages ayant déclaré
-   (option d'afficher aussi les non-déclarés). Tout est pré-rempli depuis
-   la déclaration du joueur. Le GM peut corriger si besoin, puis clique
-   "Appliquer les gains".
+   (option d'afficher aussi les non-déclarés). Le nom de chaque personnage
+   est cliquable et ouvre sa fiche. Tout est pré-rempli depuis la déclaration.
 
+   Pour un gain de compétence, le GM peut corriger les champs si besoin,
+   puis clique "Appliquer les gains".
    Formule : (1 + modif_carac + 2 si maîtrise + 2 si expertise OU +4 tools)
    × jours, puis modificateur d20 optionnel sur le total.
-   Test de compétence optionnel (≥ 5 jours) : le joueur coche la case, le MJ
-   lance un d20 + modificateur de caractéristique + bonus de maîtrise/expertise.
-   Le résultat total détermine le modificateur : ≤1 → −20 %, 2-9 → ±0 %,
-   10-19 → +10 %, ≥20 → +20 %.
+   Test de compétence optionnel (≥ 5 jours) : d20 + mod carac + maîtrise.
+   Résultats : ≤1 → −20 %, 2-9 → ±0 %, 10-19 → +10 %, ≥20 → +20 %.
 
-   À l'application :
-   - Les PO sont créditées directement sur la fiche de l'acteur
+   Pour un craft, la ligne GM affiche : nom de l'objet, type, coût total,
+   progression X/Y jours. À l'application : si terminé, flag supprimé +
+   message de complétion au joueur ; si en cours, flag mis à jour avec les
+   jours cumulés (le joueur n'a pas à tout re-saisir).
+
+   À l'application (tous types) :
    - Un whisper est envoyé aux joueurs propriétaires du personnage
    - Un résumé est posté en message privé GM dans le chat Foundry
    - Le résumé est aussi envoyé sur le webhook Discord "résultats temps morts"
-     (paramètre "URL du Webhook Discord (résultats temps morts)", salon staff)
-   - Les messages indiquent la compétence, la proficiency utilisée
-     ([Maîtrise], [Expertise] ou [Tools]), le nombre de jours, le taux
-     journalier, le résultat du d20 si applicable, et le total final
+   - Pour les gains : les PO sont créditées directement sur la fiche
+
+   Rappel Discord quotidien (tm.js) :
+   Entre 17h et 20h heure de Paris, si des TM sont en attente de validation,
+   un message est envoyé automatiquement sur le webhook TM. Déclenché sur
+   tous les utilisateurs connectés (premier connecté dans la plage envoie,
+   les suivants voient la date déjà posée et sautent). Aucun message si
+   aucun TM en attente.
 
 16. CORRECTIFS BOUTIQUES MONK'S ENHANCED JOURNAL (mejshop.js)
    -----------------------------------------------------------------
@@ -648,3 +671,40 @@ v1.4.12 | 2026-07-01
                 compétence (d20 + mod de caractéristique + bonus de maîtrise) ;
                 les seuils s'appliquent au total : ≤1 → −20 %, 2-9 → ±0 %,
                 10-19 → +10 %, ≥20 → +20 %.
+
+v1.5.1 | 2026-07-05
+   tm.js      — Rappel Discord quotidien : entre 17h et 20h heure de Paris,
+                si des temps morts sont en attente de validation GM, un message
+                est envoyé automatiquement sur le webhook TM avec le nombre et
+                les noms des personnages concernés. Aucun message si rien en
+                attente. Anti-doublon par date (une seule notification par jour).
+                Déclenché côté GM uniquement (GM connecté requis).
+
+v1.5.2 | 2026-07-05
+   tm.js      — Rappel Discord : déclenché désormais sur TOUS les utilisateurs
+                connectés (GM et joueurs) pour augmenter les chances qu'il soit
+                envoyé. Plage horaire élargie de 17h à 20h (au lieu de pile 20h).
+                Décalage aléatoire par utilisateur (0-30 s) pour réduire le
+                risque de doublon simultané. Setting tmLastNotifDate passé en
+                restricted: false pour permettre aux non-GM de poser le verrou.
+
+v1.5.3 | 2026-07-05
+   tm.js      — Dans le menu TM du GM, le nom de chaque personnage est désormais
+                cliquable (souligné) et ouvre directement sa fiche.
+
+v1.5.4 | 2026-07-05
+   tm.js      — Nouveau type d'activité TM : Craft. Le joueur peut déclarer une
+                fabrication d'objet (non-magique, parchemin de sort ou objet
+                magique) depuis le dialog sablier de sa fiche, en choisissant
+                le type puis les paramètres (prix d'achat / niveau de sort /
+                rareté). Les coûts et durées sont calculés automatiquement selon
+                les règles Ashara. La progression est suivie session après session
+                (le flag persiste entre les TM si le craft n'est pas terminé).
+                Le bouton sablier devient bleu si un craft est en cours.
+                Côté GM : ligne dédiée avec progression X/Y jours ; à
+                l'application, envoie un message au joueur (en cours ou terminé).
+
+v1.5.5 | 2026-07-05
+   tm.js      — Correction : deux boutons sablier s'affichaient sur la fiche
+                joueur (hooks renderActorSheet et renderApplicationV2 déclenchés
+                tous les deux). Le hook renderActorSheet redondant a été supprimé.
