@@ -79,6 +79,7 @@ export function MapHooks() {
 function refreshFogIfMine(fogDoc) {
     if (game.user.id !== fogDoc.user) return;
     if (canvas.scene?.id !== fogDoc.scene) return;
+    console.log(`[CE] refreshFogIfMine déclenché pour user=${game.user.name}`);
     canvas.fog.load();
     canvas.perception.update({ refreshLighting: true, refreshVision: true }, true);
 }
@@ -259,25 +260,24 @@ async function recomputeFogForCharacter(characterId) {
     if (!scene) return;
 
     const user = game.users.find(u => !u.isGM && u.character?.id === characterId);
-    if (!user) return;
+    if (!user) { console.log(`[CE] recomputeFog: aucun joueur non-GM avec le perso ${characterId}`); return; }
 
     const newGroupId = findGroupIdForCharacter(characterId, scene);
     const newKey = newGroupId ? `${characterId}:${newGroupId}` : null;
 
-    // getFlag renvoie undefined si le flag n'a JAMAIS été posé (première exécution
-    // du module pour ce joueur), null si explicitement réglé à null (pas de groupe),
-    // ou une string (clé précédente). On ne fait un swap que si le flag était déjà
-    // initialisé : au premier lancement, on pose juste la clé sans supprimer la fog
-    // existante (le doc FogExploration actuel est attribué au personnage courant).
     const rawFlag = user.getFlag("carte-expeditions", "activeFogKey");
+    console.log(`[CE] recomputeFog | user=${user.name} | rawFlag=${JSON.stringify(rawFlag)} | newKey=${newKey}`);
+
     if (rawFlag === undefined) {
+        console.log(`[CE] → première init, on pose la clé sans swap`);
         await user.setFlag("carte-expeditions", "activeFogKey", newKey);
         return;
     }
 
     const oldKey = rawFlag ?? null;
-    if (oldKey === newKey) return;
+    if (oldKey === newKey) { console.log(`[CE] → clés identiques, rien à faire`); return; }
 
+    console.log(`[CE] → SWAP fog: oldKey=${oldKey} → newKey=${newKey}`);
     await swapFogForUserKey(scene, user, oldKey, newKey);
     await user.setFlag("carte-expeditions", "activeFogKey", newKey);
 }
@@ -285,6 +285,7 @@ async function recomputeFogForCharacter(characterId) {
 async function swapFogForUserKey(scene, user, oldKey, newKey) {
     const fogCollection = game.collections.get("FogExploration");
     const fogDoc = fogCollection.find(f => f.scene === scene.id && f.user === user.id);
+    console.log(`[CE] swapFog | fogDoc trouvé: ${!!fogDoc} | oldKey=${oldKey} | newKey=${newKey}`);
 
     if (fogDoc && oldKey) {
         const savedByKey = foundry.utils.deepClone(user.getFlag("carte-expeditions", "fogByKey") ?? {});
@@ -294,10 +295,12 @@ async function swapFogForUserKey(scene, user, oldKey, newKey) {
             timestamp: fogDoc.timestamp
         };
         await user.setFlag("carte-expeditions", "fogByKey", savedByKey);
+        console.log(`[CE] → fog sauvegardée sous ${oldKey}`);
     }
 
     const savedByKey = user.getFlag("carte-expeditions", "fogByKey") ?? {};
     const saved = newKey ? savedByKey[newKey] : null;
+    console.log(`[CE] → fog restaurée pour ${newKey}: ${saved ? "OUI" : "NON (suppression)"}`);
 
     if (fogDoc) {
         if (saved) {
