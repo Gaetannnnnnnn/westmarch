@@ -1,7 +1,7 @@
 ================================================================================
                         WESTMARCH SYSTÈME — MODULE FOUNDRY VTT
                                Auteur : Soruta (Discord: s0ruta)
-                                       Version : 1.6.3
+                                       Version : 1.6.4
                               Compatibilité : Foundry VTT v13
 ================================================================================
 
@@ -626,6 +626,12 @@ NOTES TECHNIQUES
 ================================================================================
                         WESTMARCH SYSTÈME — MISES À JOUR
 ================================================================================
+
+v1.6.4 | 2026-07-06
+   tm.js      — Messages craft (joueur, GM, résumé, Discord) : ajout de
+                la rareté/type et du coût entre parenthèses après le nom
+                de l'objet. Helper craftInfoStr() pour formater selon le
+                type (Non-magique, Parchemin Niv. X, Common/Rare/… usage unique).
 
 v1.6.3 | 2026-07-06
    tgcm.js    — Nouveau module "Protégé TGCM" : bouton dans le HUD du

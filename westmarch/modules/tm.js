@@ -436,6 +436,24 @@ function craftTypeLabel(ct) {
     return ct ?? "—";
 }
 
+// Retourne une courte description du craft : type/rareté + coût
+function craftInfoStr(item) {
+    const type = item.craftType ?? "nonmagique";
+    const cost = item.craftCost ?? 0;
+    if (type === "parchemin") {
+        const levels = ["Sort mineur", "Niv. 1", "Niv. 2", "Niv. 3", "Niv. 4",
+                        "Niv. 5",    "Niv. 6", "Niv. 7", "Niv. 8", "Niv. 9"];
+        return `Parchemin ${levels[item.craftScrollLevel ?? 0] ?? "?"} — ${cost} po`;
+    }
+    if (type === "magique") {
+        const row    = TM_MAGIC_TABLE.find(r => r.key === item.craftRarity) ?? TM_MAGIC_TABLE[0];
+        const label  = item.craftSingleUse ? `${row.label} (usage unique)` : row.label;
+        return `${label} — ${cost} po`;
+    }
+    // nonmagique
+    return `Non-magique — ${cost} po`;
+}
+
 // ============================================================
 // Formulaire craft — joueur
 // ============================================================
@@ -977,6 +995,7 @@ async function applyDowntimeGains($html, actors) {
                 const craftName     = item.craftName        ?? "?";
                 const dateLabel     = item.dateRangeLabel   ?? "";
                 const craftCost     = item.craftCost        ?? 0;
+                const infoStr       = craftInfoStr(item);
                 const newTotal      = daysAlready + workDays;
                 const complete      = newTotal >= totalDays;
                 const remaining     = Math.max(0, totalDays - newTotal);
@@ -992,12 +1011,12 @@ async function applyDowntimeGains($html, actors) {
                 if (owners.length > 0) {
                     let msgContent;
                     if (complete) {
-                        msgContent = `🔨 Craft terminé pour <strong>${actor.name}</strong> : <strong>${craftName}</strong> — ${dateLabel} (${workDays} j) → ✅ Objet créé !`;
+                        msgContent = `🔨 Craft terminé pour <strong>${actor.name}</strong> : <strong>${craftName}</strong> <span style="color:#888;">(${infoStr})</span> — ${dateLabel} (${workDays} j) → ✅ Objet créé !`;
                     } else if (isFirstPeriod) {
-                        msgContent = `🔨 Craft démarré pour <strong>${actor.name}</strong> : <strong>${craftName}</strong> — ${dateLabel} (${workDays} j) → ${newTotal}/${totalDays} j — <strong>${remaining} j restant${remaining > 1 ? "s" : ""}</strong>`
+                        msgContent = `🔨 Craft démarré pour <strong>${actor.name}</strong> : <strong>${craftName}</strong> <span style="color:#888;">(${infoStr})</span> — ${dateLabel} (${workDays} j) → ${newTotal}/${totalDays} j — <strong>${remaining} j restant${remaining > 1 ? "s" : ""}</strong>`
                             + `<br><span style="color:#e67e22;">⚠️ Le coût de <strong>${craftCost} po</strong> a été retiré de votre bourse.</span>`;
                     } else {
-                        msgContent = `🔨 Craft en cours pour <strong>${actor.name}</strong> : <strong>${craftName}</strong> — ${dateLabel} (${workDays} j) → ${newTotal}/${totalDays} j — <strong>${remaining} j restant${remaining > 1 ? "s" : ""}</strong>`;
+                        msgContent = `🔨 Craft en cours pour <strong>${actor.name}</strong> : <strong>${craftName}</strong> <span style="color:#888;">(${infoStr})</span> — ${dateLabel} (${workDays} j) → ${newTotal}/${totalDays} j — <strong>${remaining} j restant${remaining > 1 ? "s" : ""}</strong>`;
                     }
                     ChatMessage.create({
                         content: msgContent,
@@ -1009,13 +1028,13 @@ async function applyDowntimeGains($html, actors) {
                 // Message privé GM — rappel d'ajouter l'objet manuellement
                 if (complete) {
                     ChatMessage.create({
-                        content: `⚠️ <strong>${actor.name}</strong> a terminé son craft : <strong>${craftName}</strong>. Pensez à ajouter l'objet manuellement sur sa fiche. Le coût de <strong>${craftCost} po</strong> a déjà été retiré de sa bourse.`,
+                        content: `⚠️ <strong>${actor.name}</strong> a terminé son craft : <strong>${craftName}</strong> (${infoStr}). Pensez à ajouter l'objet manuellement sur sa fiche. Le coût de <strong>${craftCost} po</strong> a déjà été retiré de sa bourse.`,
                         whisper: ChatMessage.getWhisperRecipients("GM"),
                         speaker: { alias: "WestMarch — Temps morts" }
                     });
                 } else if (isFirstPeriod) {
                     ChatMessage.create({
-                        content: `ℹ️ <strong>${actor.name}</strong> a démarré un craft : <strong>${craftName}</strong> (${newTotal}/${totalDays} j). Dès que le craft sera terminé, pensez à ajouter l'objet manuellement sur sa fiche.`,
+                        content: `ℹ️ <strong>${actor.name}</strong> a démarré un craft : <strong>${craftName}</strong> (${infoStr}) — ${newTotal}/${totalDays} j. Dès que le craft sera terminé, pensez à ajouter l'objet manuellement sur sa fiche.`,
                         whisper: ChatMessage.getWhisperRecipients("GM"),
                         speaker: { alias: "WestMarch — Temps morts" }
                     });
@@ -1026,11 +1045,11 @@ async function applyDowntimeGains($html, actors) {
                 }
 
                 const line = complete
-                    ? `<strong>${actor.name}</strong> — 🔨 <strong>${craftName}</strong> — ${dateLabel} (${workDays} j) → ✅ <strong>Terminé !</strong>`
-                    : `<strong>${actor.name}</strong> — 🔨 <strong>${craftName}</strong> — ${dateLabel} (${workDays} j) → ${newTotal}/${totalDays} j (${remaining} restants)`;
+                    ? `<strong>${actor.name}</strong> — 🔨 <strong>${craftName}</strong> (${infoStr}) — ${dateLabel} (${workDays} j) → ✅ <strong>Terminé !</strong>`
+                    : `<strong>${actor.name}</strong> — 🔨 <strong>${craftName}</strong> (${infoStr}) — ${dateLabel} (${workDays} j) → ${newTotal}/${totalDays} j (${remaining} restants)`;
                 const discordLine = complete
-                    ? `**${actor.name}** (${playerName}) — 🔨 **${craftName}** — ${dateLabel} (${workDays} j) → Terminé ! (par ${gmName})`
-                    : `**${actor.name}** (${playerName}) — 🔨 **${craftName}** — ${dateLabel} (${workDays} j) → ${newTotal}/${totalDays} j, ${remaining} j restant${remaining > 1 ? "s" : ""} (par ${gmName})`;
+                    ? `**${actor.name}** (${playerName}) — 🔨 **${craftName}** (${infoStr}) — ${dateLabel} (${workDays} j) → Terminé ! (par ${gmName})`
+                    : `**${actor.name}** (${playerName}) — 🔨 **${craftName}** (${infoStr}) — ${dateLabel} (${workDays} j) → ${newTotal}/${totalDays} j, ${remaining} j restant${remaining > 1 ? "s" : ""} (par ${gmName})`;
                 lines.push(line);
                 discordLines.push(discordLine);
 

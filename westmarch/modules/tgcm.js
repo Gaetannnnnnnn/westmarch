@@ -21,27 +21,7 @@ export function TgcmHooks() {
 
     // ---- Bouton HUD (GM uniquement) ----
     Hooks.on("renderTokenHUD", (hud, html) => {
-        if (!game.user.isGM) return;
-        const tokenDoc = hud.object?.document;
-        if (!tokenDoc) return;
-
-        const isActive = tokenDoc.getFlag("westmarch", "tgcm") ?? false;
-
-        const btn = $(`
-            <div class="control-icon${isActive ? " active" : ""}"
-                 title="Protégé TGCM${isActive ? " (actif)" : ""}">
-                <i class="fas fa-shield-alt"></i>
-            </div>
-        `);
-
-        btn.on("click", async (event) => {
-            event.preventDefault();
-            const current = tokenDoc.getFlag("westmarch", "tgcm") ?? false;
-            await tokenDoc.setFlag("westmarch", "tgcm", !current);
-            hud.render();
-        });
-
-        html.find(".col.right").append(btn);
+        _injectTgcmButton(hud, html);
     });
 
     // ---- Indicateur visuel : bouclier au-dessus du token (GM uniquement) ----
@@ -70,6 +50,45 @@ export function TgcmHooks() {
 // ============================================================
 // Helpers
 // ============================================================
+
+function _injectTgcmButton(hud, html) {
+    if (!game.user.isGM) return;
+
+    // v13 ApplicationV2 : hud.document | v12 : hud.object.document | fallback : hud.token
+    const tokenDoc = hud.document ?? hud.object?.document ?? hud.token ?? null;
+    if (!tokenDoc) return;
+
+    const isActive = tokenDoc.getFlag("westmarch", "tgcm") ?? false;
+
+    // Normaliser en HTMLElement
+    const root = (html instanceof HTMLElement) ? html : (html[0] ?? null);
+    if (!root) return;
+
+    // Éviter le doublon si le hook fire deux fois
+    if (root.querySelector(".tgcm-btn")) return;
+
+    // Trouver le bon conteneur — essayer plusieurs sélecteurs
+    const target =
+        root.querySelector(".col.right") ??
+        root.querySelector(".controls-right") ??
+        root.querySelector(".right") ??
+        root;
+
+    const btn = document.createElement("div");
+    btn.className = `control-icon tgcm-btn${isActive ? " active" : ""}`;
+    btn.title = `Protégé TGCM${isActive ? " (actif)" : ""}`;
+    btn.innerHTML = `<i class="fas fa-shield-alt"></i>`;
+
+    btn.addEventListener("click", async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        const current = tokenDoc.getFlag("westmarch", "tgcm") ?? false;
+        await tokenDoc.setFlag("westmarch", "tgcm", !current);
+        hud.render();
+    });
+
+    target.appendChild(btn);
+}
 
 function _isActorProtected(actor) {
     // Acteur synthétique (token non-lié) : l'acteur porte une ref directe au token
