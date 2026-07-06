@@ -1,7 +1,7 @@
 ================================================================================
                         WESTMARCH SYSTÈME — MODULE FOUNDRY VTT
                                Auteur : Soruta (Discord: s0ruta)
-                                       Version : 1.5.9
+                                       Version : 1.6.0
                               Compatibilité : Foundry VTT v13
 ================================================================================
 
@@ -626,6 +626,10 @@ NOTES TECHNIQUES
 ================================================================================
                         WESTMARCH SYSTÈME — MISES À JOUR
 ================================================================================
+
+v1.6.0 | 2026-07-06
+   tm.js      — Les fenêtres de déclaration TM (joueur) et de validation
+                (GM) sont maintenant redimensionnables (resizable: true).
 
 v1.5.9 | 2026-07-05
    goliath.js — Nouveau fichier. Quand un Goliath utilise sa feature

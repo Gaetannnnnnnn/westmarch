@@ -665,7 +665,7 @@ function openDeclarationDialog(actor) {
             cancel: { icon: '<i class="fas fa-times"></i>', label: "Annuler" }
         },
         default: "declare"
-    }, { width: 520 });
+    }, { width: 520, resizable: true });
 
     Hooks.once("renderDialog", (app, html) => {
         if (app !== dlg) return;
@@ -875,7 +875,7 @@ function openDowntimeDialog() {
             cancel: { icon: '<i class="fas fa-times"></i>', label: "Annuler" }
         },
         default: "apply"
-    }, { width: 560 });
+    }, { width: 560, resizable: true });
 
     Hooks.once("renderDialog", (app, html) => {
         if (app !== dlg) return;
