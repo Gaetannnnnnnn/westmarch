@@ -812,10 +812,16 @@ function buildActorRow(actor, startUnchecked = false) {
         <input type="checkbox" name="tm-active-${id}" ${startUnchecked ? "" : "checked"} style="margin:0;">
         <a class="tm-actor-name" data-actor-id="${id}"
            style="cursor:pointer; font-weight:bold; text-decoration:underline;">${actor.name}</a>${statusBadge}
-        <button type="button" class="tm-refuse-btn" data-actor-id="${id}"
-                style="margin-left:auto; padding:2px 8px; font-size:0.8em; color:#e74c3c; background:none; border:1px solid #e74c3c; border-radius:3px; cursor:pointer;">
-            Refuser
-        </button>
+        <div style="margin-left:auto; display:flex; gap:4px;">
+            <button type="button" class="tm-edit-btn" data-actor-id="${id}"
+                    style="padding:2px 8px; font-size:0.8em; color:#3498db; background:none; border:1px solid #3498db; border-radius:3px; cursor:pointer;">
+                Modifier
+            </button>
+            <button type="button" class="tm-refuse-btn" data-actor-id="${id}"
+                    style="padding:2px 8px; font-size:0.8em; color:#e74c3c; background:none; border:1px solid #e74c3c; border-radius:3px; cursor:pointer;">
+                Refuser
+            </button>
+        </div>
     </div>
     <div class="tm-controls-${id}" style="opacity:${startUnchecked ? "0.4" : "1"};">
         ${itemsHtml}
@@ -899,6 +905,11 @@ function openDowntimeDialog() {
         html.find(".tm-actor-name").on("click", function () {
             const actor = game.actors.get(this.dataset.actorId);
             if (actor) actor.sheet.render(true);
+        });
+
+        html.find(".tm-edit-btn").on("click", function () {
+            const actor = game.actors.get(this.dataset.actorId);
+            if (actor) openDeclarationDialog(actor);
         });
 
         html.find(".tm-refuse-btn").on("click", async function () {

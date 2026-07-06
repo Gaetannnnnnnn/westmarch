@@ -1,7 +1,7 @@
 ================================================================================
                         WESTMARCH SYSTÈME — MODULE FOUNDRY VTT
                                Auteur : Soruta (Discord: s0ruta)
-                                       Version : 1.6.1
+                                       Version : 1.6.3
                               Compatibilité : Foundry VTT v13
 ================================================================================
 
@@ -626,6 +626,20 @@ NOTES TECHNIQUES
 ================================================================================
                         WESTMARCH SYSTÈME — MISES À JOUR
 ================================================================================
+
+v1.6.3 | 2026-07-06
+   tgcm.js    — Nouveau module "Protégé TGCM" : bouton dans le HUD du
+                token (GM uniquement) qui empêche un mob de passer à 0 PV.
+                Tout dégât fatal laisse le mob à 1 PV. Indicateur visuel :
+                bouclier doré centré au-dessus du token, visible GM only.
+                Le flag est posé sur le TokenDocument (pas l'acteur), donc
+                spécifique à l'instance du token.
+
+v1.6.2 | 2026-07-06
+   tm.js      — GM : bouton "Modifier" ajouté sur chaque ligne joueur dans
+                la fenêtre de validation TM. Permet au GM d'ouvrir le
+                dialogue de déclaration TM pour n'importe quel joueur
+                (ajouter, modifier ou supprimer des activités).
 
 v1.6.1 | 2026-07-06
    tm.js      — Craft : le message "Pensez à ajouter l'objet manuellement"
