@@ -1,7 +1,7 @@
 ================================================================================
                         WESTMARCH SYSTÈME — MODULE FOUNDRY VTT
                                Auteur : Soruta (Discord: s0ruta)
-                                       Version : 1.6.4
+                                       Version : 1.7.1
                               Compatibilité : Foundry VTT v13
 ================================================================================
 
@@ -626,6 +626,42 @@ NOTES TECHNIQUES
 ================================================================================
                         WESTMARCH SYSTÈME — MISES À JOUR
 ================================================================================
+
+v1.7.1 | 2026-07-06
+   tm.js      — Notification TM simplifiée : 1 seul message avec le nombre
+                total de TM en attente + liste des noms, envoyé à chaque
+                nouvelle déclaration.
+
+v1.7.0 | 2026-07-06
+   tm.js      — Notification Discord TM : suppression du polling horaire
+                (17h-20h). La notif est maintenant envoyée immédiatement
+                quand un joueur clique "Déclarer le TM". Message : nom du
+                personnage + résumé des activités + nb total en attente si >1.
+
+v1.6.9 | 2026-07-06
+   tm.js      — Déduction du coût de craft : conversion automatique des
+                devises (PP, PA, PC) si les PO sont insuffisants. Toutes
+                les monnaies sont ramenées en cuivres, le coût soustrait,
+                puis redistribué optimalement PP → PO → PA → PC.
+                L'électrum (EP) est absorbé dans le total et non restitué.
+
+v1.6.8 | 2026-07-06
+   tgcm.js    — Délai 500 ms avant la restauration HP pour laisser
+                l'animation de dégâts (nombre rouge) s'afficher sur le token.
+
+v1.6.7 | 2026-07-06
+   tgcm.js    — Protection TGCM : passage de preUpdateActor à updateActor
+                (post-update) pour corriger l'incompatibilité Foundry v13 et
+                l'absence d'affichage des dégâts. Correction de _isActorProtected
+                pour les tokens non-liés (actor.token au lieu de actor.isToken).
+
+v1.6.6 | 2026-07-06
+   tgcm.js    — Indicateur visuel TGCM réduit (w=4, h=5) pour un simple repère discret.
+
+v1.6.5 | 2026-07-06
+   tgcm.js    — Refonte de l'indicateur visuel TGCM : dessin vectoriel
+                PIXI (pentagone héraldique doré, reflet + ombre) au lieu
+                de l'emoji. Positionné proprement en haut du token.
 
 v1.6.4 | 2026-07-06
    tm.js      — Messages craft (joueur, GM, résumé, Discord) : ajout de

@@ -12,30 +12,6 @@
 
 export function TmHooks() {
 
-    // ---- Setting interne : date du dernier rappel TM Discord (caché de l'UI) ----
-    // restricted: false → tout utilisateur (pas seulement GM) peut poser le verrou
-    // anti-doublon, ce qui permet de couvrir les plages où seuls des joueurs sont connectés.
-    Hooks.once("init", () => {
-        game.settings.register("westmarch", "tmLastNotifDate", {
-            scope: "world",
-            config: false,
-            type: String,
-            default: "",
-            restricted: false
-        });
-    });
-
-    // ---- Rappel Discord — plage 17h-20h heure de Paris, tous utilisateurs ----
-    // Un décalage aléatoire par utilisateur (0-30 s) réduit le risque de doublon
-    // si plusieurs personnes sont connectées au même moment.
-    Hooks.once("ready", () => {
-        const stagger = (game.user.id.split("").reduce((s, c) => s + c.charCodeAt(0), 0) % 30) * 1000;
-        setTimeout(() => {
-            checkAndNotifyTmPending();
-            setInterval(checkAndNotifyTmPending, 60_000);
-        }, stagger);
-    });
-
     // ---- Bouton dans le groupe WestMarch (barre de gauche, GM uniquement) ----
     Hooks.on("getSceneControlButtons", (controls) => {
         if (!game.user.isGM) return;
@@ -429,6 +405,41 @@ function getCraftStats(craftType, price, scrollLevel, rarity, singleUse) {
     return { totalDays, cost };
 }
 
+// Déduit un coût en PO en convertissant au besoin PP, PA et PC.
+// Toutes les devises sont ramenées en cuivres, le coût est soustrait,
+// puis le reste est redistribué de façon optimale (PP → PO → PA → PC).
+// L'électrum (EP) est absorbé dans la valeur totale et non restitué.
+// Retourne true si le paiement était complet, false si fonds insuffisants.
+async function deductGoldCost(actor, costGP) {
+    const cur = actor.system.currency ?? {};
+    const pp  = cur.pp ?? 0;
+    const gp  = cur.gp ?? 0;
+    const ep  = cur.ep ?? 0;  // 1 ep = 0,5 po = 50 pc
+    const sp  = cur.sp ?? 0;
+    const cp  = cur.cp ?? 0;
+
+    // Total en cuivres (base commune)
+    const totalCP = pp * 1000 + gp * 100 + ep * 50 + sp * 10 + cp;
+    const costCP  = Math.round(costGP * 100);
+    const enough  = totalCP >= costCP;
+    const leftCP  = Math.max(0, totalCP - costCP);
+
+    // Redistribution optimale PP → PO → PA → PC (EP converti)
+    const newPP = Math.floor(leftCP / 1000);
+    const newGP = Math.floor((leftCP % 1000) / 100);
+    const newSP = Math.floor((leftCP % 100)  / 10);
+    const newCP = leftCP % 10;
+
+    await actor.update({
+        "system.currency.pp": newPP,
+        "system.currency.gp": newGP,
+        "system.currency.ep": 0,
+        "system.currency.sp": newSP,
+        "system.currency.cp": newCP
+    });
+    return enough;
+}
+
 function craftTypeLabel(ct) {
     if (ct === "nonmagique") return "Non-magique";
     if (ct === "parchemin")  return "Parchemin";
@@ -677,6 +688,7 @@ function openDeclarationDialog(actor) {
                         declared: true,
                         items: cartItems.map(i => ({ ...i, declared: true }))
                     });
+                    notifyTmDeclared();
                     ui.notifications.info(`TM déclaré : ${cartItems.length} activité${cartItems.length !== 1 ? "s" : ""}.`);
                 }
             },
@@ -1001,10 +1013,9 @@ async function applyDowntimeGains($html, actors) {
                 const remaining     = Math.max(0, totalDays - newTotal);
                 const isFirstPeriod = daysAlready === 0;
 
-                // Déduire le coût au premier TM (règle : payé intégralement au début)
+                // Déduire le coût au premier TM — convertit PP/PA/PC si PO insuffisants
                 if (isFirstPeriod && craftCost > 0) {
-                    const currentGP = actor.system.currency?.gp ?? 0;
-                    await actor.update({ "system.currency.gp": Math.max(0, currentGP - craftCost) });
+                    await deductGoldCost(actor, craftCost);
                 }
 
                 // Message privé joueur
@@ -1162,50 +1173,19 @@ async function applyDowntimeGains($html, actors) {
 }
 
 // ============================================================
-// Rappel Discord quotidien — TM en attente de validation
-// Déclenché toutes les minutes sur TOUS les utilisateurs connectés
-// (GM et joueurs), dans la plage 17h-20h heure de Paris.
-// Le premier utilisateur qui passe le check dans la fenêtre pose
-// le verrou (tmLastNotifDate = aujourd'hui), les suivants sautent.
-// restricted: false sur le setting permet aux non-GM de poser le verrou.
-// Pas de message si aucun TM en attente.
+// Notification Discord immédiate — envoyée dès qu'un joueur déclare son TM
 // ============================================================
 
-async function checkAndNotifyTmPending() {
+function notifyTmDeclared() {
     const webhookUrl = game.settings.get("westmarch", "tmWebhookUrl");
     if (!webhookUrl) return;
 
-    // Heure et date côté Paris (gère CET/CEST automatiquement)
-    const now   = new Date();
-    const parts = new Intl.DateTimeFormat("fr-FR", {
-        timeZone: "Europe/Paris",
-        year: "numeric", month: "2-digit", day: "2-digit",
-        hour: "2-digit", hour12: false
-    }).formatToParts(now);
-
-    const hour    = parseInt(parts.find(p => p.type === "hour")?.value  ?? "0");
-    const day     = parts.find(p => p.type === "day")?.value;
-    const month   = parts.find(p => p.type === "month")?.value;
-    const year    = parts.find(p => p.type === "year")?.value;
-    const dateKey = `${year}-${month}-${day}`;
-
-    if (hour < 17 || hour > 20) return; // hors de la plage 17h-20h
-
-    // Vérification anti-doublon : on marque la date dès le premier passage.
-    // Le décalage aléatoire par user (0-30 s) réduit le risque de doublon
-    // si plusieurs personnes passent le check au même moment.
-    const lastDate = game.settings.get("westmarch", "tmLastNotifDate");
-    if (lastDate === dateKey) return;
-    await game.settings.set("westmarch", "tmLastNotifDate", dateKey);
-
-    // Compte les TM déclarés mais pas encore validés par le GM
     const pending = game.actors.filter(a =>
         a.type === "character" &&
         a.hasPlayerOwner &&
         a.getFlag("westmarch", "tm")?.declared
     );
-
-    if (pending.length === 0) return; // pas de message si rien en attente
+    if (pending.length === 0) return;
 
     fetch(webhookUrl, {
         method: "POST",
@@ -1214,5 +1194,5 @@ async function checkAndNotifyTmPending() {
             content: `⏳ **${pending.length} temps mort${pending.length > 1 ? "s" : ""} en attente** de validation GM.\n`
                    + pending.map(a => `• ${a.name}`).join("\n")
         })
-    }).catch(err => console.error("westmarch | Webhook TM rappel :", err));
+    }).catch(err => console.error("westmarch | Webhook TM déclaration :", err));
 }

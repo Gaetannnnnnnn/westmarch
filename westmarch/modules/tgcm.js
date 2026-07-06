@@ -33,17 +33,21 @@ export function TgcmHooks() {
         _refreshTgcmShield(token);
     });
 
-    // ---- Interception des dégâts ----
-    // Fires avant l'écriture en base sur tous les clients.
-    // On force les PV à 1 si l'acteur est protégé TGCM.
-    Hooks.on("preUpdateActor", (actor, changes) => {
+    // ---- Interception des dégâts (post-update) ----
+    // On laisse les dégâts s'appliquer normalement (affichage OK),
+    // puis on restaure les PV à 1 dès qu'ils passent à 0 ou moins.
+    // L'option tgcmProtect évite la boucle infinie.
+    Hooks.on("updateActor", async (actor, changes, options) => {
+        if (options?.tgcmProtect) return;
         const newHP = changes?.system?.attributes?.hp?.value;
-        if (newHP === undefined || newHP > 0) return;
-
-        const isProtected = _isActorProtected(actor);
-        if (!isProtected) return;
-
-        changes.system.attributes.hp.value = 1;
+        if (newHP === undefined || newHP >= 1) return;
+        if (!_isActorProtected(actor)) return;
+        // Délai pour laisser l'animation de dégâts s'afficher en rouge
+        await new Promise(r => setTimeout(r, 500));
+        await actor.update(
+            { "system.attributes.hp.value": 1 },
+            { tgcmProtect: true, animate: false }
+        );
     });
 }
 
@@ -91,17 +95,17 @@ function _injectTgcmButton(hud, html) {
 }
 
 function _isActorProtected(actor) {
-    // Acteur synthétique (token non-lié) : l'acteur porte une ref directe au token
-    if (actor.isToken) {
-        return actor.token?.getFlag("westmarch", "tgcm") ?? false;
+    // Acteur synthétique (token non-lié) : actor.token pointe directement au TokenDocument
+    if (actor.token) {
+        return actor.token.getFlag("westmarch", "tgcm") ?? false;
     }
-    // Acteur lié : vérifier tous ses tokens actifs sur la scène courante
-    return actor.getActiveTokens(false, true)
-        .some(t => t.document?.getFlag("westmarch", "tgcm"));
+    // Acteur lié : parcourir tous les tokens de la scène courante
+    return (canvas?.tokens?.placeables ?? [])
+        .filter(t => t.actor?.id === actor.id)
+        .some(t => t.document?.getFlag("westmarch", "tgcm") ?? false);
 }
 
 function _refreshTgcmShield(token) {
-    // Supprimer l'indicateur existant
     if (token._tgcmShield) {
         token._tgcmShield.destroy({ children: true });
         token._tgcmShield = null;
@@ -110,27 +114,21 @@ function _refreshTgcmShield(token) {
     if (!game.user.isGM) return;
     if (!token.document?.getFlag("westmarch", "tgcm")) return;
 
-    // Fond doré arrondi
+    // Dessine un petit bouclier héraldique vectoriel (pas d'emoji)
+    // Forme : pentagone pointu en bas — w=7, h=9 → badge ~14×18 px
     const g = new PIXI.Graphics();
-    g.beginFill(0xf39c12, 0.92);
-    g.lineStyle(2, 0xffffff, 0.95);
-    g.drawRoundedRect(-11, -11, 22, 22, 5);
+    const w = 4, h = 5;
+
+    // Bouclier minimaliste — fond doré
+    g.beginFill(0xf1c40f, 0.95);
+    g.lineStyle(1, 0x000000, 0.5);
+    g.drawPolygon([-w, -h,  w, -h,  w, 0,  0, h,  -w, 0]);
     g.endFill();
 
-    // Icône bouclier (emoji — rendu PIXI natif)
-    const icon = new PIXI.Text("🛡", { fontSize: 14 });
-    icon.anchor.set(0.5, 0.5);
-    icon.x = 0;
-    icon.y = 1;
+    // Centré en haut du token
+    g.x = token.w / 2;
+    g.y = h;
 
-    const container = new PIXI.Container();
-    container.addChild(g);
-    container.addChild(icon);
-
-    // Centré horizontalement, au-dessus du token
-    container.x = token.w / 2;
-    container.y = -14;
-
-    token.addChild(container);
-    token._tgcmShield = container;
+    token.addChild(g);
+    token._tgcmShield = g;
 }
