@@ -1,7 +1,7 @@
 ================================================================================
                         WESTMARCH SYSTÈME — MODULE FOUNDRY VTT
                                Auteur : Soruta (Discord: s0ruta)
-                                       Version : 1.6.0
+                                       Version : 1.6.1
                               Compatibilité : Foundry VTT v13
 ================================================================================
 
@@ -626,6 +626,13 @@ NOTES TECHNIQUES
 ================================================================================
                         WESTMARCH SYSTÈME — MISES À JOUR
 ================================================================================
+
+v1.6.1 | 2026-07-06
+   tm.js      — Craft : le message "Pensez à ajouter l'objet manuellement"
+                est désormais envoyé en privé au GM (pas au joueur). Le
+                joueur reçoit uniquement le statut du craft et le rappel
+                de déduction d'or (premier TM). Le GM reçoit le rappel
+                au démarrage et à la complétion.
 
 v1.6.0 | 2026-07-06
    tm.js      — Les fenêtres de déclaration TM (joueur) et de validation

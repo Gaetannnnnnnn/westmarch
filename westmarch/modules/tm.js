@@ -981,17 +981,31 @@ async function applyDowntimeGains($html, actors) {
                 if (owners.length > 0) {
                     let msgContent;
                     if (complete) {
-                        msgContent = `🔨 Craft terminé pour <strong>${actor.name}</strong> : <strong>${craftName}</strong> — ${dateLabel} (${workDays} j) → ✅ Objet créé !`
-                            + `<br><span style="color:#e67e22; font-weight:bold;">⚠️ Pensez à ajouter <strong>${craftName}</strong> manuellement sur votre fiche de personnage. Le coût de <strong>${craftCost} po</strong> a déjà été retiré de votre bourse.</span>`;
+                        msgContent = `🔨 Craft terminé pour <strong>${actor.name}</strong> : <strong>${craftName}</strong> — ${dateLabel} (${workDays} j) → ✅ Objet créé !`;
                     } else if (isFirstPeriod) {
                         msgContent = `🔨 Craft démarré pour <strong>${actor.name}</strong> : <strong>${craftName}</strong> — ${dateLabel} (${workDays} j) → ${newTotal}/${totalDays} j — <strong>${remaining} j restant${remaining > 1 ? "s" : ""}</strong>`
-                            + `<br><span style="color:#e67e22; font-weight:bold;">⚠️ Le coût de <strong>${craftCost} po</strong> a été retiré de votre bourse. Dès que le craft sera terminé, pensez à ajouter l'objet manuellement sur votre fiche.</span>`;
+                            + `<br><span style="color:#e67e22;">⚠️ Le coût de <strong>${craftCost} po</strong> a été retiré de votre bourse.</span>`;
                     } else {
                         msgContent = `🔨 Craft en cours pour <strong>${actor.name}</strong> : <strong>${craftName}</strong> — ${dateLabel} (${workDays} j) → ${newTotal}/${totalDays} j — <strong>${remaining} j restant${remaining > 1 ? "s" : ""}</strong>`;
                     }
                     ChatMessage.create({
                         content: msgContent,
                         whisper: owners.map(u => u.id),
+                        speaker: { alias: "WestMarch — Temps morts" }
+                    });
+                }
+
+                // Message privé GM — rappel d'ajouter l'objet manuellement
+                if (complete) {
+                    ChatMessage.create({
+                        content: `⚠️ <strong>${actor.name}</strong> a terminé son craft : <strong>${craftName}</strong>. Pensez à ajouter l'objet manuellement sur sa fiche. Le coût de <strong>${craftCost} po</strong> a déjà été retiré de sa bourse.`,
+                        whisper: ChatMessage.getWhisperRecipients("GM"),
+                        speaker: { alias: "WestMarch — Temps morts" }
+                    });
+                } else if (isFirstPeriod) {
+                    ChatMessage.create({
+                        content: `ℹ️ <strong>${actor.name}</strong> a démarré un craft : <strong>${craftName}</strong> (${newTotal}/${totalDays} j). Dès que le craft sera terminé, pensez à ajouter l'objet manuellement sur sa fiche.`,
+                        whisper: ChatMessage.getWhisperRecipients("GM"),
                         speaker: { alias: "WestMarch — Temps morts" }
                     });
                 }
