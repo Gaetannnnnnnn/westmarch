@@ -34,29 +34,20 @@ export function TgcmHooks() {
     });
 
     // ---- Interception des dégâts (pré-update) ----
-    // On clamp le HP à 1 avant écriture → players ne voient jamais 1→0.
-    // options.diff = false force Foundry à envoyer l'update même si HP
-    // était déjà à 1, ce qui permet à Midi QOL d'afficher les dégâts
-    // sur les coups suivants (sinon Foundry court-circuite le no-op 1→1).
-    // Les dégâts réels (overkill compris) sont stockés dans options pour
-    // qu'on puisse les afficher sans Midi QOL si nécessaire.
+    // Clamp HP à 1 avant écriture → players ne voient jamais 1→0.
+    // Midi QOL calcule son affichage depuis le delta HP réel : si on
+    // clamp 1→1 il voit 0 et n'affiche rien. On prend donc en charge
+    // l'affichage nous-mêmes via setTimeout (hors de la call stack
+    // synchrone) avec les dégâts réels overkill compris.
     Hooks.on("preUpdateActor", (actor, changes, options) => {
         const newHP = changes?.system?.attributes?.hp?.value;
         if (newHP === undefined || newHP >= 1) return;
         if (!_isActorProtected(actor)) return;
         const currentHP = actor.system?.attributes?.hp?.value ?? 1;
-        options._tgcmDamage = Math.max(0, currentHP - newHP); // dégâts réels avec overkill
+        const damage = Math.max(0, currentHP - newHP);
         changes.system.attributes.hp.value = 1;
-        options.diff = false; // forcer l'update même si HP est déjà à 1
-    });
-
-    // ---- Affichage des dégâts réels (fallback sans Midi QOL) ----
-    // Si Midi QOL est absent, il n'y a pas de floating text → on l'ajoute.
-    // Avec Midi QOL, celui-ci affiche lui-même le montant depuis le jet.
-    Hooks.on("updateActor", (actor, _changes, options) => {
-        if (!options?._tgcmDamage) return;
-        if (game.modules.get("midi-qol")?.active) return;
-        _showTgcmDamageFloat(actor, options._tgcmDamage);
+        options.diff = false;
+        setTimeout(() => _showTgcmDamageFloat(actor, damage), 100);
     });
 }
 

@@ -1,7 +1,7 @@
 ================================================================================
                         WESTMARCH SYSTÈME — MODULE FOUNDRY VTT
                                Auteur : Soruta (Discord: s0ruta)
-                                       Version : 1.7.4
+                                       Version : 1.7.8
                               Compatibilité : Foundry VTT v13
 ================================================================================
 
@@ -626,6 +626,33 @@ NOTES TECHNIQUES
 ================================================================================
                         WESTMARCH SYSTÈME — MISES À JOUR
 ================================================================================
+
+v1.7.8 | 2026-07-06
+   tm.js      — Dialog GM : barre de recherche (filtre temps réel) au-dessus
+                de la liste des personnages. Focus automatique à l'ouverture
+                de la liste.
+
+v1.7.7 | 2026-07-06
+   tgcm.js    — Affichage dégâts : suppression de la Map/updateActor.
+                L'affichage est maintenant déclenché directement depuis
+                preUpdateActor via setTimeout(100ms), hors de la call
+                stack synchrone. Midi QOL calcule son display depuis le
+                delta HP réel (0 si HP clampé) donc on prend en charge
+                l'affichage nous-mêmes avec les dégâts réels.
+
+v1.7.6 | 2026-07-06
+   tm.js      — getPlayerActors : filtre désormais uniquement les acteurs
+                dans le dossier "PJ" (a.folder?.name === "PJ") en plus
+                des conditions existantes (type character + hasPlayerOwner).
+
+v1.7.5 | 2026-07-06
+   tgcm.js    — Correction affichage dégâts TGCM : passage d'une Map
+                module-level (_tgcmPendingDamage) pour transmettre les
+                dégâts réels entre preUpdateActor et updateActor, car
+                Foundry v13 clone l'objet options entre les deux hooks.
+                Suppression du check Midi QOL (son affichage est dans le
+                chat, le scrolling text TGCM est sur le token — pas de
+                doublon). diff:false conservé pour les coups successifs.
 
 v1.7.4 | 2026-07-06
    player.js  — Join Scene : un GM peut désormais rejoindre la scène de

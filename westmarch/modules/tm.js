@@ -120,7 +120,7 @@ function getMonthName(monthIndex) {
 
 function getPlayerActors() {
     return game.actors
-        .filter(a => a.type === "character" && a.hasPlayerOwner)
+        .filter(a => a.type === "character" && a.hasPlayerOwner && a.folder?.name === "PJ")
         .sort((a, b) => a.name.localeCompare(b.name));
 }
 
@@ -891,11 +891,15 @@ function openDowntimeDialog() {
     const content = `
 <div>
     ${headerHtml}
-    <div id="tm-actor-list" style="display:none; max-height:58vh; overflow-y:auto; padding-right:4px;">
-        ${(showAllByDefault ? allActors : declared).map(a => buildActorRow(a, true)).join("")}
-        ${!showAllByDefault && undeclared.length > 0
-            ? `<div class="tm-undeclared-group" style="display:none;">${undeclared.map(a => buildActorRow(a, true)).join("")}</div>`
-            : ""}
+    <div id="tm-actor-list" style="display:none;">
+        <input id="tm-search" type="text" placeholder="Rechercher un personnage…"
+               style="width:100%; box-sizing:border-box; margin-bottom:6px; padding:4px 8px; border:1px solid #ccc; border-radius:4px;">
+        <div id="tm-actor-scroll" style="max-height:55vh; overflow-y:auto; padding-right:4px;">
+            ${(showAllByDefault ? allActors : declared).map(a => buildActorRow(a, true)).join("")}
+            ${!showAllByDefault && undeclared.length > 0
+                ? `<div class="tm-undeclared-group" style="display:none;">${undeclared.map(a => buildActorRow(a, true)).join("")}</div>`
+                : ""}
+        </div>
     </div>
 </div>`;
 
@@ -918,6 +922,15 @@ function openDowntimeDialog() {
 
         html.find("#tm-show-list").on("change", function () {
             html.find("#tm-actor-list").css("display", this.checked ? "block" : "none");
+            if (this.checked) html.find("#tm-search").trigger("focus");
+        });
+
+        html.find("#tm-search").on("input", function () {
+            const q = this.value.trim().toLowerCase();
+            html.find(".tm-actor-row").each(function () {
+                const name = $(this).find(".tm-actor-name").text().toLowerCase();
+                $(this).toggle(!q || name.includes(q));
+            });
         });
 
         html.find("#tm-show-undeclared").on("change", function () {

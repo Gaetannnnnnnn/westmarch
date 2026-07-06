@@ -70,7 +70,7 @@ export function registerSettings() {
 
     game.settings.register("westmarch", "enableJoinScene", {
         name: "Join Scene",
-        hint: "Ajoute une option 'Join Scene' dans le menu contextuel de la liste des joueurs. Permet à n'importe quel membre d'une party de se téléporter vers la scène d'un autre membre.",
+        hint: "Ajoute une option 'Join Scene' dans le menu contextuel de la liste des joueurs. Permet à n'importe quel membre d'une party de se téléporter vers la scène d'un autre membre. Les GM peuvent rejoindre la scène de n'importe quel autre GM, sans condition de party.",
         scope: "world",
         config: true,
         type: Boolean,
@@ -229,8 +229,8 @@ export function registerSettings() {
     });
 
     game.settings.register("westmarch", "tmWebhookUrl", {
-        name: "URL du Webhook Discord (résultats temps morts)",
-        hint: "Quand le GM applique les gains de temps morts, envoie le récapitulatif sur ce webhook Discord (salon staff/MJ). Laisser vide pour désactiver.",
+        name: "URL du Webhook Discord (temps morts)",
+        hint: "Envoie une notification immédiate sur ce webhook Discord à chaque nouvelle déclaration de temps mort par un joueur : nombre total de TM en attente + liste des noms. Laisser vide pour désactiver.",
         scope: "world",
         config: true,
         type: String,
