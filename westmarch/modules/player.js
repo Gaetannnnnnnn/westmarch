@@ -168,6 +168,9 @@ export function PlayerHooks() {
                 const targetUser = game.users.get(li.dataset.userId);
                 if (!targetUser) return false;
                 if (targetUser.id === game.user.id) return false;
+                // Un GM peut rejoindre la scène de n'importe quel autre GM
+                if (game.user.isGM && targetUser.isGM) return true;
+                // Sinon : même party, cible non-GM uniquement
                 if (targetUser.isGM) return false;
                 const myParty = game.user.getFlag('westmarch', 'partyId');
                 if (!myParty) return false;

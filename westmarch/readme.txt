@@ -1,7 +1,7 @@
 ================================================================================
                         WESTMARCH SYSTÈME — MODULE FOUNDRY VTT
                                Auteur : Soruta (Discord: s0ruta)
-                                       Version : 1.7.3
+                                       Version : 1.7.4
                               Compatibilité : Foundry VTT v13
 ================================================================================
 
@@ -627,6 +627,11 @@ NOTES TECHNIQUES
                         WESTMARCH SYSTÈME — MISES À JOUR
 ================================================================================
 
+v1.7.4 | 2026-07-06
+   player.js  — Join Scene : un GM peut désormais rejoindre la scène de
+                n'importe quel autre GM via clic droit → Join Scene, sans
+                condition de party.
+
 v1.7.3 | 2026-07-06
    tgcm.js    — Affichage des dégâts réels (overkill compris) : options.diff=false
                 force l'update Foundry même quand HP est déjà à 1, ce qui permet
@@ -651,173 +656,3 @@ v1.7.0 | 2026-07-06
                 (17h-20h). La notif est maintenant envoyée immédiatement
                 quand un joueur clique "Déclarer le TM". Message : nom du
                 personnage + résumé des activités + nb total en attente si >1.
-
-v1.6.9 | 2026-07-06
-   tm.js      — Déduction du coût de craft : conversion automatique des
-                devises (PP, PA, PC) si les PO sont insuffisants. Toutes
-                les monnaies sont ramenées en cuivres, le coût soustrait,
-                puis redistribué optimalement PP → PO → PA → PC.
-                L'électrum (EP) est absorbé dans le total et non restitué.
-
-v1.6.8 | 2026-07-06
-   tgcm.js    — Délai 500 ms avant la restauration HP pour laisser
-                l'animation de dégâts (nombre rouge) s'afficher sur le token.
-
-v1.6.7 | 2026-07-06
-   tgcm.js    — Protection TGCM : passage de preUpdateActor à updateActor
-                (post-update) pour corriger l'incompatibilité Foundry v13 et
-                l'absence d'affichage des dégâts. Correction de _isActorProtected
-                pour les tokens non-liés (actor.token au lieu de actor.isToken).
-
-v1.6.6 | 2026-07-06
-   tgcm.js    — Indicateur visuel TGCM réduit (w=4, h=5) pour un simple repère discret.
-
-v1.6.5 | 2026-07-06
-   tgcm.js    — Refonte de l'indicateur visuel TGCM : dessin vectoriel
-                PIXI (pentagone héraldique doré, reflet + ombre) au lieu
-                de l'emoji. Positionné proprement en haut du token.
-
-v1.6.4 | 2026-07-06
-   tm.js      — Messages craft (joueur, GM, résumé, Discord) : ajout de
-                la rareté/type et du coût entre parenthèses après le nom
-                de l'objet. Helper craftInfoStr() pour formater selon le
-                type (Non-magique, Parchemin Niv. X, Common/Rare/… usage unique).
-
-v1.6.3 | 2026-07-06
-   tgcm.js    — Nouveau module "Protégé TGCM" : bouton dans le HUD du
-                token (GM uniquement) qui empêche un mob de passer à 0 PV.
-                Tout dégât fatal laisse le mob à 1 PV. Indicateur visuel :
-                bouclier doré centré au-dessus du token, visible GM only.
-                Le flag est posé sur le TokenDocument (pas l'acteur), donc
-                spécifique à l'instance du token.
-
-v1.6.2 | 2026-07-06
-   tm.js      — GM : bouton "Modifier" ajouté sur chaque ligne joueur dans
-                la fenêtre de validation TM. Permet au GM d'ouvrir le
-                dialogue de déclaration TM pour n'importe quel joueur
-                (ajouter, modifier ou supprimer des activités).
-
-v1.6.1 | 2026-07-06
-   tm.js      — Craft : le message "Pensez à ajouter l'objet manuellement"
-                est désormais envoyé en privé au GM (pas au joueur). Le
-                joueur reçoit uniquement le statut du craft et le rappel
-                de déduction d'or (premier TM). Le GM reçoit le rappel
-                au démarrage et à la complétion.
-
-v1.6.0 | 2026-07-06
-   tm.js      — Les fenêtres de déclaration TM (joueur) et de validation
-                (GM) sont maintenant redimensionnables (resizable: true).
-
-v1.5.9 | 2026-07-05
-   goliath.js — Nouveau fichier. Quand un Goliath utilise sa feature
-   (nouveau)     "Large Form", son token passe automatiquement en 2x2
-                (Large). Réutiliser la feature revient à la taille
-                d'origine (toggle). Même logique que rage.js : GM
-                uniquement, taille d'origine sauvegardée en flag.
-                Compatible Midi QOL : écoute à la fois
-                dnd5e.postUseActivity et midi-qol.RollComplete (cooldown
-                500 ms pour éviter le double-déclenchement).
-                Désactivable via les paramètres du module.
-
-v1.5.8 | 2026-07-05
-   tm.js      — Système de panier pour les déclarations TM joueur : le bouton
-                sablier ouvre un dialog avec un panier (🛒) listant les
-                activités ajoutées. "Ajouter au panier" enregistre une activité
-                sans déclarer ; "Déclarer le panier" envoie l'ensemble au GM.
-                Le panier est sauvegardé en temps réel (fermeture sans déclarer
-                = items préservés). Les items s'affichent en liste dans la vue
-                GM (lecture seule, plus de formulaire par acteur). Craft :
-                l'or est déduit à la première validation du GM, et un message
-                ⚠️ rappelle au joueur d'ajouter l'objet manuellement sur sa
-                fiche une fois le craft terminé.
-
-v1.5.7 | 2026-07-05
-   tm.js      — Menu GM (temps morts) : une case à cocher "Afficher la liste"
-                permet de montrer ou masquer la liste des personnages. La liste
-                est masquée par défaut pour ne pas polluer l'interface.
-
-v1.5.6 | 2026-07-05
-   tm.js      — Menu GM (temps morts) : tous les personnages sont désormais
-                décochés par défaut à l'ouverture du dialog.
-
-v1.5.5 | 2026-07-05
-   tm.js      — Correction : deux boutons sablier s'affichaient sur la fiche
-                joueur (hooks renderActorSheet et renderApplicationV2 déclenchés
-                tous les deux). Le hook renderActorSheet redondant a été supprimé.
-
-v1.5.4 | 2026-07-05
-   tm.js      — Nouveau type d'activité TM : Craft. Le joueur peut déclarer une
-                fabrication d'objet (non-magique, parchemin de sort ou objet
-                magique) depuis le dialog sablier de sa fiche, en choisissant
-                le type puis les paramètres (prix d'achat / niveau de sort /
-                rareté). Les coûts et durées sont calculés automatiquement selon
-                les règles Ashara. La progression est suivie session après session
-                (le flag persiste entre les TM si le craft n'est pas terminé).
-                Le bouton sablier devient bleu si un craft est en cours.
-                Côté GM : ligne dédiée avec progression X/Y jours ; à
-                l'application, envoie un message au joueur (en cours ou terminé).
-
-v1.5.3 | 2026-07-05
-   tm.js      — Dans le menu TM du GM, le nom de chaque personnage est désormais
-                cliquable (souligné) et ouvre directement sa fiche.
-
-v1.5.2 | 2026-07-05
-   tm.js      — Rappel Discord : déclenché désormais sur TOUS les utilisateurs
-                connectés (GM et joueurs) pour augmenter les chances qu'il soit
-                envoyé. Plage horaire élargie de 17h à 20h (au lieu de pile 20h).
-                Décalage aléatoire par utilisateur (0-30 s) pour réduire le
-                risque de doublon simultané. Setting tmLastNotifDate passé en
-                restricted: false pour permettre aux non-GM de poser le verrou.
-
-v1.5.1 | 2026-07-05
-   tm.js      — Rappel Discord quotidien : entre 17h et 20h heure de Paris,
-                si des temps morts sont en attente de validation GM, un message
-                est envoyé automatiquement sur le webhook TM avec le nombre et
-                les noms des personnages concernés. Aucun message si rien en
-                attente. Anti-doublon par date (une seule notification par jour).
-                Déclenché côté GM uniquement (GM connecté requis).
-
-v1.5.0 | 2026-07-03
-   mejrestock.js — Bouton toggle 🔄 par article dans la zone des contrôles
-                   (icône fa-rotate, teal si actif / gris si inactif),
-                   remplace l'ancienne case à cocher dans la colonne Qté.
-                 — Délai par rareté : 5 nouveaux paramètres module
-                   (Commun, Peu commun, Rare, Très rare, Légendaire) ;
-                   0 = utilise le délai par défaut.
-                 — Correction : après désactivation puis réactivation du
-                   bouton, le timer ne repartait pas (Foundry mergait les
-                   flags sans supprimer l'ancienne clé ; fix : suppression
-                   explicite par clé pointée, et overwrite systématique
-                   du timer à l'activation).
-   mejshop.js    — Correction FIX 2 déjà en v1.4.15 : confirmé que
-                   application.options.pageId est bien utilisé.
-   settings.js   — 5 nouveaux settings shopRestockDaysCommon/Uncommon/
-                   Rare/VeryRare/Legendary (scope world, config true,
-                   default 0, requiresReload false).
-
-v1.4.15 | 2026-07-03
-   mejrestock.js — Case à cocher "auto" par article dans la colonne Qté de la
-                   boutique MEJ. Le timer ne démarre que si la case est cochée.
-                   Cocher sur un article déjà à 0 lance le timer immédiatement ;
-                   décocher annule le timer en cours. Correction du bug d'affichage
-                   du décompte (application.document = undefined dans MEJ, remplacé
-                   par application.options.pageId + MutationObserver pour l'injection
-                   après le rendu asynchrone des items).
-   mejshop.js    — Correction FIX 2 (objets cachés) : même correctif
-                   application.options.pageId au lieu de application.document.
-
-v1.4.13 | 2026-07-01
-   mejrestock.js — Nouveau : réapprovisionnement automatique des boutiques MEJ.
-                   Quand un article tombe à 0, un timer de N jours (configurable
-                   dans les paramètres du module, défaut 7) se lance. À expiration,
-                   l'article repasse à 1 automatiquement. Le décompte restant
-                   s'affiche en petit et grisé à côté de la quantité dans la vue
-                   boutique. Stocker 0 dans le paramètre désactive la feature.
-
-v1.4.12 | 2026-07-01
-   tm.js      — Le champ "Jours" est remplacé par deux champs de date (début/fin)
-                avec un dropdown de mois et un affichage automatique du nombre de
-                jours calculé. Le test optionnel est maintenant un vrai test de
-                compétence (d20 + mod de caractéristique + bonus de maîtrise) ;
-                les seuils s'appliquent au total : ≤1 → −20 %, 2-9 → ±0 %,
-                10-19 → +10 %, ≥20 → +20 %.
