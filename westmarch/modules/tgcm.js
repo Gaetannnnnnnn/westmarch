@@ -33,21 +33,30 @@ export function TgcmHooks() {
         _refreshTgcmShield(token);
     });
 
-    // ---- Interception des dégâts (post-update) ----
-    // On laisse les dégâts s'appliquer normalement (affichage OK),
-    // puis on restaure les PV à 1 dès qu'ils passent à 0 ou moins.
-    // L'option tgcmProtect évite la boucle infinie.
-    Hooks.on("updateActor", async (actor, changes, options) => {
-        if (options?.tgcmProtect) return;
+    // ---- Interception des dégâts (pré-update) ----
+    // On clamp le HP à 1 avant écriture → players ne voient jamais 1→0.
+    // options.diff = false force Foundry à envoyer l'update même si HP
+    // était déjà à 1, ce qui permet à Midi QOL d'afficher les dégâts
+    // sur les coups suivants (sinon Foundry court-circuite le no-op 1→1).
+    // Les dégâts réels (overkill compris) sont stockés dans options pour
+    // qu'on puisse les afficher sans Midi QOL si nécessaire.
+    Hooks.on("preUpdateActor", (actor, changes, options) => {
         const newHP = changes?.system?.attributes?.hp?.value;
         if (newHP === undefined || newHP >= 1) return;
         if (!_isActorProtected(actor)) return;
-        // Délai pour laisser l'animation de dégâts s'afficher en rouge
-        await new Promise(r => setTimeout(r, 500));
-        await actor.update(
-            { "system.attributes.hp.value": 1 },
-            { tgcmProtect: true, animate: false }
-        );
+        const currentHP = actor.system?.attributes?.hp?.value ?? 1;
+        options._tgcmDamage = Math.max(0, currentHP - newHP); // dégâts réels avec overkill
+        changes.system.attributes.hp.value = 1;
+        options.diff = false; // forcer l'update même si HP est déjà à 1
+    });
+
+    // ---- Affichage des dégâts réels (fallback sans Midi QOL) ----
+    // Si Midi QOL est absent, il n'y a pas de floating text → on l'ajoute.
+    // Avec Midi QOL, celui-ci affiche lui-même le montant depuis le jet.
+    Hooks.on("updateActor", (actor, _changes, options) => {
+        if (!options?._tgcmDamage) return;
+        if (game.modules.get("midi-qol")?.active) return;
+        _showTgcmDamageFloat(actor, options._tgcmDamage);
     });
 }
 
@@ -92,6 +101,26 @@ function _injectTgcmButton(hud, html) {
     });
 
     target.appendChild(btn);
+}
+
+function _showTgcmDamageFloat(actor, damage) {
+    if (!canvas?.interface) return;
+    const placeables = canvas.tokens?.placeables ?? [];
+    const tokens = actor.token
+        ? [placeables.find(t => t.document === actor.token)]
+        : placeables.filter(t => t.actor?.id === actor.id);
+    for (const token of tokens) {
+        if (!token?.center) continue;
+        canvas.interface.createScrollingText(token.center, `-${damage}`, {
+            anchor: CONST.TEXT_ANCHOR_POINTS.TOP,
+            duration: 2000,
+            fill: 0xff0000,
+            fontSize: 36,
+            stroke: 0x000000,
+            strokeThickness: 4,
+            jitter: 0.25
+        });
+    }
 }
 
 function _isActorProtected(actor) {

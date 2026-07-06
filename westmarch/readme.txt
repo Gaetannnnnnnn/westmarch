@@ -1,7 +1,7 @@
 ================================================================================
                         WESTMARCH SYSTÈME — MODULE FOUNDRY VTT
                                Auteur : Soruta (Discord: s0ruta)
-                                       Version : 1.7.1
+                                       Version : 1.7.3
                               Compatibilité : Foundry VTT v13
 ================================================================================
 
@@ -626,6 +626,20 @@ NOTES TECHNIQUES
 ================================================================================
                         WESTMARCH SYSTÈME — MISES À JOUR
 ================================================================================
+
+v1.7.3 | 2026-07-06
+   tgcm.js    — Affichage des dégâts réels (overkill compris) : options.diff=false
+                force l'update Foundry même quand HP est déjà à 1, ce qui permet
+                à Midi QOL d'afficher le montant sur les coups successifs. Sans
+                Midi QOL, un floating text rouge est généré manuellement via
+                canvas.interface.createScrollingText.
+
+v1.7.2 | 2026-07-06
+   tgcm.js    — Correction interception HP : retour au hook preUpdateActor
+                (pré-écriture) au lieu de updateActor post-update. Le HP
+                ne passe plus jamais à 0 en base → les joueurs ne voient
+                plus "1→0" ni le +1 de soin. Le nombre de dégâts Midi QOL
+                reste affiché normalement (basé sur le jet, pas le delta HP).
 
 v1.7.1 | 2026-07-06
    tm.js      — Notification TM simplifiée : 1 seul message avec le nombre
