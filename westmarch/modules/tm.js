@@ -60,19 +60,29 @@ export function TmHooks() {
         const header = element.querySelector(".window-header");
         if (!header || header.querySelector(".westmarch-tm-declare")) return;
 
-        const actor  = app.document;
-        const tmFlag = actor.getFlag("westmarch", "tm");
-        const btn    = document.createElement("button");
+        const actor    = app.document;
+        const tmFlag   = actor.getFlag("westmarch", "tm");
+        const items    = tmFlagItems(tmFlag);
+        const declared = tmFlag?.declared ?? false;
+        const hasCraft = items.some(i => i.type === "craft");
+
+        const btn = document.createElement("button");
         btn.type = "button";
         btn.classList.add("header-control", "icon", "fa-solid", "fa-hourglass-half", "westmarch-tm-declare");
         btn.setAttribute("aria-label", "Temps mort");
-        btn.dataset.tooltip = tmFlag?.declared
-            ? `TM déclaré : ${tmFlag.choiceLabel} (${tmFlag.dateRangeLabel ?? (tmFlag.days ?? "?") + " j"})`
-            : (tmFlag?.type === "craft")
-                ? `Craft en cours : ${tmFlag.craftName || "?"} (${tmFlag.craftDaysAlready ?? 0}/${tmFlag.craftTotalDays ?? "?"} j) — cliquer pour déclarer la prochaine période`
-                : "Déclarer mon activité TM";
-        if (tmFlag?.declared) btn.style.color = "#2ecc71";
-        else if (tmFlag?.type === "craft") btn.style.color = "#3498db";
+
+        if (declared && items.length > 0) {
+            const summary = items.map(i => i.type === "craft" ? `🔨 ${i.craftName || "craft"}` : i.choiceLabel).join(", ");
+            btn.dataset.tooltip = `TM déclaré (${items.length} activité${items.length > 1 ? "s" : ""}) : ${summary}`;
+            btn.style.color = "#2ecc71";
+        } else if (items.length > 0) {
+            const summary = items.map(i => i.type === "craft" ? `🔨 ${i.craftName || "craft"}` : i.choiceLabel).join(", ");
+            btn.dataset.tooltip = `TM (${items.length}) : ${summary} — cliquer pour déclarer`;
+            btn.style.color = hasCraft ? "#3498db" : "#e67e22";
+        } else {
+            btn.dataset.tooltip = "Déclarer mon activité TM";
+        }
+
         btn.addEventListener("click", () => openDeclarationDialog(actor));
 
         const closeBtn = header.querySelector('[data-action="close"]');
@@ -84,6 +94,17 @@ export function TmHooks() {
 // ============================================================
 // Utilitaires communs
 // ============================================================
+
+// Normalise le flag TM en tableau d'items.
+// Ancien format (objet plat avec .type) → [flag]
+// Nouveau format (.items array) → flag.items
+// Pas de flag → []
+function tmFlagItems(flag) {
+    if (!flag) return [];
+    if (Array.isArray(flag.items)) return flag.items;
+    if (flag.type) return [flag];
+    return [];
+}
 
 function buildSkillOptionsHtml(selectedId = null) {
     return Object.entries(CONFIG.DND5E.skills)
@@ -384,11 +405,11 @@ const TM_SCROLL_TABLE = [
 ];
 
 const TM_MAGIC_TABLE = [
-    { key: "courant",    label: "Courant",     days: 5,   cost: 50,     lvl: 1  },
-    { key: "peucourant", label: "Peu courant", days: 10,  cost: 200,    lvl: 1  },
-    { key: "rare",       label: "Rare",        days: 50,  cost: 2000,   lvl: 5  },
-    { key: "tresrare",   label: "Très rare",   days: 125, cost: 20000,  lvl: 11 },
-    { key: "legendaire", label: "Légendaire",  days: 250, cost: 100000, lvl: 17 },
+    { key: "courant",    label: "Common",    days: 5,   cost: 50,     lvl: 1  },
+    { key: "peucourant", label: "Uncommon",  days: 10,  cost: 200,    lvl: 1  },
+    { key: "rare",       label: "Rare",      days: 50,  cost: 2000,   lvl: 5  },
+    { key: "tresrare",   label: "Very Rare", days: 125, cost: 20000,  lvl: 11 },
+    { key: "legendaire", label: "Legendary", days: 250, cost: 100000, lvl: 17 },
 ];
 
 function getCraftStats(craftType, price, scrollLevel, rarity, singleUse) {
@@ -550,148 +571,105 @@ function wireCraftControls(html, idPrefix) {
 }
 
 // ============================================================
-// Déclaration joueur
+// Déclaration joueur — système de TM
 // ============================================================
 
 function openDeclarationDialog(actor) {
-    const existing  = actor.getFlag("westmarch", "tm");
-    const preType   = existing?.type ?? "gain";
+    const existing = actor.getFlag("westmarch", "tm");
 
-    // ---- Champs gain ----
-    const preSkillId   = existing?.skillId    ?? null;
-    const preSkill     = preSkillId           ?? Object.keys(CONFIG.DND5E.skills).sort()[0];
-    const profLevel    = getProfLevel(actor, preSkill);
-    const preMaitrise  = existing?.hasMaitrise  ?? (profLevel >= 1);
-    const preExpertise = existing?.hasExpertise ?? (profLevel >= 2);
-    const preTools     = existing?.hasTools     ?? false;
-    const preDoRoll    = existing?.doRoll       ?? false;
+    // Charger le TM (rétrocompat ancien format plat)
+    let cartItems;
+    if (existing?.items) {
+        cartItems = existing.items.map(i => ({ ...i }));
+    } else if (existing?.type) {
+        cartItems = [{ ...existing }];
+    } else {
+        cartItems = [];
+    }
 
-    // ---- Champs craft ----
-    const preCraftType   = existing?.craftType        ?? "nonmagique";
-    const preCraftName   = existing?.craftName        ?? "";
-    const preCraftPrice  = existing?.craftPrice       ?? 50;
-    const preCraftScroll = existing?.craftScrollLevel ?? 0;
-    const preCraftRarity = existing?.craftRarity      ?? "courant";
-    const preCraftSingle = existing?.craftSingleUse   ?? false;
-    const preCraftDone   = existing?.craftDaysAlready ?? 0;
+    const today      = getCurrentCalDate() ?? { day: 1, month: 0, year: 1 };
+    const firstSkill = Object.keys(CONFIG.DND5E.skills).sort()[0];
+    // Si craft en cours non déclaré → pré-remplir le champ "déjà fait"
+    const ongoingCraft = !existing?.declared
+        ? cartItems.find(i => i.type === "craft" && (i.craftDaysAlready ?? 0) > 0)
+        : null;
 
-    // ---- Dates (partagées) ----
-    const today        = getCurrentCalDate() ?? { day: 1, month: 0, year: 1 };
-    const preStartDay  = existing?.startDay   ?? today.day;
-    const preStartMth  = existing?.startMonth ?? today.month;
-    const preStartYear = existing?.startYear  ?? today.year;
-    const preEndDay    = existing?.endDay     ?? today.day;
-    const preEndMth    = existing?.endMonth   ?? today.month;
-    const preEndYear   = existing?.endYear    ?? today.year;
-
-    const existingBadge = existing?.declared
-        ? `<p style="color:#2ecc71; margin:0 0 4px;"><em>✓ Déjà déclaré : <strong>${existing.choiceLabel}</strong>. Modifiable ci-dessous.</em></p>`
-        : (existing?.type === "craft" && !existing?.declared)
-            ? `<p style="color:#3498db; margin:0 0 4px;"><em>🔨 Craft en cours : <strong>${existing.craftName || "?"}</strong> (${existing.craftDaysAlready ?? 0}/${existing.craftTotalDays ?? "?"} j). Déclarez la prochaine période ci-dessous.</em></p>`
-            : "";
+    function cartHtml(items) {
+        if (items.length === 0)
+            return `<em style="color:#888; font-size:0.9em;">TM vide — ajoutez au moins une activité.</em>`;
+        return items.map((item, i) => {
+            const label = item.type === "craft"
+                ? `🔨 <strong>${item.craftName || "Craft"}</strong> — ${craftTypeLabel(item.craftType)} — ${item.dateRangeLabel ?? "?"} (${item.days ?? "?"} j) · <em>${item.craftCost ?? "?"} po</em>`
+                  + ((item.craftDaysAlready ?? 0) > 0 ? ` · ${item.craftDaysAlready}/${item.craftTotalDays} j déjà faits` : "")
+                : `<strong>${item.choiceLabel ?? item.skillId}</strong> — ${item.dateRangeLabel ?? "?"} (${item.days ?? "?"} j)`;
+            return `<div class="tm-cart-item" style="display:flex; justify-content:space-between; align-items:center; padding:3px 0; border-bottom:1px solid #eee; font-size:0.9em; gap:8px;">
+                <span style="flex:1;">${label}</span>
+                <button type="button" class="tm-remove-item" data-index="${i}"
+                        style="background:none; border:none; color:#e74c3c; cursor:pointer; padding:0 4px; font-size:1.1em; flex-shrink:0;">×</button>
+            </div>`;
+        }).join("");
+    }
 
     const dlg = new Dialog({
         title: `Temps mort — ${actor.name}`,
         content: `
 <div style="display:flex; flex-direction:column; gap:8px; padding:4px 0;">
-    ${existingBadge}
+    <!-- PANIER -->
+    <div style="background:#f5f5f5; border:1px solid #ddd; border-radius:4px; padding:8px;">
+        <div style="font-weight:bold; margin-bottom:4px; font-size:0.95em;">
+            🛒 TM — <span id="tm-cart-count">${cartItems.length} activité${cartItems.length !== 1 ? "s" : ""}</span>
+        </div>
+        <div id="tm-cart-display">${cartHtml(cartItems)}</div>
+    </div>
+    <hr style="margin:2px 0;">
+    <!-- FORMULAIRE D'AJOUT -->
+    <div style="font-size:0.8em; font-weight:bold; color:#666; text-transform:uppercase; letter-spacing:0.04em;">Ajouter une activité</div>
     <div style="display:flex; gap:20px; padding:4px 0 6px; border-bottom:1px solid #ddd;">
         <label style="cursor:pointer; display:flex; align-items:center; gap:6px; font-weight:bold;">
-            <input type="radio" name="tm-type-decl" value="gain"${preType !== "craft" ? " checked" : ""}> Gain de compétence
+            <input type="radio" name="tm-type-decl" value="gain" checked> Gain de compétence
         </label>
         <label style="cursor:pointer; display:flex; align-items:center; gap:6px; font-weight:bold;">
-            <input type="radio" name="tm-type-decl" value="craft"${preType === "craft" ? " checked" : ""}> 🔨 Craft
+            <input type="radio" name="tm-type-decl" value="craft"> 🔨 Craft
         </label>
     </div>
-    <div class="tm-section-gain-decl" style="display:${preType === "craft" ? "none" : "flex"}; flex-direction:column; gap:8px;">
-        ${skillRowHtml("decl", preSkillId)}
-        ${profRowHtml("decl", preMaitrise, preExpertise, preTools)}
-        ${dateAndRollHtml("decl", preStartDay, preStartMth, preStartYear, preEndDay, preEndMth, preEndYear, preDoRoll)}
+    <div class="tm-section-gain-decl" style="display:flex; flex-direction:column; gap:8px;">
+        ${skillRowHtml("decl", firstSkill)}
+        ${profRowHtml("decl", false, false, false)}
+        ${dateAndRollHtml("decl", today.day, today.month, today.year, today.day, today.month, today.year, false)}
         ${previewHtml("decl")}
     </div>
-    <div class="tm-section-craft-decl" style="display:${preType === "craft" ? "flex" : "none"}; flex-direction:column; gap:8px;">
-        ${craftDeclFormHtml("decl", preCraftType, preCraftName, preCraftPrice, preCraftScroll, preCraftRarity, preCraftSingle, preCraftDone, preStartDay, preStartMth, preStartYear, preEndDay, preEndMth, preEndYear)}
+    <div class="tm-section-craft-decl" style="display:none; flex-direction:column; gap:8px;">
+        ${craftDeclFormHtml("decl", "nonmagique", ongoingCraft?.craftName ?? "", ongoingCraft?.craftPrice ?? 50, ongoingCraft?.craftScrollLevel ?? 0, ongoingCraft?.craftRarity ?? "courant", ongoingCraft?.craftSingleUse ?? false, ongoingCraft?.craftDaysAlready ?? 0, today.day, today.month, today.year, today.day, today.month, today.year)}
     </div>
+    <button type="button" id="tm-add-to-cart"
+            style="padding:6px 12px; background:#2980b9; color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold; font-size:0.95em;">
+        + Ajouter au TM
+    </button>
 </div>`,
         buttons: {
             declare: {
                 icon: '<i class="fas fa-check"></i>',
-                label: "Déclarer",
-                callback: async (html) => {
-                    const $h   = $(html);
-                    const type = $h.find('[name="tm-type-decl"]:checked').val() ?? "gain";
-
-                    if (type === "craft") {
-                        const craftType   = $h.find('[name="tm-craft-type-decl"]').val();
-                        const craftName   = $h.find('[name="tm-craft-name-decl"]').val().trim() || craftTypeLabel(craftType);
-                        const price       = Math.max(1, parseInt($h.find('[name="tm-craft-price-decl"]').val()) || 1);
-                        const scrollLevel = parseInt($h.find('[name="tm-craft-scroll-decl"]').val()) || 0;
-                        const rarity      = $h.find('[name="tm-craft-rarity-decl"]').val() ?? "courant";
-                        const singleUse   = $h.find('[name="tm-craft-single-decl"]').prop("checked");
-                        const daysAlready = Math.max(0, parseInt($h.find('[name="tm-craft-done-decl"]').val()) || 0);
-
-                        const sDay   = Math.max(1, parseInt($h.find('[name="tm-craft-sday-decl"]').val())   || 1);
-                        const sMonth = parseInt($h.find('[name="tm-craft-smonth-decl"]').val()) || 0;
-                        const sYear  = Math.max(1, parseInt($h.find('[name="tm-craft-syear-decl"]').val())  || 1);
-                        const eDay   = Math.max(1, parseInt($h.find('[name="tm-craft-eday-decl"]').val())   || 1);
-                        const eMonth = parseInt($h.find('[name="tm-craft-emonth-decl"]').val()) || 0;
-                        const eYear  = Math.max(1, parseInt($h.find('[name="tm-craft-eyear-decl"]').val())  || 1);
-                        const days   = getDaysFromDates(sDay, sMonth, sYear, eDay, eMonth, eYear);
-                        const dateRangeLabel = `${sDay} ${getMonthName(sMonth)} → ${eDay} ${getMonthName(eMonth)}`;
-
-                        const { totalDays, cost } = getCraftStats(craftType, price, scrollLevel, rarity, singleUse);
-
-                        await actor.setFlag("westmarch", "tm", {
-                            declared: true, type: "craft",
-                            craftType, craftName, craftTotalDays: totalDays, craftCost: cost,
-                            craftDaysAlready: daysAlready,
-                            craftPrice: price, craftScrollLevel: scrollLevel,
-                            craftRarity: rarity, craftSingleUse: singleUse,
-                            choiceLabel: `🔨 ${craftName}`,
-                            startDay: sDay, startMonth: sMonth, startYear: sYear,
-                            endDay: eDay, endMonth: eMonth, endYear: eYear,
-                            days, dateRangeLabel
-                        });
-                        ui.notifications.info(`Craft déclaré : ${craftName} — ${dateRangeLabel} (${days} j).`);
-
-                    } else {
-                        const skillId      = $h.find('[name="tm-skill-decl"]').val();
-                        const hasMaitrise  = $h.find('[name="tm-maitrise-decl"]').prop("checked");
-                        const hasExpertise = $h.find('[name="tm-expertise-decl"]').prop("checked");
-                        const hasTools     = $h.find('[name="tm-tools-decl"]').prop("checked");
-                        const doRoll       = $h.find('[name="tm-roll-decl"]').prop("checked");
-
-                        const sDay   = Math.max(1, parseInt($h.find('[name="tm-sday-decl"]').val())   || 1);
-                        const sMonth = parseInt($h.find('[name="tm-smonth-decl"]').val()) || 0;
-                        const sYear  = Math.max(1, parseInt($h.find('[name="tm-syear-decl"]').val())  || 1);
-                        const eDay   = Math.max(1, parseInt($h.find('[name="tm-eday-decl"]').val())   || 1);
-                        const eMonth = parseInt($h.find('[name="tm-emonth-decl"]').val()) || 0;
-                        const eYear  = Math.max(1, parseInt($h.find('[name="tm-eyear-decl"]').val())  || 1);
-                        const days   = getDaysFromDates(sDay, sMonth, sYear, eDay, eMonth, eYear);
-                        const dateRangeLabel = `${sDay} ${getMonthName(sMonth)} → ${eDay} ${getMonthName(eMonth)}`;
-
-                        const sc          = CONFIG.DND5E.skills[skillId];
-                        const choiceLabel = game.i18n.localize(sc?.label ?? skillId);
-                        const abilityId   = sc?.ability ?? "int";
-
-                        await actor.setFlag("westmarch", "tm", {
-                            skillId, choiceLabel, abilityId,
-                            hasMaitrise, hasExpertise, hasTools,
-                            startDay: sDay, startMonth: sMonth, startYear: sYear,
-                            endDay: eDay, endMonth: eMonth, endYear: eYear,
-                            days, dateRangeLabel, doRoll, declared: true
-                        });
-                        ui.notifications.info(`Activité TM déclarée : ${choiceLabel} — ${dateRangeLabel} (${days} j).`);
+                label: "Déclarer le TM",
+                callback: async () => {
+                    if (cartItems.length === 0) {
+                        ui.notifications.warn("Le TM est vide. Ajoutez au moins une activité.");
+                        return;
                     }
+                    await actor.setFlag("westmarch", "tm", {
+                        declared: true,
+                        items: cartItems.map(i => ({ ...i, declared: true }))
+                    });
+                    ui.notifications.info(`TM déclaré : ${cartItems.length} activité${cartItems.length !== 1 ? "s" : ""}.`);
                 }
             },
             cancel: { icon: '<i class="fas fa-times"></i>', label: "Annuler" }
         },
         default: "declare"
-    }, { width: 500 });
+    }, { width: 520 });
 
     Hooks.once("renderDialog", (app, html) => {
         if (app !== dlg) return;
+
         wireControls(html, actor, "decl");
         wireCraftControls(html, "decl");
 
@@ -700,93 +678,138 @@ function openDeclarationDialog(actor) {
             html.find(".tm-section-gain-decl").css("display", isCraft ? "none" : "flex");
             html.find(".tm-section-craft-decl").css("display", isCraft ? "flex" : "none");
         });
+
+        function refreshCart() {
+            html.find("#tm-cart-display").html(cartHtml(cartItems));
+            html.find("#tm-cart-count").text(`${cartItems.length} activité${cartItems.length !== 1 ? "s" : ""}`);
+            html.find(".tm-remove-item").on("click", async function () {
+                cartItems.splice(parseInt(this.dataset.index), 1);
+                if (cartItems.length === 0) await actor.unsetFlag("westmarch", "tm");
+                else await actor.setFlag("westmarch", "tm", { declared: false, items: cartItems });
+                refreshCart();
+            });
+        }
+        refreshCart();
+
+        html.find("#tm-add-to-cart").on("click", async () => {
+            const type = html.find('[name="tm-type-decl"]:checked').val() ?? "gain";
+
+            if (type === "craft") {
+                const craftType   = html.find('[name="tm-craft-type-decl"]').val();
+                const craftName   = (html.find('[name="tm-craft-name-decl"]').val() ?? "").trim() || craftTypeLabel(craftType);
+                const price       = Math.max(1, parseInt(html.find('[name="tm-craft-price-decl"]').val())  || 1);
+                const scrollLevel = parseInt(html.find('[name="tm-craft-scroll-decl"]').val())             || 0;
+                const rarity      = html.find('[name="tm-craft-rarity-decl"]').val()                      ?? "courant";
+                const singleUse   = html.find('[name="tm-craft-single-decl"]').prop("checked");
+                const daysAlready = Math.max(0, parseInt(html.find('[name="tm-craft-done-decl"]').val())   || 0);
+                const sDay   = Math.max(1, parseInt(html.find('[name="tm-craft-sday-decl"]').val())   || 1);
+                const sMonth = parseInt(html.find('[name="tm-craft-smonth-decl"]').val())             || 0;
+                const sYear  = Math.max(1, parseInt(html.find('[name="tm-craft-syear-decl"]').val())  || 1);
+                const eDay   = Math.max(1, parseInt(html.find('[name="tm-craft-eday-decl"]').val())   || 1);
+                const eMonth = parseInt(html.find('[name="tm-craft-emonth-decl"]').val())             || 0;
+                const eYear  = Math.max(1, parseInt(html.find('[name="tm-craft-eyear-decl"]').val())  || 1);
+                const days            = getDaysFromDates(sDay, sMonth, sYear, eDay, eMonth, eYear);
+                const dateRangeLabel  = `${sDay} ${getMonthName(sMonth)} → ${eDay} ${getMonthName(eMonth)}`;
+                const { totalDays, cost } = getCraftStats(craftType, price, scrollLevel, rarity, singleUse);
+
+                cartItems.push({
+                    type: "craft",
+                    craftType, craftName, craftTotalDays: totalDays, craftCost: cost,
+                    craftDaysAlready: daysAlready,
+                    craftPrice: price, craftScrollLevel: scrollLevel,
+                    craftRarity: rarity, craftSingleUse: singleUse,
+                    choiceLabel: `🔨 ${craftName}`,
+                    startDay: sDay, startMonth: sMonth, startYear: sYear,
+                    endDay: eDay, endMonth: eMonth, endYear: eYear,
+                    days, dateRangeLabel
+                });
+
+            } else {
+                const skillId      = html.find('[name="tm-skill-decl"]').val();
+                const hasMaitrise  = html.find('[name="tm-maitrise-decl"]').prop("checked");
+                const hasExpertise = html.find('[name="tm-expertise-decl"]').prop("checked");
+                const hasTools     = html.find('[name="tm-tools-decl"]').prop("checked");
+                const doRoll       = html.find('[name="tm-roll-decl"]').prop("checked");
+                const sDay   = Math.max(1, parseInt(html.find('[name="tm-sday-decl"]').val())   || 1);
+                const sMonth = parseInt(html.find('[name="tm-smonth-decl"]').val())             || 0;
+                const sYear  = Math.max(1, parseInt(html.find('[name="tm-syear-decl"]').val())  || 1);
+                const eDay   = Math.max(1, parseInt(html.find('[name="tm-eday-decl"]').val())   || 1);
+                const eMonth = parseInt(html.find('[name="tm-emonth-decl"]').val())             || 0;
+                const eYear  = Math.max(1, parseInt(html.find('[name="tm-eyear-decl"]').val())  || 1);
+                const days           = getDaysFromDates(sDay, sMonth, sYear, eDay, eMonth, eYear);
+                const dateRangeLabel = `${sDay} ${getMonthName(sMonth)} → ${eDay} ${getMonthName(eMonth)}`;
+                const sc             = CONFIG.DND5E.skills[skillId];
+                const choiceLabel    = game.i18n.localize(sc?.label ?? skillId);
+                const abilityId      = sc?.ability ?? "int";
+
+                cartItems.push({
+                    type: "gain",
+                    skillId, choiceLabel, abilityId,
+                    hasMaitrise, hasExpertise, hasTools, doRoll,
+                    startDay: sDay, startMonth: sMonth, startYear: sYear,
+                    endDay: eDay, endMonth: eMonth, endYear: eYear,
+                    days, dateRangeLabel
+                });
+            }
+
+            await actor.setFlag("westmarch", "tm", { declared: false, items: cartItems });
+            refreshCart();
+        });
     });
 
     dlg.render(true);
 }
 
 // ============================================================
-// Dialogue GM — ligne craft
-// ============================================================
-
-function buildCraftActorRow(actor, flag, startUnchecked) {
-    const id          = actor.id;
-    const totalDays   = flag.craftTotalDays   ?? 0;
-    const daysAlready = flag.craftDaysAlready ?? 0;
-    const workDays    = flag.days             ?? 0;
-    const dateLabel   = flag.dateRangeLabel   ?? "";
-    const newTotal    = daysAlready + workDays;
-    const remaining   = Math.max(0, totalDays - newTotal);
-    const complete    = newTotal >= totalDays;
-
-    const statusBadge = flag.declared
-        ? `<span style="color:#2ecc71; font-size:0.85em; margin-left:6px;">✓ 🔨 ${flag.craftName || "Craft"} — ${daysAlready}/${totalDays} j + ${workDays} j ce TM</span>`
-        : `<span style="color:#e67e22; font-size:0.85em; margin-left:6px;">(non déclaré)</span>`;
-
-    const progressInfo = complete
-        ? `<span style="color:#2ecc71; font-weight:bold;">✅ Terminé après ce TM !</span>`
-        : `${newTotal} / ${totalDays} j — <strong>${remaining} j restant${remaining > 1 ? "s" : ""}</strong>`;
-
-    return `
-<div class="tm-actor-row" data-actor-id="${id}"
-     style="border:1px solid #ccc; border-radius:4px; padding:8px; margin-bottom:8px;">
-    <div style="display:flex; align-items:center; gap:6px; margin-bottom:6px;">
-        <input type="checkbox" name="tm-active-${id}" ${startUnchecked ? "" : "checked"} style="margin:0;">
-        <input type="hidden" name="tm-type-${id}" value="craft">
-        <a class="tm-actor-name" data-actor-id="${id}"
-           style="cursor:pointer; font-weight:bold; text-decoration:underline;">${actor.name}</a>${statusBadge}
-        <button type="button" class="tm-refuse-btn" data-actor-id="${id}"
-                style="margin-left:auto; padding:2px 8px; font-size:0.8em; color:#e74c3c; background:none; border:1px solid #e74c3c; border-radius:3px; cursor:pointer;">
-            Refuser
-        </button>
-    </div>
-    <div class="tm-controls-${id}" style="display:flex; flex-direction:column; gap:4px; opacity:${startUnchecked ? "0.4" : "1"}; font-size:0.9em;">
-        <div><strong>${flag.craftName || "—"}</strong> <span style="color:#888;">— ${craftTypeLabel(flag.craftType)}</span></div>
-        <div style="color:#888;">Coût : ${flag.craftCost ?? "?"} po &nbsp;·&nbsp; Durée totale : ${totalDays} j &nbsp;·&nbsp; ${dateLabel}</div>
-        <div>${progressInfo}</div>
-    </div>
-</div>`;
-}
-
-// ============================================================
-// Dialogue GM — construction des lignes
+// Dialogue GM — construction des lignes (multi-items)
 // ============================================================
 
 function buildActorRow(actor, startUnchecked = false) {
-    const flag     = actor.getFlag("westmarch", "tm");
-    const declared = flag?.declared ?? false;
+    const flag  = actor.getFlag("westmarch", "tm");
+    const items = tmFlagItems(flag);
+    const id    = actor.id;
 
-    // Dispatch craft vers le builder dédié
-    if (flag?.type === "craft") return buildCraftActorRow(actor, flag, startUnchecked);
+    const isDeclared = flag?.declared ?? false;
+    const count      = items.length;
 
-    const preSkillId   = flag?.skillId    ?? null;
-    const preSkill     = preSkillId       ?? Object.keys(CONFIG.DND5E.skills).sort()[0];
-    const profLevel    = getProfLevel(actor, preSkill);
-    const preMaitrise  = flag?.hasMaitrise  ?? (profLevel >= 1);
-    const preExpertise = flag?.hasExpertise ?? (profLevel >= 2);
-    const preTools     = flag?.hasTools     ?? false;
-    const preDoRoll    = flag?.doRoll       ?? false;
+    const statusBadge = isDeclared && count > 0
+        ? `<span style="color:#2ecc71; font-size:0.85em; margin-left:6px;">✓ ${count} activité${count > 1 ? "s" : ""} déclarée${count > 1 ? "s" : ""}</span>`
+        : count > 0
+            ? `<span style="color:#e67e22; font-size:0.85em; margin-left:6px;">(non déclaré)</span>`
+            : `<span style="color:#888; font-size:0.85em; margin-left:6px;">(aucune déclaration)</span>`;
 
-    const today        = getCurrentCalDate() ?? { day: 1, month: 0, year: 1 };
-    const preStartDay  = flag?.startDay   ?? today.day;
-    const preStartMth  = flag?.startMonth ?? today.month;
-    const preStartYear = flag?.startYear  ?? today.year;
-    const preEndDay    = flag?.endDay     ?? today.day;
-    const preEndMth    = flag?.endMonth   ?? today.month;
-    const preEndYear   = flag?.endYear    ?? today.year;
-    const preDays      = flag?.days ?? getDaysFromDates(preStartDay, preStartMth, preStartYear, preEndDay, preEndMth, preEndYear);
+    const itemsHtml = items.map(item => {
+        if (item.type === "craft") {
+            const daysAlready = item.craftDaysAlready ?? 0;
+            const totalDays   = item.craftTotalDays   ?? 0;
+            const workDays    = item.days              ?? 0;
+            const newTotal    = daysAlready + workDays;
+            const complete    = newTotal >= totalDays;
+            const remaining   = Math.max(0, totalDays - newTotal);
+            const progressStr = complete
+                ? `<span style="color:#2ecc71; font-weight:bold;">✅ Terminé après ce TM</span>`
+                : `${newTotal}/${totalDays} j — <strong>${remaining} j restant${remaining > 1 ? "s" : ""}</strong>`;
+            return `<div style="font-size:0.9em; padding:4px 0 4px 4px; border-top:1px solid #eee;">
+                <div>🔨 <strong>${item.craftName || "—"}</strong> <span style="color:#888;">— ${craftTypeLabel(item.craftType)}</span></div>
+                <div style="color:#888;">Coût : <strong>${item.craftCost ?? "?"} po</strong> · Durée : ${totalDays} j · ${item.dateRangeLabel ?? ""} (${workDays} j ce TM)</div>
+                <div>${progressStr}</div>
+            </div>`;
+        } else {
+            const profStr = item.hasTools ? " [Tools]" : item.hasExpertise ? " [Expertise]" : item.hasMaitrise ? " [Maîtrise]" : "";
+            const rate    = item.skillId ? calcDailyRate(actor, item.skillId, item.hasMaitrise, item.hasExpertise, item.hasTools) : 0;
+            const est     = rate * (item.days ?? 0);
+            return `<div style="font-size:0.9em; padding:4px 0 4px 4px; border-top:1px solid #eee;">
+                <div><strong>${item.choiceLabel ?? item.skillId}</strong>${profStr} — ${item.dateRangeLabel ?? ""} (${item.days ?? "?"} j)</div>
+                <div style="color:#888;">≈ ${rate} po/j → ~${est} po${item.doRoll ? " · test d20 demandé" : ""}</div>
+            </div>`;
+        }
+    }).join("") || `<div style="color:#888; font-size:0.9em; font-style:italic; padding-top:4px;">Aucune activité déclarée.</div>`;
 
-    const statusBadge = declared
-        ? `<span style="color:#2ecc71; font-size:0.85em; margin-left:6px;">✓ ${flag.choiceLabel} — ${flag.dateRangeLabel ?? preDays + " j"}</span>`
-        : `<span style="color:#e67e22; font-size:0.85em; margin-left:6px;">(non déclaré)</span>`;
-
-    const id = actor.id;
     return `
 <div class="tm-actor-row" data-actor-id="${id}"
      style="border:1px solid #ccc; border-radius:4px; padding:8px; margin-bottom:8px;">
-    <div style="display:flex; align-items:center; gap:6px; margin-bottom:6px;">
+    <div style="display:flex; align-items:center; gap:6px; margin-bottom:4px;">
         <input type="checkbox" name="tm-active-${id}" ${startUnchecked ? "" : "checked"} style="margin:0;">
-        <input type="hidden" name="tm-type-${id}" value="gain">
         <a class="tm-actor-name" data-actor-id="${id}"
            style="cursor:pointer; font-weight:bold; text-decoration:underline;">${actor.name}</a>${statusBadge}
         <button type="button" class="tm-refuse-btn" data-actor-id="${id}"
@@ -794,11 +817,8 @@ function buildActorRow(actor, startUnchecked = false) {
             Refuser
         </button>
     </div>
-    <div class="tm-controls-${id}" style="display:flex; flex-direction:column; gap:5px; opacity:${startUnchecked ? "0.4" : "1"};">
-        ${skillRowHtml(id, preSkillId)}
-        ${profRowHtml(id, preMaitrise, preExpertise, preTools)}
-        ${dateAndRollHtml(id, preStartDay, preStartMth, preStartYear, preEndDay, preEndMth, preEndYear, preDoRoll)}
-        ${previewHtml(id)}
+    <div class="tm-controls-${id}" style="opacity:${startUnchecked ? "0.4" : "1"};">
+        ${itemsHtml}
     </div>
 </div>`;
 }
@@ -816,19 +836,27 @@ function openDowntimeDialog() {
 
     const showAllByDefault = declared.length === 0;
 
-    const headerHtml = declared.length === 0
-        ? `<p style="color:#e67e22; margin:0 0 8px;"><em>Aucune déclaration reçue — tous les personnages affichés.</em></p>`
-        : `<p style="margin:0 0 6px;"><strong>${declared.length}</strong> déclaration${declared.length > 1 ? "s" : ""} reçue${declared.length > 1 ? "s" : ""}.`
-          + (undeclared.length > 0
-              ? ` <label style="cursor:pointer; color:#888;"><input type="checkbox" id="tm-show-undeclared" style="margin:0 4px 0 8px;">${undeclared.length} sans déclaration</label>`
-              : "")
-          + `</p>`;
+    const headerHtml = `
+<div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:6px;">
+    ${declared.length === 0
+        ? `<span style="color:#e67e22;"><em>Aucune déclaration reçue.</em></span>`
+        : `<span><strong>${declared.length}</strong> déclaration${declared.length > 1 ? "s" : ""} reçue${declared.length > 1 ? "s" : ""}.</span>`}
+    <label style="cursor:pointer; display:flex; align-items:center; gap:5px;">
+        <input type="checkbox" id="tm-show-list" style="margin:0;">
+        Afficher la liste${declared.length > 0 ? ` (${declared.length})` : ""}
+    </label>
+    ${!showAllByDefault && undeclared.length > 0
+        ? `<label style="cursor:pointer; color:#888; display:flex; align-items:center; gap:5px;">
+               <input type="checkbox" id="tm-show-undeclared" style="margin:0;">${undeclared.length} sans déclaration
+           </label>`
+        : ""}
+</div>`;
 
     const content = `
 <div>
     ${headerHtml}
-    <div style="max-height:58vh; overflow-y:auto; padding-right:4px;">
-        ${(showAllByDefault ? allActors : declared).map(a => buildActorRow(a, false)).join("")}
+    <div id="tm-actor-list" style="display:none; max-height:58vh; overflow-y:auto; padding-right:4px;">
+        ${(showAllByDefault ? allActors : declared).map(a => buildActorRow(a, true)).join("")}
         ${!showAllByDefault && undeclared.length > 0
             ? `<div class="tm-undeclared-group" style="display:none;">${undeclared.map(a => buildActorRow(a, true)).join("")}</div>`
             : ""}
@@ -852,18 +880,20 @@ function openDowntimeDialog() {
     Hooks.once("renderDialog", (app, html) => {
         if (app !== dlg) return;
 
+        html.find("#tm-show-list").on("change", function () {
+            html.find("#tm-actor-list").css("display", this.checked ? "block" : "none");
+        });
+
         html.find("#tm-show-undeclared").on("change", function () {
             html.find(".tm-undeclared-group").css("display", this.checked ? "block" : "none");
         });
 
         for (const actor of allActors) {
-            const id   = actor.id;
-            const flag = actor.getFlag("westmarch", "tm");
+            const id = actor.id;
             html.find(`[name="tm-active-${id}"]`).on("change", function () {
                 html.find(`.tm-controls-${id}`).css("opacity", this.checked ? "1" : "0.4");
             });
-            // wireControls ne concerne que les lignes de gain (pas les crafts)
-            if (flag?.type !== "craft") wireControls(html, actor, id);
+            // La vue GM est en lecture seule — les détails sont lus depuis le flag
         }
 
         html.find(".tm-actor-name").on("click", function () {
@@ -911,136 +941,158 @@ async function applyDowntimeGains($html, actors) {
     const discordLines = [];
 
     for (const actor of actors) {
-        const id   = actor.id;
-        const type = $html.find(`[name="tm-type-${id}"]`).val() ?? "gain";
+        const id = actor.id;
         if (!$html.find(`[name="tm-active-${id}"]`).prop("checked")) continue;
 
-        // ---- Branche craft ----
-        if (type === "craft") {
-            const craftFlag   = actor.getFlag("westmarch", "tm");
-            if (!craftFlag || craftFlag.type !== "craft") continue;
+        const flag  = actor.getFlag("westmarch", "tm");
+        const items = tmFlagItems(flag);
+        if (items.length === 0) continue;
 
-            const daysAlready = craftFlag.craftDaysAlready ?? 0;
-            const workDays    = craftFlag.days             ?? 0;
-            const totalDays   = craftFlag.craftTotalDays   ?? 0;
-            const newTotal    = daysAlready + workDays;
-            const complete    = newTotal >= totalDays;
-            const craftName   = craftFlag.craftName      ?? "?";
-            const dateLabel   = craftFlag.dateRangeLabel ?? "";
-            const remaining   = Math.max(0, totalDays - newTotal);
+        const owners     = getActorOwners(actor);
+        const playerName = owners.find(u => !u.isGM)?.name ?? owners[0]?.name ?? "?";
+        const gmName     = game.user.name;
 
-            if (complete) {
-                await actor.unsetFlag("westmarch", "tm");
+        const remainingItems = []; // crafts incomplets qui persistent
+
+        for (const item of items) {
+
+            // ================================================================
+            // Branche craft
+            // ================================================================
+            if (item.type === "craft") {
+                const daysAlready   = item.craftDaysAlready ?? 0;
+                const workDays      = item.days             ?? 0;
+                const totalDays     = item.craftTotalDays   ?? 0;
+                const craftName     = item.craftName        ?? "?";
+                const dateLabel     = item.dateRangeLabel   ?? "";
+                const craftCost     = item.craftCost        ?? 0;
+                const newTotal      = daysAlready + workDays;
+                const complete      = newTotal >= totalDays;
+                const remaining     = Math.max(0, totalDays - newTotal);
+                const isFirstPeriod = daysAlready === 0;
+
+                // Déduire le coût au premier TM (règle : payé intégralement au début)
+                if (isFirstPeriod && craftCost > 0) {
+                    const currentGP = actor.system.currency?.gp ?? 0;
+                    await actor.update({ "system.currency.gp": Math.max(0, currentGP - craftCost) });
+                }
+
+                // Message privé joueur
+                if (owners.length > 0) {
+                    let msgContent;
+                    if (complete) {
+                        msgContent = `🔨 Craft terminé pour <strong>${actor.name}</strong> : <strong>${craftName}</strong> — ${dateLabel} (${workDays} j) → ✅ Objet créé !`
+                            + `<br><span style="color:#e67e22; font-weight:bold;">⚠️ Pensez à ajouter <strong>${craftName}</strong> manuellement sur votre fiche de personnage. Le coût de <strong>${craftCost} po</strong> a déjà été retiré de votre bourse.</span>`;
+                    } else if (isFirstPeriod) {
+                        msgContent = `🔨 Craft démarré pour <strong>${actor.name}</strong> : <strong>${craftName}</strong> — ${dateLabel} (${workDays} j) → ${newTotal}/${totalDays} j — <strong>${remaining} j restant${remaining > 1 ? "s" : ""}</strong>`
+                            + `<br><span style="color:#e67e22; font-weight:bold;">⚠️ Le coût de <strong>${craftCost} po</strong> a été retiré de votre bourse. Dès que le craft sera terminé, pensez à ajouter l'objet manuellement sur votre fiche.</span>`;
+                    } else {
+                        msgContent = `🔨 Craft en cours pour <strong>${actor.name}</strong> : <strong>${craftName}</strong> — ${dateLabel} (${workDays} j) → ${newTotal}/${totalDays} j — <strong>${remaining} j restant${remaining > 1 ? "s" : ""}</strong>`;
+                    }
+                    ChatMessage.create({
+                        content: msgContent,
+                        whisper: owners.map(u => u.id),
+                        speaker: { alias: "WestMarch — Temps morts" }
+                    });
+                }
+
+                if (!complete) {
+                    remainingItems.push({ ...item, craftDaysAlready: newTotal, declared: false });
+                }
+
+                const line = complete
+                    ? `<strong>${actor.name}</strong> — 🔨 <strong>${craftName}</strong> — ${dateLabel} (${workDays} j) → ✅ <strong>Terminé !</strong>`
+                    : `<strong>${actor.name}</strong> — 🔨 <strong>${craftName}</strong> — ${dateLabel} (${workDays} j) → ${newTotal}/${totalDays} j (${remaining} restants)`;
+                const discordLine = complete
+                    ? `**${actor.name}** (${playerName}) — 🔨 **${craftName}** — ${dateLabel} (${workDays} j) → Terminé ! (par ${gmName})`
+                    : `**${actor.name}** (${playerName}) — 🔨 **${craftName}** — ${dateLabel} (${workDays} j) → ${newTotal}/${totalDays} j, ${remaining} j restant${remaining > 1 ? "s" : ""} (par ${gmName})`;
+                lines.push(line);
+                discordLines.push(discordLine);
+
+            // ================================================================
+            // Branche gain
+            // ================================================================
             } else {
-                await actor.setFlag("westmarch", "tm", {
-                    ...craftFlag, craftDaysAlready: newTotal, declared: false
-                });
+                const skillId      = item.skillId;
+                const hasMaitrise  = item.hasMaitrise  ?? false;
+                const hasExpertise = item.hasExpertise ?? false;
+                const hasTools     = item.hasTools     ?? false;
+                const doRoll       = item.doRoll       ?? false;
+                const sDay   = item.startDay   ?? 1;
+                const sMonth = item.startMonth ?? 0;
+                const sYear  = item.startYear  ?? 1;
+                const eDay   = item.endDay     ?? 1;
+                const eMonth = item.endMonth   ?? 0;
+                const eYear  = item.endYear    ?? 1;
+                const days   = item.days ?? getDaysFromDates(sDay, sMonth, sYear, eDay, eMonth, eYear);
+
+                const activityName = game.i18n.localize(CONFIG.DND5E.skills[skillId]?.label ?? skillId);
+                const profStr      = hasTools ? " [Tools]" : hasExpertise ? " [Expertise]" : hasMaitrise ? " [Maîtrise]" : "";
+                const dailyRate    = calcDailyRate(actor, skillId, hasMaitrise, hasExpertise, hasTools);
+                const dateLabel    = item.dateRangeLabel ?? `${sDay} ${getMonthName(sMonth)} → ${eDay} ${getMonthName(eMonth)}`;
+                let total = dailyRate * days, rollResult = null;
+
+                if (doRoll && days >= 5) {
+                    const abilityId  = CONFIG.DND5E.skills[skillId]?.ability ?? "int";
+                    const abilityMod = actor.system.abilities[abilityId]?.mod ?? 0;
+                    const prof       = actor.system.attributes?.prof ?? 2;
+                    const checkMod   = abilityMod + (hasExpertise ? prof * 2 : (hasMaitrise || hasTools) ? prof : 0);
+                    const roll = await new Roll("1d20 + @mod", { mod: checkMod }).evaluate();
+                    rollResult = roll.total;
+                    const mult = rollResult <= 1 ? 0.8 : rollResult >= 20 ? 1.2 : rollResult >= 10 ? 1.1 : 1.0;
+                    total = total * mult;
+                    const abilityAbbr = game.i18n.localize(
+                        CONFIG.DND5E.abilities[abilityId]?.abbreviation ?? abilityId
+                    ).toUpperCase();
+                    await roll.toMessage({
+                        speaker: { alias: `Temps mort — ${actor.name}` },
+                        flavor: `Test de compétence : ${activityName} (${abilityAbbr}) — ${days} j`
+                    });
+                }
+
+                const totalGP = Math.floor(total);
+                const totalSP = Math.round((total - totalGP) * 10);
+                const gainStr = totalSP > 0 ? `+${totalGP} po ${totalSP} pa` : `+${totalGP} po`;
+
+                const currencyUpdate = {};
+                if (totalGP > 0) currencyUpdate["system.currency.gp"] = (actor.system.currency?.gp ?? 0) + totalGP;
+                if (totalSP > 0) currencyUpdate["system.currency.sp"] = (actor.system.currency?.sp ?? 0) + totalSP;
+                if (Object.keys(currencyUpdate).length > 0) await actor.update(currencyUpdate);
+
+                if (owners.length > 0) {
+                    const pctStr = rollResult === null ? ""
+                        : rollResult <= 1  ? " (test : ≤1 → −20 %)"
+                        : rollResult >= 20 ? ` (test : ${rollResult} → +20 %)`
+                        : rollResult >= 10 ? ` (test : ${rollResult} → +10 %)`
+                        :                   ` (test : ${rollResult} → ±0 %)`;
+                    ChatMessage.create({
+                        content: `🕰️ Temps mort appliqué pour <strong>${actor.name}</strong> : `
+                               + `${activityName}${profStr}, ${dateLabel} — ${days} j (${dailyRate} po/j)${pctStr} → <strong>${gainStr}</strong>`,
+                        whisper: owners.map(u => u.id),
+                        speaker: { alias: "WestMarch — Temps morts" }
+                    });
+                }
+
+                let line        = `<strong>${actor.name}</strong> — ${activityName}${profStr} — ${dateLabel} (${days} j, ${dailyRate} po/j)`;
+                let discordLine = `**${actor.name}** (${playerName}) — ${activityName}${profStr} — ${dateLabel} (${days} j, ${dailyRate} po/j)`;
+                if (rollResult !== null) {
+                    const pct = rollResult <= 1 ? "−20 %" : rollResult >= 20 ? "+20 %" : rollResult >= 10 ? "+10 %" : "±0 %";
+                    line        += ` → test : ${rollResult} (${pct})`;
+                    discordLine += ` → test : ${rollResult} (${pct})`;
+                }
+                line        += ` = <strong>${gainStr}</strong>`;
+                discordLine += ` = **${gainStr}** (par ${gmName})`;
+                lines.push(line);
+                discordLines.push(discordLine);
             }
-
-            const owners = getActorOwners(actor);
-            if (owners.length > 0) {
-                ChatMessage.create({
-                    content: complete
-                        ? `🔨 Craft terminé pour <strong>${actor.name}</strong> : <strong>${craftName}</strong> — ${dateLabel} (${workDays} j) → ✅ Objet créé !`
-                        : `🔨 Craft en cours pour <strong>${actor.name}</strong> : <strong>${craftName}</strong> — ${dateLabel} (${workDays} j) → ${newTotal}/${totalDays} j — <strong>${remaining} j restant${remaining > 1 ? "s" : ""}</strong>`,
-                    whisper: owners.map(u => u.id),
-                    speaker: { alias: "WestMarch — Temps morts" }
-                });
-            }
-
-            const line = complete
-                ? `<strong>${actor.name}</strong> — 🔨 <strong>${craftName}</strong> — ${dateLabel} (${workDays} j) → ✅ <strong>Terminé !</strong>`
-                : `<strong>${actor.name}</strong> — 🔨 <strong>${craftName}</strong> — ${dateLabel} (${workDays} j) → ${newTotal}/${totalDays} j (${remaining} restants)`;
-            const discordLine = complete
-                ? `**${actor.name}** — 🔨 **${craftName}** — ${dateLabel} (${workDays} j) → ✅ **Terminé !**`
-                : `**${actor.name}** — 🔨 **${craftName}** — ${dateLabel} (${workDays} j) → ${newTotal}/${totalDays} j (${remaining} restants)`;
-
-            lines.push(line);
-            discordLines.push(discordLine);
-            continue; // pas de traitement gain
         }
 
-        // ---- Branche gain (compétence) ----
-        const skillId      = $html.find(`[name="tm-skill-${id}"]`).val();
-        const doRoll       = $html.find(`[name="tm-roll-${id}"]`).prop("checked");
-        const hasMaitrise  = $html.find(`[name="tm-maitrise-${id}"]`).prop("checked");
-        const hasExpertise = $html.find(`[name="tm-expertise-${id}"]`).prop("checked");
-        const hasTools     = $html.find(`[name="tm-tools-${id}"]`).prop("checked");
-
-        const sDay   = Math.max(1, parseInt($html.find(`[name="tm-sday-${id}"]`).val())   || 1);
-        const sMonth = parseInt($html.find(`[name="tm-smonth-${id}"]`).val()) || 0;
-        const sYear  = Math.max(1, parseInt($html.find(`[name="tm-syear-${id}"]`).val())  || 1);
-        const eDay   = Math.max(1, parseInt($html.find(`[name="tm-eday-${id}"]`).val())   || 1);
-        const eMonth = parseInt($html.find(`[name="tm-emonth-${id}"]`).val()) || 0;
-        const eYear  = Math.max(1, parseInt($html.find(`[name="tm-eyear-${id}"]`).val())  || 1);
-        const days   = getDaysFromDates(sDay, sMonth, sYear, eDay, eMonth, eYear);
-
-        const activityName = game.i18n.localize(CONFIG.DND5E.skills[skillId]?.label ?? skillId);
-        const profStr      = hasTools ? " [Tools]" : hasExpertise ? " [Expertise]" : hasMaitrise ? " [Maîtrise]" : "";
-        const dailyRate    = calcDailyRate(actor, skillId, hasMaitrise, hasExpertise, hasTools);
-        const dateLabel    = `${sDay} ${getMonthName(sMonth)} → ${eDay} ${getMonthName(eMonth)}`;
-        let total = dailyRate * days, rollResult = null;
-
-        if (doRoll && days >= 5) {
-            // Test de compétence : d20 + mod de caractéristique + bonus de maîtrise/expertise
-            const abilityId  = CONFIG.DND5E.skills[skillId]?.ability ?? "int";
-            const abilityMod = actor.system.abilities[abilityId]?.mod ?? 0;
-            const prof       = actor.system.attributes?.prof ?? 2;
-            const checkMod   = abilityMod + (hasExpertise ? prof * 2 : (hasMaitrise || hasTools) ? prof : 0);
-
-            const roll = await new Roll("1d20 + @mod", { mod: checkMod }).evaluate();
-            rollResult = roll.total;
-            const mult = rollResult <= 1 ? 0.8 : rollResult >= 20 ? 1.2 : rollResult >= 10 ? 1.1 : 1.0;
-            total = total * mult;
-
-            const abilityAbbr = game.i18n.localize(
-                CONFIG.DND5E.abilities[abilityId]?.abbreviation ?? abilityId
-            ).toUpperCase();
-            await roll.toMessage({
-                speaker: { alias: `Temps mort — ${actor.name}` },
-                flavor: `Test de compétence : ${activityName} (${abilityAbbr}) — ${days} j`
-            });
+        // Mettre à jour ou effacer le flag
+        if (remainingItems.length > 0) {
+            await actor.setFlag("westmarch", "tm", { declared: false, items: remainingItems });
+        } else {
+            await actor.unsetFlag("westmarch", "tm");
         }
-
-        // Séparer PO (entier) et PA (décimale × 10, arrondie)
-        const totalGP = Math.floor(total);
-        const totalSP = Math.round((total - totalGP) * 10);
-        const gainStr = totalSP > 0 ? `+${totalGP} po ${totalSP} pa` : `+${totalGP} po`;
-
-        const currencyUpdate = {};
-        if (totalGP > 0) currencyUpdate["system.currency.gp"] = (actor.system.currency?.gp ?? 0) + totalGP;
-        if (totalSP > 0) currencyUpdate["system.currency.sp"] = (actor.system.currency?.sp ?? 0) + totalSP;
-        if (Object.keys(currencyUpdate).length > 0)
-            await actor.update(currencyUpdate);
-
-        await actor.unsetFlag("westmarch", "tm");
-
-        const owners = getActorOwners(actor);
-        if (owners.length > 0) {
-            const pctStr = rollResult === null ? ""
-                : rollResult <= 1  ? " (test : ≤1 → −20 %)"
-                : rollResult >= 20 ? ` (test : ${rollResult} → +20 %)`
-                : rollResult >= 10 ? ` (test : ${rollResult} → +10 %)`
-                :                   ` (test : ${rollResult} → ±0 %)`;
-            ChatMessage.create({
-                content: `🕰️ Temps mort appliqué pour <strong>${actor.name}</strong> : `
-                       + `${activityName}${profStr}, ${dateLabel} — ${days} j (${dailyRate} po/j)${pctStr} → <strong>${gainStr}</strong>`,
-                whisper: owners.map(u => u.id),
-                speaker: { alias: "WestMarch — Temps morts" }
-            });
-        }
-
-        let line        = `<strong>${actor.name}</strong> — ${activityName}${profStr} — ${dateLabel} (${days} j, ${dailyRate} po/j)`;
-        let discordLine = `**${actor.name}** — ${activityName}${profStr} — ${dateLabel} (${days} j, ${dailyRate} po/j)`;
-        if (rollResult !== null) {
-            const pct = rollResult <= 1 ? "−20 %" : rollResult >= 20 ? "+20 %" : rollResult >= 10 ? "+10 %" : "±0 %";
-            line        += ` → test : ${rollResult} (${pct})`;
-            discordLine += ` → test : ${rollResult} (${pct})`;
-        }
-        line        += ` = <strong>${gainStr}</strong>`;
-        discordLine += ` = **${gainStr}**`;
-        lines.push(line);
-        discordLines.push(discordLine);
     }
 
     if (lines.length === 0) { ui.notifications.info("Aucun personnage traité."); return; }
@@ -1062,7 +1114,7 @@ async function applyDowntimeGains($html, actors) {
         }).catch(err => console.error("westmarch | Webhook TM Discord :", err));
     }
 
-    ui.notifications.info(`Temps morts appliqués pour ${lines.length} personnage${lines.length > 1 ? "s" : ""}.`);
+    ui.notifications.info(`Temps morts appliqués : ${lines.length} activité${lines.length > 1 ? "s" : ""}.`);
 }
 
 // ============================================================

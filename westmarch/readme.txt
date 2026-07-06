@@ -1,7 +1,7 @@
 ================================================================================
                         WESTMARCH SYSTÈME — MODULE FOUNDRY VTT
                                Auteur : Soruta (Discord: s0ruta)
-                                       Version : 1.5.5
+                                       Version : 1.5.9
                               Compatibilité : Foundry VTT v13
 ================================================================================
 
@@ -627,6 +627,75 @@ NOTES TECHNIQUES
                         WESTMARCH SYSTÈME — MISES À JOUR
 ================================================================================
 
+v1.5.9 | 2026-07-05
+   goliath.js — Nouveau fichier. Quand un Goliath utilise sa feature
+   (nouveau)     "Large Form", son token passe automatiquement en 2x2
+                (Large). Réutiliser la feature revient à la taille
+                d'origine (toggle). Même logique que rage.js : GM
+                uniquement, taille d'origine sauvegardée en flag.
+                Compatible Midi QOL : écoute à la fois
+                dnd5e.postUseActivity et midi-qol.RollComplete (cooldown
+                500 ms pour éviter le double-déclenchement).
+                Désactivable via les paramètres du module.
+
+v1.5.8 | 2026-07-05
+   tm.js      — Système de panier pour les déclarations TM joueur : le bouton
+                sablier ouvre un dialog avec un panier (🛒) listant les
+                activités ajoutées. "Ajouter au panier" enregistre une activité
+                sans déclarer ; "Déclarer le panier" envoie l'ensemble au GM.
+                Le panier est sauvegardé en temps réel (fermeture sans déclarer
+                = items préservés). Les items s'affichent en liste dans la vue
+                GM (lecture seule, plus de formulaire par acteur). Craft :
+                l'or est déduit à la première validation du GM, et un message
+                ⚠️ rappelle au joueur d'ajouter l'objet manuellement sur sa
+                fiche une fois le craft terminé.
+
+v1.5.7 | 2026-07-05
+   tm.js      — Menu GM (temps morts) : une case à cocher "Afficher la liste"
+                permet de montrer ou masquer la liste des personnages. La liste
+                est masquée par défaut pour ne pas polluer l'interface.
+
+v1.5.6 | 2026-07-05
+   tm.js      — Menu GM (temps morts) : tous les personnages sont désormais
+                décochés par défaut à l'ouverture du dialog.
+
+v1.5.5 | 2026-07-05
+   tm.js      — Correction : deux boutons sablier s'affichaient sur la fiche
+                joueur (hooks renderActorSheet et renderApplicationV2 déclenchés
+                tous les deux). Le hook renderActorSheet redondant a été supprimé.
+
+v1.5.4 | 2026-07-05
+   tm.js      — Nouveau type d'activité TM : Craft. Le joueur peut déclarer une
+                fabrication d'objet (non-magique, parchemin de sort ou objet
+                magique) depuis le dialog sablier de sa fiche, en choisissant
+                le type puis les paramètres (prix d'achat / niveau de sort /
+                rareté). Les coûts et durées sont calculés automatiquement selon
+                les règles Ashara. La progression est suivie session après session
+                (le flag persiste entre les TM si le craft n'est pas terminé).
+                Le bouton sablier devient bleu si un craft est en cours.
+                Côté GM : ligne dédiée avec progression X/Y jours ; à
+                l'application, envoie un message au joueur (en cours ou terminé).
+
+v1.5.3 | 2026-07-05
+   tm.js      — Dans le menu TM du GM, le nom de chaque personnage est désormais
+                cliquable (souligné) et ouvre directement sa fiche.
+
+v1.5.2 | 2026-07-05
+   tm.js      — Rappel Discord : déclenché désormais sur TOUS les utilisateurs
+                connectés (GM et joueurs) pour augmenter les chances qu'il soit
+                envoyé. Plage horaire élargie de 17h à 20h (au lieu de pile 20h).
+                Décalage aléatoire par utilisateur (0-30 s) pour réduire le
+                risque de doublon simultané. Setting tmLastNotifDate passé en
+                restricted: false pour permettre aux non-GM de poser le verrou.
+
+v1.5.1 | 2026-07-05
+   tm.js      — Rappel Discord quotidien : entre 17h et 20h heure de Paris,
+                si des temps morts sont en attente de validation GM, un message
+                est envoyé automatiquement sur le webhook TM avec le nombre et
+                les noms des personnages concernés. Aucun message si rien en
+                attente. Anti-doublon par date (une seule notification par jour).
+                Déclenché côté GM uniquement (GM connecté requis).
+
 v1.5.0 | 2026-07-03
    mejrestock.js — Bouton toggle 🔄 par article dans la zone des contrôles
                    (icône fa-rotate, teal si actif / gris si inactif),
@@ -671,40 +740,3 @@ v1.4.12 | 2026-07-01
                 compétence (d20 + mod de caractéristique + bonus de maîtrise) ;
                 les seuils s'appliquent au total : ≤1 → −20 %, 2-9 → ±0 %,
                 10-19 → +10 %, ≥20 → +20 %.
-
-v1.5.1 | 2026-07-05
-   tm.js      — Rappel Discord quotidien : entre 17h et 20h heure de Paris,
-                si des temps morts sont en attente de validation GM, un message
-                est envoyé automatiquement sur le webhook TM avec le nombre et
-                les noms des personnages concernés. Aucun message si rien en
-                attente. Anti-doublon par date (une seule notification par jour).
-                Déclenché côté GM uniquement (GM connecté requis).
-
-v1.5.2 | 2026-07-05
-   tm.js      — Rappel Discord : déclenché désormais sur TOUS les utilisateurs
-                connectés (GM et joueurs) pour augmenter les chances qu'il soit
-                envoyé. Plage horaire élargie de 17h à 20h (au lieu de pile 20h).
-                Décalage aléatoire par utilisateur (0-30 s) pour réduire le
-                risque de doublon simultané. Setting tmLastNotifDate passé en
-                restricted: false pour permettre aux non-GM de poser le verrou.
-
-v1.5.3 | 2026-07-05
-   tm.js      — Dans le menu TM du GM, le nom de chaque personnage est désormais
-                cliquable (souligné) et ouvre directement sa fiche.
-
-v1.5.4 | 2026-07-05
-   tm.js      — Nouveau type d'activité TM : Craft. Le joueur peut déclarer une
-                fabrication d'objet (non-magique, parchemin de sort ou objet
-                magique) depuis le dialog sablier de sa fiche, en choisissant
-                le type puis les paramètres (prix d'achat / niveau de sort /
-                rareté). Les coûts et durées sont calculés automatiquement selon
-                les règles Ashara. La progression est suivie session après session
-                (le flag persiste entre les TM si le craft n'est pas terminé).
-                Le bouton sablier devient bleu si un craft est en cours.
-                Côté GM : ligne dédiée avec progression X/Y jours ; à
-                l'application, envoie un message au joueur (en cours ou terminé).
-
-v1.5.5 | 2026-07-05
-   tm.js      — Correction : deux boutons sablier s'affichaient sur la fiche
-                joueur (hooks renderActorSheet et renderApplicationV2 déclenchés
-                tous les deux). Le hook renderActorSheet redondant a été supprimé.

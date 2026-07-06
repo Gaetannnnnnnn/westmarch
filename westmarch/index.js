@@ -16,6 +16,7 @@ import { CombatHooks } from './modules/combat.js';
 import { ItemHooks } from './modules/items.js';
 import { AudioHooks } from './modules/audio.js';
 import { RageHooks } from './modules/rage.js';
+import { GoliathHooks } from './modules/goliath.js';
 import { MejShopHooks } from './modules/mejshop.js';
 import { MejRestockHooks } from './modules/mejrestock.js';
 import { CalDateHooks } from './modules/caldate.js';
@@ -51,6 +52,7 @@ Hooks.on("init", async () => {
     ItemHooks();
     AudioHooks();
     RageHooks();
+    GoliathHooks();
     MejShopHooks();
     MejRestockHooks();
     CalDateHooks();

@@ -278,6 +278,16 @@ export function registerSettings() {
         requiresReload: false
     });
 
+    game.settings.register("westmarch", "enableLargeForm", {
+        name: "Taille Large — Goliath (Large Form)",
+        hint: "Quand un Goliath utilise sa feature 'Large Form', son token passe en 2x2 (Large). Réutiliser la feature revient à la taille d'origine (toggle). Prérequis : la feature 'Large Form' doit avoir une activité configurée dans dnd5e (ex: type 'Utility', activation 'Bonus Action').",
+        scope: "world",
+        config: true,
+        type: Boolean,
+        default: true,
+        requiresReload: false
+    });
+
     game.settings.register("westmarch", "enableDiscordLog", {
         name: "Log Discord (modifications)",
         hint: "Envoie un message dans un salon Discord (via webhook, différent du webhook IC par scène) à chaque ajout/suppression d'objet, changement de quantité, gain d'XP/niveau, et création/suppression de personnage.",
