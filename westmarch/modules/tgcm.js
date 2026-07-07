@@ -33,21 +33,46 @@ export function TgcmHooks() {
         _refreshTgcmShield(token);
     });
 
-    // ---- Interception des dégâts (pré-update) ----
+    // ---- Correction carte chat Midi QOL (dmg-hp-new) ----
+    // Midi QOL génère la carte AVANT que preUpdateActor clamp les PV.
+    // On post-process le DOM pour remplacer "0" par "1" côté tous les clients.
+    Hooks.on("renderChatMessage", (message, html) => {
+        const root = (html instanceof HTMLElement) ? html : (html[0] ?? null);
+        if (!root) return;
+        root.querySelectorAll(".midi-qol-dmg-row[data-actor-uuid]").forEach(row => {
+            const uuid = row.dataset.actorUuid;
+            if (!uuid) return;
+            let actor;
+            try { actor = fromUuidSync(uuid); } catch(e) { return; }
+            if (!actor || !_isActorProtected(actor)) return;
+            row.style.display = "none";
+        });
+    });
+
+    // ---- Interception des dégâts (pré-update) — GM uniquement ----
     // Clamp HP à 1 avant écriture → players ne voient jamais 1→0.
-    // Midi QOL calcule son affichage depuis le delta HP réel : si on
-    // clamp 1→1 il voit 0 et n'affiche rien. On prend donc en charge
-    // l'affichage nous-mêmes via setTimeout (hors de la call stack
-    // synchrone) avec les dégâts réels overkill compris.
+    // On piggybacks les dégâts réels dans flags.westmarch._tgcmDamage :
+    // ce flag part dans l'update broadcast, donc updateActor le reçoit
+    // sur TOUS les clients. diff:false force l'update même si HP=1 déjà.
     Hooks.on("preUpdateActor", (actor, changes, options) => {
         const newHP = changes?.system?.attributes?.hp?.value;
         if (newHP === undefined || newHP >= 1) return;
         if (!_isActorProtected(actor)) return;
         const currentHP = actor.system?.attributes?.hp?.value ?? 1;
         const damage = Math.max(0, currentHP - newHP);
+        foundry.utils.setProperty(changes, "flags.westmarch._tgcmDamage", damage);
         changes.system.attributes.hp.value = 1;
         options.diff = false;
-        setTimeout(() => _showTgcmDamageFloat(actor, damage), 100);
+    });
+
+    // ---- Affichage des dégâts sur tous les clients ----
+    // updateActor fire sur tous les clients → tous voient le float rouge.
+    // Le GM nettoie le flag après affichage pour ne pas le laisser en base.
+    Hooks.on("updateActor", (actor, changes) => {
+        const damage = changes?.flags?.westmarch?._tgcmDamage;
+        if (!damage) return;
+        _showTgcmDamageFloat(actor, damage);
+        if (game.user.isGM) actor.update({ "flags.westmarch.-=_tgcmDamage": null });
     });
 }
 

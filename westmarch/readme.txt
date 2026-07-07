@@ -1,7 +1,7 @@
 ================================================================================
                         WESTMARCH SYSTÈME — MODULE FOUNDRY VTT
                                Auteur : Soruta (Discord: s0ruta)
-                                       Version : 1.7.8
+                                       Version : 1.8.1
                               Compatibilité : Foundry VTT v13
 ================================================================================
 
@@ -626,6 +626,18 @@ NOTES TECHNIQUES
 ================================================================================
                         WESTMARCH SYSTÈME — MISES À JOUR
 ================================================================================
+
+v1.8.1 | 2026-07-06
+   tgcm.js    — Floating text dégâts visible sur tous les clients : le montant
+                est piggybacked dans flags.westmarch._tgcmDamage lors du update
+                actor (broadcast Foundry), updateActor le lit sur tous les clients
+                et affiche le scrolling text rouge. Le setTimeout GM-only est
+                supprimé. Le flag est nettoyé par le GM après affichage.
+
+v1.8.0 | 2026-07-06
+   tgcm.js    — Carte chat Midi QOL : masquage complet de la ligne de PV
+                (midi-qol-dmg-row) pour les tokens TGCM protégés. Les joueurs
+                voient les dégâts infligés mais pas l'état HP du mob.
 
 v1.7.8 | 2026-07-06
    tm.js      — Dialog GM : barre de recherche (filtre temps réel) au-dessus
