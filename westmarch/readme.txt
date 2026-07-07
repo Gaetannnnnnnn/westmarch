@@ -1,7 +1,7 @@
 ================================================================================
                         WESTMARCH SYSTÈME — MODULE FOUNDRY VTT
                                Auteur : Soruta (Discord: s0ruta)
-                                       Version : 1.8.1
+                                       Version : 1.8.3
                               Compatibilité : Foundry VTT v13
 ================================================================================
 
@@ -626,6 +626,20 @@ NOTES TECHNIQUES
 ================================================================================
                         WESTMARCH SYSTÈME — MISES À JOUR
 ================================================================================
+
+v1.8.3 | 2026-07-06
+   tgcm.js    — renderChatMessage → renderChatMessageHTML (v13 non déprécié).
+                Résolution acteur : Midi QOL stocke "ActorXXXX" sans le point,
+                fromUuidSync échouait → fallback game.actors.get(id) après
+                suppression du préfixe "Actor". data-hp-total lu correctement.
+
+v1.8.2 | 2026-07-06
+   tgcm.js    — Refonte affichage TGCM : tout centralisé dans renderChatMessage
+                (fire sur tous les clients). Masquage ligne HP Midi QOL +
+                floating text depuis data-hp-total (valeur réelle, dnd5e clamp
+                HP à 0 avant update donc currentHP-newHP=1 est faux). Fallback
+                canvas tokenId si fromUuidSync échoue côté joueurs. Suppression
+                du mécanisme flag/updateActor.
 
 v1.8.1 | 2026-07-06
    tgcm.js    — Floating text dégâts visible sur tous les clients : le montant

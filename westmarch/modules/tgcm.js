@@ -33,46 +33,46 @@ export function TgcmHooks() {
         _refreshTgcmShield(token);
     });
 
-    // ---- Correction carte chat Midi QOL (dmg-hp-new) ----
-    // Midi QOL génère la carte AVANT que preUpdateActor clamp les PV.
-    // On post-process le DOM pour remplacer "0" par "1" côté tous les clients.
-    Hooks.on("renderChatMessage", (message, html) => {
-        const root = (html instanceof HTMLElement) ? html : (html[0] ?? null);
-        if (!root) return;
-        root.querySelectorAll(".midi-qol-dmg-row[data-actor-uuid]").forEach(row => {
+    // ---- Carte chat Midi QOL : masquage HP + floating text dégâts ----
+    // renderChatMessageHTML (v13) fire sur TOUS les clients.
+    // Midi QOL stocke l'uuid sous la forme "ActorXXXX" (sans le point),
+    // fromUuidSync échoue → on extrait l'ID et on passe par game.actors.get().
+    // Le vrai montant est dans data-hp-total (dnd5e clamp déjà à 0 avant update).
+    Hooks.on("renderChatMessageHTML", (message, html) => {
+        html.querySelectorAll(".midi-qol-dmg-row[data-actor-uuid]").forEach(row => {
             const uuid = row.dataset.actorUuid;
             if (!uuid) return;
-            let actor;
-            try { actor = fromUuidSync(uuid); } catch(e) { return; }
+            // Résolution acteur : fromUuidSync puis fallback game.actors
+            let actor = null;
+            try { actor = fromUuidSync(uuid); } catch(e) {}
+            if (!actor) {
+                // Midi QOL : "ActorXXXX" → retirer le préfixe "Actor" (avec ou sans point)
+                const id = uuid.replace(/^Actor\.?/, "");
+                actor = game.actors.get(id) ?? null;
+            }
+            if (!actor) {
+                // Dernier recours : chercher via token sur la scène active
+                const tokenId = uuid.match(/Token\.([^.]+)/)?.[1];
+                if (tokenId) actor = canvas.tokens?.placeables?.find(t => t.id === tokenId)?.actor ?? null;
+            }
             if (!actor || !_isActorProtected(actor)) return;
+            // Masquer la ligne HP
             row.style.display = "none";
+            // Afficher les dégâts réels en floating text
+            const damage = parseInt(row.querySelector("[data-hp-total]")?.dataset?.hpTotal ?? "0");
+            if (damage > 0) setTimeout(() => _showTgcmDamageFloat(actor, damage), 150);
         });
     });
 
-    // ---- Interception des dégâts (pré-update) — GM uniquement ----
+    // ---- Interception des dégâts (pré-update) ----
     // Clamp HP à 1 avant écriture → players ne voient jamais 1→0.
-    // On piggybacks les dégâts réels dans flags.westmarch._tgcmDamage :
-    // ce flag part dans l'update broadcast, donc updateActor le reçoit
-    // sur TOUS les clients. diff:false force l'update même si HP=1 déjà.
+    // L'affichage est géré dans renderChatMessage (tous les clients).
     Hooks.on("preUpdateActor", (actor, changes, options) => {
         const newHP = changes?.system?.attributes?.hp?.value;
         if (newHP === undefined || newHP >= 1) return;
         if (!_isActorProtected(actor)) return;
-        const currentHP = actor.system?.attributes?.hp?.value ?? 1;
-        const damage = Math.max(0, currentHP - newHP);
-        foundry.utils.setProperty(changes, "flags.westmarch._tgcmDamage", damage);
         changes.system.attributes.hp.value = 1;
         options.diff = false;
-    });
-
-    // ---- Affichage des dégâts sur tous les clients ----
-    // updateActor fire sur tous les clients → tous voient le float rouge.
-    // Le GM nettoie le flag après affichage pour ne pas le laisser en base.
-    Hooks.on("updateActor", (actor, changes) => {
-        const damage = changes?.flags?.westmarch?._tgcmDamage;
-        if (!damage) return;
-        _showTgcmDamageFloat(actor, damage);
-        if (game.user.isGM) actor.update({ "flags.westmarch.-=_tgcmDamage": null });
     });
 }
 
