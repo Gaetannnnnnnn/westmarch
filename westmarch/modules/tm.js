@@ -659,101 +659,6 @@ async function openDeclarationDialog(actor) {
         }).join("");
     }
 
-    // ---- Hook renderApplicationV2 (v13) ----
-    // Le callback render: de DialogV2.wait() a une signature variable selon les builds v13.
-    // On utilise renderApplicationV2 (hook standard v13) identifié par #tm-add-to-cart.
-    const _hookIdDecl = Hooks.on("renderApplicationV2", (app, html) => {
-        if (!html?.querySelector?.("#tm-add-to-cart")) return; // Pas notre dialogue
-        Hooks.off("renderApplicationV2", _hookIdDecl);
-        const $html = $(html);
-
-        wireControls($html, actor, "decl");
-        wireCraftControls($html, "decl");
-
-        $html.find('[name="tm-type-decl"]').on("change", function () {
-            const isCraft = this.value === "craft";
-            $html.find(".tm-section-gain-decl").css("display", isCraft ? "none" : "flex");
-            $html.find(".tm-section-craft-decl").css("display", isCraft ? "flex" : "none");
-        });
-
-        function refreshCart() {
-            $html.find("#tm-cart-display").html(cartHtml(cartItems));
-            $html.find("#tm-cart-count").text(`${cartItems.length} activité${cartItems.length !== 1 ? "s" : ""}`);
-            $html.find(".tm-remove-item").on("click", async function () {
-                cartItems.splice(parseInt(this.dataset.index), 1);
-                if (cartItems.length === 0) await actor.unsetFlag("westmarch", "tm");
-                else await actor.setFlag("westmarch", "tm", { declared: false, items: cartItems });
-                refreshCart();
-            });
-        }
-        refreshCart();
-
-        $html.find("#tm-add-to-cart").on("click", async () => {
-            const type = $html.find('[name="tm-type-decl"]:checked').val() ?? "gain";
-
-            if (type === "craft") {
-                const craftType   = $html.find('[name="tm-craft-type-decl"]').val();
-                const craftName   = ($html.find('[name="tm-craft-name-decl"]').val() ?? "").trim() || craftTypeLabel(craftType);
-                const price       = Math.max(1, parseInt($html.find('[name="tm-craft-price-decl"]').val())  || 1);
-                const scrollLevel = parseInt($html.find('[name="tm-craft-scroll-decl"]').val())             || 0;
-                const rarity      = $html.find('[name="tm-craft-rarity-decl"]').val()                      ?? "courant";
-                const singleUse   = $html.find('[name="tm-craft-single-decl"]').prop("checked");
-                const daysAlready = Math.max(0, parseInt($html.find('[name="tm-craft-done-decl"]').val())   || 0);
-                const sDay   = Math.max(1, parseInt($html.find('[name="tm-craft-sday-decl"]').val())   || 1);
-                const sMonth = parseInt($html.find('[name="tm-craft-smonth-decl"]').val())             || 0;
-                const sYear  = Math.max(1, parseInt($html.find('[name="tm-craft-syear-decl"]').val())  || 1);
-                const eDay   = Math.max(1, parseInt($html.find('[name="tm-craft-eday-decl"]').val())   || 1);
-                const eMonth = parseInt($html.find('[name="tm-craft-emonth-decl"]').val())             || 0;
-                const eYear  = Math.max(1, parseInt($html.find('[name="tm-craft-eyear-decl"]').val())  || 1);
-                const days            = getDaysFromDates(sDay, sMonth, sYear, eDay, eMonth, eYear);
-                const dateRangeLabel  = `${sDay} ${getMonthName(sMonth)} → ${eDay} ${getMonthName(eMonth)}`;
-                const { totalDays, cost } = getCraftStats(craftType, price, scrollLevel, rarity, singleUse);
-
-                cartItems.push({
-                    type: "craft",
-                    craftType, craftName, craftTotalDays: totalDays, craftCost: cost,
-                    craftDaysAlready: daysAlready,
-                    craftPrice: price, craftScrollLevel: scrollLevel,
-                    craftRarity: rarity, craftSingleUse: singleUse,
-                    choiceLabel: `🔨 ${craftName}`,
-                    startDay: sDay, startMonth: sMonth, startYear: sYear,
-                    endDay: eDay, endMonth: eMonth, endYear: eYear,
-                    days, dateRangeLabel
-                });
-
-            } else {
-                const skillId      = $html.find('[name="tm-skill-decl"]').val();
-                const hasMaitrise  = $html.find('[name="tm-maitrise-decl"]').prop("checked");
-                const hasExpertise = $html.find('[name="tm-expertise-decl"]').prop("checked");
-                const hasTools     = $html.find('[name="tm-tools-decl"]').prop("checked");
-                const doRoll       = $html.find('[name="tm-roll-decl"]').prop("checked");
-                const sDay   = Math.max(1, parseInt($html.find('[name="tm-sday-decl"]').val())   || 1);
-                const sMonth = parseInt($html.find('[name="tm-smonth-decl"]').val())             || 0;
-                const sYear  = Math.max(1, parseInt($html.find('[name="tm-syear-decl"]').val())  || 1);
-                const eDay   = Math.max(1, parseInt($html.find('[name="tm-eday-decl"]').val())   || 1);
-                const eMonth = parseInt($html.find('[name="tm-emonth-decl"]').val())             || 0;
-                const eYear  = Math.max(1, parseInt($html.find('[name="tm-eyear-decl"]').val())  || 1);
-                const days           = getDaysFromDates(sDay, sMonth, sYear, eDay, eMonth, eYear);
-                const dateRangeLabel = `${sDay} ${getMonthName(sMonth)} → ${eDay} ${getMonthName(eMonth)}`;
-                const sc             = CONFIG.DND5E.skills[skillId];
-                const choiceLabel    = game.i18n.localize(sc?.label ?? skillId);
-                const abilityId      = sc?.ability ?? "int";
-
-                cartItems.push({
-                    type: "gain",
-                    skillId, choiceLabel, abilityId,
-                    hasMaitrise, hasExpertise, hasTools, doRoll,
-                    startDay: sDay, startMonth: sMonth, startYear: sYear,
-                    endDay: eDay, endMonth: eMonth, endYear: eYear,
-                    days, dateRangeLabel
-                });
-            }
-
-            await actor.setFlag("westmarch", "tm", { declared: false, items: cartItems });
-            refreshCart();
-        });
-    });
-
     await (foundry.applications.api.DialogV2 ?? DialogV2).wait({
         window: { title: `Temps mort — ${actor.name}`, resizable: true },
         position: { width: 520 },
@@ -792,6 +697,99 @@ async function openDeclarationDialog(actor) {
     </button>
 </div>`,
         rejectClose: false,
+        render: () => {
+            // Ne pas utiliser l'argument — son type varie (HTMLElement, Event, string…) selon les builds v13.
+            // On accède au DOM directement par ID unique ; garanti disponible quand render() est appelé.
+            const rootEl = document.getElementById("tm-add-to-cart")
+                ?.closest(".application, .dialog, form") ?? document.body;
+            const $html = $(rootEl);
+
+            wireControls($html, actor, "decl");
+            wireCraftControls($html, "decl");
+
+            $html.find('[name="tm-type-decl"]').on("change", function () {
+                const isCraft = this.value === "craft";
+                $html.find(".tm-section-gain-decl").css("display", isCraft ? "none" : "flex");
+                $html.find(".tm-section-craft-decl").css("display", isCraft ? "flex" : "none");
+            });
+
+            function refreshCart() {
+                $html.find("#tm-cart-display").html(cartHtml(cartItems));
+                $html.find("#tm-cart-count").text(`${cartItems.length} activité${cartItems.length !== 1 ? "s" : ""}`);
+                $html.find(".tm-remove-item").on("click", async function () {
+                    cartItems.splice(parseInt(this.dataset.index), 1);
+                    if (cartItems.length === 0) await actor.unsetFlag("westmarch", "tm");
+                    else await actor.setFlag("westmarch", "tm", { declared: false, items: cartItems });
+                    refreshCart();
+                });
+            }
+            refreshCart();
+
+            $html.find("#tm-add-to-cart").on("click", async () => {
+                const type = $html.find('[name="tm-type-decl"]:checked').val() ?? "gain";
+
+                if (type === "craft") {
+                    const craftType   = $html.find('[name="tm-craft-type-decl"]').val();
+                    const craftName   = ($html.find('[name="tm-craft-name-decl"]').val() ?? "").trim() || craftTypeLabel(craftType);
+                    const price       = Math.max(1, parseInt($html.find('[name="tm-craft-price-decl"]').val())  || 1);
+                    const scrollLevel = parseInt($html.find('[name="tm-craft-scroll-decl"]').val())             || 0;
+                    const rarity      = $html.find('[name="tm-craft-rarity-decl"]').val()                      ?? "courant";
+                    const singleUse   = $html.find('[name="tm-craft-single-decl"]').prop("checked");
+                    const daysAlready = Math.max(0, parseInt($html.find('[name="tm-craft-done-decl"]').val())   || 0);
+                    const sDay   = Math.max(1, parseInt($html.find('[name="tm-craft-sday-decl"]').val())   || 1);
+                    const sMonth = parseInt($html.find('[name="tm-craft-smonth-decl"]').val())             || 0;
+                    const sYear  = Math.max(1, parseInt($html.find('[name="tm-craft-syear-decl"]').val())  || 1);
+                    const eDay   = Math.max(1, parseInt($html.find('[name="tm-craft-eday-decl"]').val())   || 1);
+                    const eMonth = parseInt($html.find('[name="tm-craft-emonth-decl"]').val())             || 0;
+                    const eYear  = Math.max(1, parseInt($html.find('[name="tm-craft-eyear-decl"]').val())  || 1);
+                    const days            = getDaysFromDates(sDay, sMonth, sYear, eDay, eMonth, eYear);
+                    const dateRangeLabel  = `${sDay} ${getMonthName(sMonth)} → ${eDay} ${getMonthName(eMonth)}`;
+                    const { totalDays, cost } = getCraftStats(craftType, price, scrollLevel, rarity, singleUse);
+
+                    cartItems.push({
+                        type: "craft",
+                        craftType, craftName, craftTotalDays: totalDays, craftCost: cost,
+                        craftDaysAlready: daysAlready,
+                        craftPrice: price, craftScrollLevel: scrollLevel,
+                        craftRarity: rarity, craftSingleUse: singleUse,
+                        choiceLabel: `🔨 ${craftName}`,
+                        startDay: sDay, startMonth: sMonth, startYear: sYear,
+                        endDay: eDay, endMonth: eMonth, endYear: eYear,
+                        days, dateRangeLabel
+                    });
+
+                } else {
+                    const skillId      = $html.find('[name="tm-skill-decl"]').val();
+                    const hasMaitrise  = $html.find('[name="tm-maitrise-decl"]').prop("checked");
+                    const hasExpertise = $html.find('[name="tm-expertise-decl"]').prop("checked");
+                    const hasTools     = $html.find('[name="tm-tools-decl"]').prop("checked");
+                    const doRoll       = $html.find('[name="tm-roll-decl"]').prop("checked");
+                    const sDay   = Math.max(1, parseInt($html.find('[name="tm-sday-decl"]').val())   || 1);
+                    const sMonth = parseInt($html.find('[name="tm-smonth-decl"]').val())             || 0;
+                    const sYear  = Math.max(1, parseInt($html.find('[name="tm-syear-decl"]').val())  || 1);
+                    const eDay   = Math.max(1, parseInt($html.find('[name="tm-eday-decl"]').val())   || 1);
+                    const eMonth = parseInt($html.find('[name="tm-emonth-decl"]').val())             || 0;
+                    const eYear  = Math.max(1, parseInt($html.find('[name="tm-eyear-decl"]').val())  || 1);
+                    const days           = getDaysFromDates(sDay, sMonth, sYear, eDay, eMonth, eYear);
+                    const dateRangeLabel = `${sDay} ${getMonthName(sMonth)} → ${eDay} ${getMonthName(eMonth)}`;
+                    const sc             = CONFIG.DND5E.skills[skillId];
+                    const choiceLabel    = game.i18n.localize(sc?.label ?? skillId);
+                    const abilityId      = sc?.ability ?? "int";
+
+                    cartItems.push({
+                        type: "gain",
+                        skillId, choiceLabel, abilityId,
+                        hasMaitrise, hasExpertise, hasTools, doRoll,
+                        startDay: sDay, startMonth: sMonth, startYear: sYear,
+                        endDay: eDay, endMonth: eMonth, endYear: eYear,
+                        days, dateRangeLabel
+                    });
+                }
+
+                await actor.setFlag("westmarch", "tm", { declared: false, items: cartItems });
+                refreshCart();
+            });
+        },
         buttons: [
             {
                 action: "declare",
@@ -818,9 +816,6 @@ async function openDeclarationDialog(actor) {
             }
         ]
     });
-
-    // Nettoyage si le dialogue s'est fermé avant d'avoir rendu
-    Hooks.off("renderApplicationV2", _hookIdDecl);
 }
 
 // ============================================================
@@ -936,84 +931,82 @@ async function openDowntimeDialog() {
     </div>
 </div>`;
 
-    // ---- Hook renderApplicationV2 (v13) ----
-    // Le callback render: de DialogV2.wait() a une signature variable selon les builds v13.
-    // On utilise renderApplicationV2 (hook standard v13) identifié par #tm-show-list.
     let dialogHtml = null;
-
-    const _hookId = Hooks.on("renderApplicationV2", (app, html) => {
-        if (!html?.querySelector?.("#tm-show-list")) return; // Pas notre dialogue
-        Hooks.off("renderApplicationV2", _hookId);
-        dialogHtml = html;
-        const $html = $(html);
-
-        $html.find("#tm-show-list").on("change", function () {
-            $html.find("#tm-actor-list").css("display", this.checked ? "block" : "none");
-            if (this.checked) $html.find("#tm-search").trigger("focus");
-        });
-
-        $html.find("#tm-search").on("input", function () {
-            const q = this.value.trim().toLowerCase();
-            $html.find(".tm-actor-row").each(function () {
-                const name = $(this).find(".tm-actor-name").text().toLowerCase();
-                $(this).toggle(!q || name.includes(q));
-            });
-        });
-
-        $html.find("#tm-show-undeclared").on("change", function () {
-            $html.find(".tm-undeclared-group").css("display", this.checked ? "block" : "none");
-        });
-
-        for (const actor of allActors) {
-            const id = actor.id;
-            $html.find(`[name="tm-active-${id}"]`).on("change", function () {
-                $html.find(`.tm-controls-${id}`).css("opacity", this.checked ? "1" : "0.4");
-            });
-        }
-
-        $html.find(".tm-actor-name").on("click", function () {
-            const actor = game.actors.get(this.dataset.actorId);
-            if (actor) actor.sheet.render(true);
-        });
-
-        $html.find(".tm-edit-btn").on("click", function () {
-            const actor = game.actors.get(this.dataset.actorId);
-            if (actor) openDeclarationDialog(actor);
-        });
-
-        $html.find(".tm-refuse-btn").on("click", async function () {
-            const actorId = this.dataset.actorId;
-            const actor   = game.actors.get(actorId);
-            if (!actor) return;
-
-            await actor.unsetFlag("westmarch", "tm");
-
-            const owners = getActorOwners(actor);
-            if (owners.length > 0) {
-                ChatMessage.create({
-                    content: `❌ Votre demande de temps mort a été refusée par le MJ.`,
-                    whisper: owners.map(u => u.id),
-                    speaker: { alias: "WestMarch — Temps morts" }
-                });
-            }
-
-            $html.find(`[data-actor-id="${actorId}"].tm-actor-row`).css("opacity", "0.4");
-            $html.find(`[name="tm-active-${actorId}"]`).prop("checked", false);
-            $html.find(`.tm-controls-${actorId}`).css("opacity", "0.4");
-            this.textContent = "Refusé";
-            this.disabled = true;
-            this.style.color = "#888";
-            this.style.borderColor = "#888";
-
-            ui.notifications.info(`Demande TM refusée pour ${actor.name}.`);
-        });
-    });
 
     await (foundry.applications.api.DialogV2 ?? DialogV2).wait({
         window: { title: "Temps morts", resizable: true },
         position: { width: 560 },
         content,
         rejectClose: false,
+        render: () => {
+            // Ne pas utiliser l'argument — son type varie (HTMLElement, Event, string…) selon les builds v13.
+            // On accède au DOM directement par ID unique ; garanti disponible quand render() est appelé.
+            const rootEl = document.getElementById("tm-show-list")
+                ?.closest(".application, .dialog, form") ?? document.body;
+            dialogHtml = rootEl;
+            const $html = $(rootEl);
+
+            $html.find("#tm-show-list").on("change", function () {
+                $html.find("#tm-actor-list").css("display", this.checked ? "block" : "none");
+                if (this.checked) $html.find("#tm-search").trigger("focus");
+            });
+
+            $html.find("#tm-search").on("input", function () {
+                const q = this.value.trim().toLowerCase();
+                $html.find(".tm-actor-row").each(function () {
+                    const name = $(this).find(".tm-actor-name").text().toLowerCase();
+                    $(this).toggle(!q || name.includes(q));
+                });
+            });
+
+            $html.find("#tm-show-undeclared").on("change", function () {
+                $html.find(".tm-undeclared-group").css("display", this.checked ? "block" : "none");
+            });
+
+            for (const actor of allActors) {
+                const id = actor.id;
+                $html.find(`[name="tm-active-${id}"]`).on("change", function () {
+                    $html.find(`.tm-controls-${id}`).css("opacity", this.checked ? "1" : "0.4");
+                });
+            }
+
+            $html.find(".tm-actor-name").on("click", function () {
+                const actor = game.actors.get(this.dataset.actorId);
+                if (actor) actor.sheet.render(true);
+            });
+
+            $html.find(".tm-edit-btn").on("click", function () {
+                const actor = game.actors.get(this.dataset.actorId);
+                if (actor) openDeclarationDialog(actor);
+            });
+
+            $html.find(".tm-refuse-btn").on("click", async function () {
+                const actorId = this.dataset.actorId;
+                const actor   = game.actors.get(actorId);
+                if (!actor) return;
+
+                await actor.unsetFlag("westmarch", "tm");
+
+                const owners = getActorOwners(actor);
+                if (owners.length > 0) {
+                    ChatMessage.create({
+                        content: `❌ Votre demande de temps mort a été refusée par le MJ.`,
+                        whisper: owners.map(u => u.id),
+                        speaker: { alias: "WestMarch — Temps morts" }
+                    });
+                }
+
+                $html.find(`[data-actor-id="${actorId}"].tm-actor-row`).css("opacity", "0.4");
+                $html.find(`[name="tm-active-${actorId}"]`).prop("checked", false);
+                $html.find(`.tm-controls-${actorId}`).css("opacity", "0.4");
+                this.textContent = "Refusé";
+                this.disabled = true;
+                this.style.color = "#888";
+                this.style.borderColor = "#888";
+
+                ui.notifications.info(`Demande TM refusée pour ${actor.name}.`);
+            });
+        },
         buttons: [
             {
                 action: "apply",
@@ -1031,9 +1024,6 @@ async function openDowntimeDialog() {
             }
         ]
     });
-
-    // Nettoyage si le dialogue s'est fermé avant d'avoir rendu
-    Hooks.off("renderApplicationV2", _hookId);
 }
 
 // ============================================================
