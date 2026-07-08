@@ -1,7 +1,7 @@
 ================================================================================
                         WESTMARCH SYSTÈME — MODULE FOUNDRY VTT
                                Auteur : Soruta (Discord: s0ruta)
-                                       Version : 1.8.5
+                                       Version : 1.8.7
                               Compatibilité : Foundry VTT v13
 ================================================================================
 
@@ -626,6 +626,21 @@ NOTES TECHNIQUES
 ================================================================================
                         WESTMARCH SYSTÈME — MISES À JOUR
 ================================================================================
+
+v1.8.7 | 2026-07-08
+   tm.js          — SceneControlTool#onClick → onChange (déprécié depuis v13,
+                    suppression prévue en v15).
+   fake-warning.js — idem.
+   Version        — 1.8.6 → 1.8.7
+
+v1.8.6 | 2026-07-08
+   tm.js      — Câblage event listeners migré de render: callback (DialogV2.wait)
+                vers Hooks.on("renderApplicationV2", ...) identifié par un élément
+                unique (#tm-show-list / #tm-add-to-cart). La signature du callback
+                render: varie selon les builds v13 et était silencieusement ignorée ;
+                renderApplicationV2 est le hook officiel v13, déjà utilisé ailleurs
+                dans le module — garantit le câblage du checkbox et des boutons.
+   Version    — 1.8.5 → 1.8.6
 
 v1.8.5 | 2026-07-08
    tm.js      — DialogV2 render callback : signature corrigée (event, html) → (html).

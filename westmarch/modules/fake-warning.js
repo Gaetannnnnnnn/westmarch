@@ -30,7 +30,7 @@ export function FakeWarningHooks() {
                     title: "Faux message de maintenance",
                     icon: "fa-solid fa-triangle-exclamation",
                     button: true,
-                    onClick: () => openFakeWarningDialog(),
+                    onChange: () => openFakeWarningDialog(),
                     visible: true
                 }
             }

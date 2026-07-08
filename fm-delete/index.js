@@ -180,9 +180,9 @@ async function _deleteFile(app, path, filename) {
 // ============================================================
 // Appel serveur Foundry pour la suppression
 //
-// v13 ne fournit pas FilePicker.delete() → on appelle directement
-// l'endpoint /files/ avec l'action "deleteFile".
-// Fondry's server Express handler accepte ce format.
+// Foundry v13 : les opérations non-upload du FilePicker utilisent JSON
+// (Content-Type: application/json) plutôt que FormData.
+// En cas d'échec on retente avec FormData (compat v12).
 // ============================================================
 
 async function _serverDelete(source, path, bucket) {
@@ -192,16 +192,27 @@ async function _serverDelete(source, path, bucket) {
         return FP.delete(source, path, { bucket });
     }
 
-    // Méthode 2 : endpoint serveur /files/ via FormData
     const filesUrl = foundry.utils?.getRoute?.("files") ?? "/files/";
 
-    const fd = new FormData();
-    fd.set("action", "deleteFile");
-    fd.set("source", source);
-    fd.set("target", path);
-    if (bucket) fd.set("bucket", bucket);
+    // Méthode 2 : JSON (Foundry v13 — opérations non-upload)
+    const payload = { action: "deleteFile", source, target: path };
+    if (bucket) payload.bucket = bucket;
 
-    const resp = await fetch(filesUrl, { method: "POST", body: fd });
+    let resp = await fetch(filesUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload)
+    });
+
+    // Méthode 3 : FormData (Foundry v12 / fallback)
+    if (!resp.ok) {
+        const fd = new FormData();
+        fd.set("action", "deleteFile");
+        fd.set("source", source);
+        fd.set("target", path);
+        if (bucket) fd.set("bucket", bucket);
+        resp = await fetch(filesUrl, { method: "POST", body: fd });
+    }
 
     if (!resp.ok) {
         let msg = `HTTP ${resp.status}`;

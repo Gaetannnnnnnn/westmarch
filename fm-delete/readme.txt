@@ -1,7 +1,7 @@
 ================================================================================
                      FM-DELETE — MODULE FOUNDRY VTT
                           Auteur : Soruta (Discord: s0ruta)
-                                  Version : 1.0.1
+                                  Version : 1.0.2
                          Compatibilité : Foundry VTT v13
 ================================================================================
 
@@ -41,6 +41,12 @@ Puis activer le module dans Foundry : Paramètres → Gestion des modules.
 ================================================================================
                             FM-DELETE — MISES À JOUR
 ================================================================================
+
+v1.0.2 | 2026-07-08
+   index.js   — _serverDelete : Foundry v13 utilise JSON (Content-Type:
+                application/json) pour les opérations non-upload sur /files/.
+                Le module essaie maintenant JSON en premier, puis FormData
+                en fallback (compat v12). Corrige l'erreur HTTP 404.
 
 v1.0.1 | 2026-07-08
    index.js   — Correction accès FilePicker v13 : remplacé le global déprécié
