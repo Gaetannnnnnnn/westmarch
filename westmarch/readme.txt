@@ -1,7 +1,7 @@
 ================================================================================
                         WESTMARCH SYSTÈME — MODULE FOUNDRY VTT
                                Auteur : Soruta (Discord: s0ruta)
-                                       Version : 1.8.3
+                                       Version : 1.8.4
                               Compatibilité : Foundry VTT v13
 ================================================================================
 
@@ -626,6 +626,17 @@ NOTES TECHNIQUES
 ================================================================================
                         WESTMARCH SYSTÈME — MISES À JOUR
 ================================================================================
+
+v1.8.4 | 2026-07-08
+   tm.js      — Bouton GM "Temps morts" : correction complète pour Foundry v13.
+                getSceneControlButtons : création défensive du groupe westmarch
+                si fake-warning.js n'a pas encore tourné (robustesse ordre hook).
+                openDowntimeDialog + openDeclarationDialog : migration de
+                new Dialog() + Hooks.once("renderDialog") vers DialogV2.wait()
+                (Dialog déprécié en v13, renderDialog passait un raw HTMLElement
+                causant des html.find() silencieux). Tous les event listeners
+                câblés dans le callback render natif avec $(html) wrapping.
+   Version    — 1.8.3 → 1.8.4
 
 v1.8.3 | 2026-07-06
    tgcm.js    — renderChatMessage → renderChatMessageHTML (v13 non déprécié).
