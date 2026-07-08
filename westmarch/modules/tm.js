@@ -700,7 +700,7 @@ async function openDeclarationDialog(actor) {
     </button>
 </div>`,
         rejectClose: false,
-        render: (event, html) => {
+        render: (html) => {
             const $html = $(html);
 
             wireControls($html, actor, "decl");
@@ -937,7 +937,7 @@ async function openDowntimeDialog() {
         position: { width: 560 },
         content,
         rejectClose: false,
-        render: (event, html) => {
+        render: (html) => {
             dialogHtml = html;
             const $html = $(html);
 

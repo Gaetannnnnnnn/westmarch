@@ -1,7 +1,7 @@
 ================================================================================
                         WESTMARCH SYSTÈME — MODULE FOUNDRY VTT
                                Auteur : Soruta (Discord: s0ruta)
-                                       Version : 1.8.4
+                                       Version : 1.8.5
                               Compatibilité : Foundry VTT v13
 ================================================================================
 
@@ -626,6 +626,13 @@ NOTES TECHNIQUES
 ================================================================================
                         WESTMARCH SYSTÈME — MISES À JOUR
 ================================================================================
+
+v1.8.5 | 2026-07-08
+   tm.js      — DialogV2 render callback : signature corrigée (event, html) → (html).
+                En v13, DialogV2.wait() appelle render(htmlElement) avec un seul
+                argument — le second paramètre était donc undefined, causant des
+                $(html).find() vides et aucun event listener câblé.
+   Version    — 1.8.4 → 1.8.5
 
 v1.8.4 | 2026-07-08
    tm.js      — Bouton GM "Temps morts" : correction complète pour Foundry v13.

@@ -1,7 +1,7 @@
 {
   "id": "fm-delete",
   "title": "File Manager — Suppression",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Ajoute un clic droit → Supprimer dans le FilePicker Foundry (GM uniquement). Module propriétaire — ne pas redistribuer.",
   "authors": [
     {
