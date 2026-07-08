@@ -15,5 +15,8 @@
   },
   "esmodules": [
     "./index.js"
-  ]
+  ],
+  "url": "https://github.com/Gaetannnnnnnn/westmarch.git",
+  "manifest": "https://raw.githubusercontent.com/Gaetannnnnnnn/westmarch/main/carte-expeditions/modules/module.json",
+  "download": "https://github.com/Gaetannnnnnnn/westmarch/raw/main/carte-expeditions.zip"
 }
