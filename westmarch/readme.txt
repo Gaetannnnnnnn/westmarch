@@ -1,7 +1,7 @@
 ================================================================================
                         WESTMARCH SYSTÈME — MODULE FOUNDRY VTT
                                Auteur : Soruta (Discord: s0ruta)
-                                       Version : 1.9.0
+                                       Version : 1.9.1
                               Compatibilité : Foundry VTT v13
 ================================================================================
 
@@ -641,6 +641,13 @@ NOTES TECHNIQUES
 ================================================================================
                         WESTMARCH SYSTÈME — MISES À JOUR
 ================================================================================
+
+v1.9.1 | 2026-07-09
+   polymorph.js — Fix transfert de PV : remplace tokenDoc.actor.update() par
+                  tokenDoc.delta.update() pour cibler uniquement l'ActorDelta
+                  du token (v13). actor.update() risquait de modifier le base
+                  actor dans game.actors au lieu du delta local du token.
+   Version      — 1.9.0 → 1.9.1
 
 v1.9.0 | 2026-07-09
    polymorph.js — Transfert des PV lors de la transformation : au moment de

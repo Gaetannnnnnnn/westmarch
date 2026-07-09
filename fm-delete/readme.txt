@@ -1,7 +1,7 @@
 ================================================================================
                      FM-DELETE — MODULE FOUNDRY VTT
                           Auteur : Soruta (Discord: s0ruta)
-                                  Version : 1.0.3
+                                  Version : 1.0.4
                          Compatibilité : Foundry VTT v13
 ================================================================================
 
@@ -41,6 +41,15 @@ Puis activer le module dans Foundry : Paramètres → Gestion des modules.
 ================================================================================
                             FM-DELETE — MISES À JOUR
 ================================================================================
+
+v1.0.4 | 2026-07-09
+   index.js   — Fix décisif : game.socket.emit("manageFiles") prend 4 arguments
+                (data, options, callback) et non 3. On passait le callback en
+                3ème position à la place de options → callback jamais appelé →
+                promise pendante indéfiniment → rien ne se passait sans erreur.
+                Ajout de {} comme options (3ème arg) pour que le callback soit
+                bien en 4ème position.
+   Version    — 1.0.3 → 1.0.4
 
 v1.0.3 | 2026-07-09
    index.js   — _serverDelete : diagnostic confirmé — en Foundry v13, les

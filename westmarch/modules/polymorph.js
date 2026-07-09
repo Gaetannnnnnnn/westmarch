@@ -61,16 +61,16 @@ async function applyTransform(tokenDoc, beastActor) {
 
     await tokenDoc.update(updateData);
 
-    // Après await, tokenDoc.actor est l'instance synthétique de la bête
-    // (actorLink: false → copie locale non liée à l'acteur de base).
-    // On lui applique les PV du PJ : current = ce qu'il avait, max = son max.
+    // Applique les PV du PJ via tokenDoc.delta (ActorDelta en v13).
+    // tokenDoc.actor.update() en v13 risque de modifier le base actor dans
+    // game.actors ; delta.update() cible uniquement ce token.
     if (pcHpValue !== null || pcHpMax !== null) {
-        const syntheticActor = tokenDoc.actor;
-        if (syntheticActor) {
+        const delta = tokenDoc.delta;
+        if (delta) {
             const hpUpdate = {};
             if (pcHpValue !== null) hpUpdate["system.attributes.hp.value"] = pcHpValue;
             if (pcHpMax   !== null) hpUpdate["system.attributes.hp.max"]   = pcHpMax;
-            await syntheticActor.update(hpUpdate);
+            await delta.update(hpUpdate);
         }
     }
 }

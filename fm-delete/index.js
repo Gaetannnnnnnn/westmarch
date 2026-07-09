@@ -211,13 +211,14 @@ async function _serverDelete(source, path, bucket) {
         return result;
     }
 
-    // Méthode 3 : socket direct — même protocole que FilePicker.manage()
-    // mais sans passer par la classe (au cas où elle serait inaccessible).
+    // Méthode 3 : socket direct — même protocole que FilePicker.#manageFiles()
+    // Signature exacte : game.socket.emit("manageFiles", data, options, callback)
+    // (4 arguments — le 3ème est options, pas le callback).
     if (game?.socket) {
         return new Promise((resolve, reject) => {
             const body = { action: "deleteFile", storage: source, target: path };
             if (bucket) body.bucket = bucket;
-            game.socket.emit("manageFiles", body, (response) => {
+            game.socket.emit("manageFiles", body, {}, (response) => {
                 if (response?.error) reject(new Error(response.error));
                 else resolve(response);
             });
