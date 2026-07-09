@@ -12,20 +12,20 @@
 // © Soruta — module propriétaire Ashara, ne pas redistribuer.
 // ============================================================
 
-// Hooks sur les entrées (documents)
+// Hooks sur les entrées (documents) — v13 : suffixe "Options"
 const FM_ENTRY_HOOKS = [
-    { hook: "getSceneDirectoryEntryContext",   collection: () => game.scenes,  folderType: "Scene",        label: "Scènes"   },
-    { hook: "getActorDirectoryEntryContext",   collection: () => game.actors,  folderType: "Actor",        label: "Acteurs"  },
-    { hook: "getItemDirectoryEntryContext",    collection: () => game.items,   folderType: "Item",         label: "Objets"   },
-    { hook: "getJournalEntryContext",          collection: () => game.journal, folderType: "JournalEntry", label: "Journaux" },
+    { hook: "getSceneDirectoryEntryContextOptions",   collection: () => game.scenes,  folderType: "Scene",        label: "Scènes"   },
+    { hook: "getActorDirectoryEntryContextOptions",   collection: () => game.actors,  folderType: "Actor",        label: "Acteurs"  },
+    { hook: "getItemDirectoryEntryContextOptions",    collection: () => game.items,   folderType: "Item",         label: "Objets"   },
+    { hook: "getJournalEntryContextOptions",          collection: () => game.journal, folderType: "JournalEntry", label: "Journaux" },
 ];
 
-// Hooks sur les dossiers
+// Hooks sur les dossiers — v13 : suffixe "Options"
 const FM_FOLDER_HOOKS = [
-    { hook: "getSceneDirectoryFolderContext",   folderType: "Scene"        },
-    { hook: "getActorDirectoryFolderContext",   folderType: "Actor"        },
-    { hook: "getItemDirectoryFolderContext",    folderType: "Item"         },
-    { hook: "getJournalDirectoryFolderContext", folderType: "JournalEntry" },
+    { hook: "getSceneDirectoryFolderContextOptions",   folderType: "Scene"        },
+    { hook: "getActorDirectoryFolderContextOptions",   folderType: "Actor"        },
+    { hook: "getItemDirectoryFolderContextOptions",    folderType: "Item"         },
+    { hook: "getJournalDirectoryFolderContextOptions", folderType: "JournalEntry" },
 ];
 
 // ============================================================
@@ -126,7 +126,7 @@ export function FolderMoveHooks() {
                     icon: '<i class="fas fa-folder-open"></i>',
                     condition: () => true,
                     callback: async (li) => {
-                        const docId = li.data("document-id") ?? li.attr("data-document-id");
+                        const docId = li.dataset?.entryId ?? li.dataset?.documentId ?? li.dataset?.sceneId;
                         const doc   = collection().get(docId);
                         if (!doc) return;
                         const folderId = await openFolderPicker(folderType, `Déplacer — ${doc.name}`);
@@ -139,7 +139,7 @@ export function FolderMoveHooks() {
                     icon: '<i class="fas fa-copy"></i>',
                     condition: () => true,
                     callback: async (li) => {
-                        const docId = li.data("document-id") ?? li.attr("data-document-id");
+                        const docId = li.dataset?.entryId ?? li.dataset?.documentId ?? li.dataset?.sceneId;
                         const doc   = collection().get(docId);
                         if (!doc) return;
                         const folderId = await openFolderPicker(folderType, `Dupliquer — ${doc.name}`);
@@ -151,28 +151,46 @@ export function FolderMoveHooks() {
         });
     }
 
-    // ---- Menu clic droit sur les dossiers ----
-    for (const { hook, folderType } of FM_FOLDER_HOOKS) {
-        Hooks.on(hook, (html, options) => {
-            if (!game.settings.get("westmarch", "enableFolderMove")) return;
-            if (!game.user.isGM) return;
+    // ---- Menu clic droit sur les dossiers (patch prototype v13) ----
+    // En v13, les menus de dossiers n'ont pas de hook — on patche
+    // _getFolderContextOptions directement sur chaque classe de directory.
+    const FOLDER_PATCHES = [
+        { uiKey: "scenes",  folderType: "Scene"        },
+        { uiKey: "actors",  folderType: "Actor"        },
+        { uiKey: "items",   folderType: "Item"         },
+        { uiKey: "journal", folderType: "JournalEntry" },
+    ];
 
-            options.push(
-                {
+    Hooks.on("ready", () => {
+        for (const { uiKey, folderType } of FOLDER_PATCHES) {
+            const dir = ui[uiKey];
+            if (!dir) continue;
+            const proto = dir.constructor.prototype;
+            if (!proto._getFolderContextOptions) continue;
+            // Évite de patcher deux fois si le module reload
+            if (proto._getFolderContextOptions._wmPatched) continue;
+
+            const _orig = proto._getFolderContextOptions;
+            proto._getFolderContextOptions = function(...args) {
+                const options = _orig.call(this, ...args);
+                if (!game.user.isGM) return options;
+                if (!game.settings.get("westmarch", "enableFolderMove")) return options;
+
+                options.push({
                     name: "Déplacer vers…",
                     icon: '<i class="fas fa-folder-open"></i>',
-                    condition: () => true,
                     callback: async (li) => {
-                        const folderId = li.data("folder-id") ?? li.attr("data-folder-id");
-                        const folder   = game.folders.get(folderId);
+                        const fId    = li.dataset?.folderId ?? li.dataset?.entryId;
+                        const folder = game.folders.get(fId);
                         if (!folder) return;
-                        // Exclure le dossier lui-même du sélecteur
-                        const destId = await openFolderPicker(folderType, `Déplacer — ${folder.name}`, folderId);
+                        const destId = await openFolderPicker(folderType, `Déplacer — ${folder.name}`, fId);
                         if (destId === false) return;
                         await folder.update({ folder: destId });
                     }
-                }
-            );
-        });
-    }
+                });
+                return options;
+            };
+            proto._getFolderContextOptions._wmPatched = true;
+        }
+    });
 }
