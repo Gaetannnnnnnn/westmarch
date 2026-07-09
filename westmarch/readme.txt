@@ -1,7 +1,7 @@
 ================================================================================
                         WESTMARCH SYSTÈME — MODULE FOUNDRY VTT
                                Auteur : Soruta (Discord: s0ruta)
-                                       Version : 1.9.1
+                                       Version : 1.9.4
                               Compatibilité : Foundry VTT v13
 ================================================================================
 
@@ -22,6 +22,7 @@ westmarch/
 ├── README.txt              Ce fichier, regroupant toutes les informations utiles à la compréhension du module ainsi que les mises à jour apportées
 ├── module.json             Manifeste du module (id, version, compatibilité)
 ├── index.js                Point d'entrée — initialise tous les hooks
+│   ├── foldermove.js       Multi-sélection et déplacement/duplication de documents dans le sidebar
 ├── modules/
 │   ├── anticheat.js        Avertit les GM en privé des modifs suspectes (sorts/attunement/équipement) en combat
 │   ├── audio.js            Coupe les sons globaux (dés, thème de combat) qui traversent les party
@@ -641,6 +642,34 @@ NOTES TECHNIQUES
 ================================================================================
                         WESTMARCH SYSTÈME — MISES À JOUR
 ================================================================================
+
+v1.9.4 | 2026-07-09
+   foldermove.js — Nouveau module : multi-sélection et déplacement/duplication
+                  de documents en lot dans le sidebar (Scènes, Acteurs, Objets,
+                  Journaux). Un bouton ☑ dans l'en-tête de chaque onglet active
+                  le mode sélection (GM uniquement) : cliquer sur des documents
+                  les coche (outline vert). Une barre en bas expose deux boutons :
+                  "Déplacer" et "Dupliquer", qui ouvrent un sélecteur d'arbre de
+                  dossiers. Sur confirmation, tous les documents sélectionnés sont
+                  déplacés (doc.update({ folder })) ou dupliqués (doc.clone({ folder },
+                  { save: true })). Nouveau setting enableFolderMove.
+   index.js      — Import + appel FolderMoveHooks().
+   settings.js   — Ajout setting enableFolderMove.
+   Version       — 1.9.3 → 1.9.4
+
+v1.9.3 | 2026-07-09
+   tm.js        — Reliable Talent (Roublard niv. 11) : lors du test de
+                  compétence TM, si l'acteur possède un item "Reliable Talent"
+                  ou "Talent Fiable" et est maîtrisé dans la compétence
+                  (maîtrise, expertise ou tools), le d20 brut est clampé à 10
+                  minimum avant d'ajouter le modificateur.
+   Version      — 1.9.2 → 1.9.3
+
+v1.9.2 | 2026-07-09
+   tm.js        — Couleur du texte des messages chat TM : ajout de color:#000
+                  en style inline sur le whisper joueur et le résumé GM.
+                  Le texte était invisible (couleur sombre sur fond sombre).
+   Version      — 1.9.1 → 1.9.2
 
 v1.9.1 | 2026-07-09
    polymorph.js — Fix transfert de PV : remplace tokenDoc.actor.update() par

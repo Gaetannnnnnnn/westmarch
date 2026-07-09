@@ -268,6 +268,16 @@ export function registerSettings() {
         requiresReload: false
     });
 
+    game.settings.register("westmarch", "enableFolderMove", {
+        name: "Déplacement/duplication multiple de documents",
+        hint: "Ajoute un bouton ☑ dans les onglets Scènes, Acteurs, Objets et Journaux (GM uniquement). En mode sélection, cliquer sur plusieurs documents les coche, puis une barre en bas permet de les déplacer ou dupliquer en lot vers un dossier au choix.",
+        scope: "world",
+        config: true,
+        type: Boolean,
+        default: true,
+        requiresReload: false
+    });
+
     game.settings.register("westmarch", "enablePolymorph", {
         name: "Transformation polymorphe (Wild Shape / Polymorph)",
         hint: "Permet au GM de configurer des 'formes polymorphes' (acteurs existants) sur un acteur. Ajoute une barre en bas du HUD du token avec un bouton pour transformer le token vers la forme sélectionnée et un bouton pour revenir à la forme originale. Propriétaire du token et GM uniquement.",

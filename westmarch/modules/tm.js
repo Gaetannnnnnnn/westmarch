@@ -1146,7 +1146,18 @@ async function applyDowntimeGains($html, actors) {
                     const prof       = actor.system.attributes?.prof ?? 2;
                     const checkMod   = abilityMod + (hasExpertise ? prof * 2 : (hasMaitrise || hasTools) ? prof : 0);
                     const roll = await new Roll("1d20 + @mod", { mod: checkMod }).evaluate();
-                    rollResult = roll.total;
+                    const d20Raw = roll.dice[0]?.results[0]?.result ?? (roll.total - checkMod);
+
+                    // Reliable Talent (Roublard niv. 11) : si maîtrisé dans la compétence,
+                    // le d20 ne peut pas être inférieur à 10.
+                    const isProficient = hasMaitrise || hasExpertise || hasTools;
+                    const hasReliableTalent = isProficient && actor.items.some(i => {
+                        const n = i.name.toLowerCase();
+                        return n.includes("reliable talent") || n.includes("talent fiable");
+                    });
+                    const effectiveD20 = (hasReliableTalent && d20Raw < 10) ? 10 : d20Raw;
+                    rollResult = effectiveD20 + checkMod;
+
                     const mult = rollResult <= 1 ? 0.8 : rollResult >= 20 ? 1.2 : rollResult >= 10 ? 1.1 : 1.0;
                     total = total * mult;
                     const abilityAbbr = game.i18n.localize(
@@ -1174,8 +1185,8 @@ async function applyDowntimeGains($html, actors) {
                         : rollResult >= 10 ? ` (test : ${rollResult} → +10 %)`
                         :                   ` (test : ${rollResult} → ±0 %)`;
                     ChatMessage.create({
-                        content: `🕰️ Temps mort appliqué pour <strong>${actor.name}</strong> : `
-                               + `${activityName}${profStr}, ${dateLabel} — ${days} j (${dailyRate} po/j)${pctStr} → <strong>${gainStr}</strong>`,
+                        content: `<span style="color:#000;">🕰️ Temps mort appliqué pour <strong>${actor.name}</strong> : `
+                               + `${activityName}${profStr}, ${dateLabel} — ${days} j (${dailyRate} po/j)${pctStr} → <strong>${gainStr}</strong></span>`,
                         whisper: owners.map(u => u.id),
                         speaker: { alias: "WestMarch — Temps morts" }
                     });
@@ -1206,7 +1217,7 @@ async function applyDowntimeGains($html, actors) {
     if (lines.length === 0) { ui.notifications.info("Aucun personnage traité."); return; }
 
     ChatMessage.create({
-        content: `<p style="margin:0 0 4px; font-weight:bold;">Résumé des temps morts</p><ul style="margin:0; padding-left:16px;">${lines.map(l => `<li>${l}</li>`).join("")}</ul>`,
+        content: `<div style="color:#000;"><p style="margin:0 0 4px; font-weight:bold;">Résumé des temps morts</p><ul style="margin:0; padding-left:16px;">${lines.map(l => `<li>${l}</li>`).join("")}</ul></div>`,
         whisper: ChatMessage.getWhisperRecipients("GM"),
         speaker: { alias: "WestMarch — Temps morts" }
     });
