@@ -1,7 +1,7 @@
 ================================================================================
                         WESTMARCH SYSTÈME — MODULE FOUNDRY VTT
                                Auteur : Soruta (Discord: s0ruta)
-                                       Version : 1.9.7
+                                       Version : 1.9.8
                               Compatibilité : Foundry VTT v13
 ================================================================================
 
@@ -642,6 +642,16 @@ NOTES TECHNIQUES
 ================================================================================
                         WESTMARCH SYSTÈME — MISES À JOUR
 ================================================================================
+
+v1.9.8 | 2026-07-09
+   foldermove.js — Refonte complète : abandon des hooks (inexistants en v13
+                  pour les menus d'acteurs/objets/journaux/dossiers). Patch
+                  direct de _getEntryContextOptions et _getFolderContextOptions
+                  sur les prototypes des 4 directories (scenes, actors, items,
+                  journal) via Hooks.on("ready"). Confirme que les options
+                  "Déplacer vers…" et "Dupliquer vers…" apparaissent dans le
+                  clic droit des documents et des dossiers.
+   Version       — 1.9.7 → 1.9.8
 
 v1.9.7 | 2026-07-09
    foldermove.js — Dossiers : abandon des hooks (absents en v13 pour les
