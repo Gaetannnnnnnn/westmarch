@@ -1,7 +1,7 @@
 ================================================================================
                         WESTMARCH SYSTÈME — MODULE FOUNDRY VTT
                                Auteur : Soruta (Discord: s0ruta)
-                                       Version : 1.9.8
+                                       Version : 1.9.9
                               Compatibilité : Foundry VTT v13
 ================================================================================
 
@@ -642,6 +642,16 @@ NOTES TECHNIQUES
 ================================================================================
                         WESTMARCH SYSTÈME — MISES À JOUR
 ================================================================================
+
+v1.9.9 | 2026-07-09
+   foldermove.js — Fix hooks définitif (debug console) : les hooks v13 pour
+                  les entrées de sidebar suivent le pattern get${documentName}
+                  ContextOptions (getActorContextOptions, getSceneContextOptions,
+                  getItemContextOptions, getJournalEntryContextOptions) et non
+                  getXxxDirectoryEntryContextOptions. Les dossiers utilisent un
+                  hook commun getFolderContextOptions (type filtré via folder.type).
+                  Suppression du patch prototype devenu inutile.
+   Version       — 1.9.8 → 1.9.9
 
 v1.9.8 | 2026-07-09
    foldermove.js — Refonte complète : abandon des hooks (inexistants en v13

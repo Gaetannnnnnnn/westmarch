@@ -2,24 +2,24 @@
 // foldermove.js — Déplacement et duplication via le clic droit
 // du sidebar Foundry VTT.
 //
-// En v13, les menus contextuels du sidebar ne passent pas par
-// le système de hooks — ils sont construits directement dans
-// _getEntryContextOptions() et _getFolderContextOptions().
-// On patche ces méthodes sur chaque prototype de directory.
+// Hooks corrects (v13, découverts par inspection de
+// DocumentDirectory._createContextMenus) :
+//  - Entrées : get${documentName}ContextOptions
+//      → getSceneContextOptions, getActorContextOptions,
+//        getItemContextOptions, getJournalEntryContextOptions
+//  - Dossiers : getFolderContextOptions (tous types confondus,
+//    on filtre par folder.type dans le callback)
 //
-// Ajoute dans le clic droit des documents : "Déplacer vers…"
-// et "Dupliquer vers…". Ajoute dans le clic droit des dossiers :
-// "Déplacer vers…" (déplace le dossier entier).
-//
-// Couvre : Scènes, Acteurs, Objets, Journaux. GM uniquement.
+// Ajoute "Déplacer vers…" et "Dupliquer vers…" sur les
+// documents, et "Déplacer vers…" sur les dossiers. GM only.
 // © Soruta — module propriétaire Ashara, ne pas redistribuer.
 // ============================================================
 
-const FM_DIRS = [
-    { uiKey: "scenes",  collection: () => game.scenes,  folderType: "Scene",        label: "Scènes"   },
-    { uiKey: "actors",  collection: () => game.actors,  folderType: "Actor",        label: "Acteurs"  },
-    { uiKey: "items",   collection: () => game.items,   folderType: "Item",         label: "Objets"   },
-    { uiKey: "journal", collection: () => game.journal, folderType: "JournalEntry", label: "Journaux" },
+const FM_ENTRIES = [
+    { hook: "getSceneContextOptions",        collection: () => game.scenes,  folderType: "Scene",        label: "Scènes"   },
+    { hook: "getActorContextOptions",        collection: () => game.actors,  folderType: "Actor",        label: "Acteurs"  },
+    { hook: "getItemContextOptions",         collection: () => game.items,   folderType: "Item",         label: "Objets"   },
+    { hook: "getJournalEntryContextOptions", collection: () => game.journal, folderType: "JournalEntry", label: "Journaux" },
 ];
 
 // ============================================================
@@ -65,7 +65,6 @@ function buildFolderTreeHtml(folderType, excludeFolderId = null) {
     `;
 }
 
-// Retourne : false = annulé, null = racine, string = folderId
 async function openFolderPicker(folderType, title, excludeFolderId = null) {
     const uid = `wm-fm-pick-${Date.now()}`;
     let chosen = false;
@@ -103,21 +102,16 @@ async function openFolderPicker(folderType, title, excludeFolderId = null) {
 }
 
 // ============================================================
-// SECTION : Patch des prototypes (ready)
+// SECTION : Hooks
 // ============================================================
 
-function patchDirectory({ uiKey, collection, folderType, label }) {
-    const dir = ui[uiKey];
-    if (!dir) return;
-    const proto = dir.constructor.prototype;
+export function FolderMoveHooks() {
 
     // ---- Entrées (documents) ----
-    if (proto._getEntryContextOptions && !proto._getEntryContextOptions._wmPatched) {
-        const _origEntry = proto._getEntryContextOptions;
-        proto._getEntryContextOptions = function(...args) {
-            const options = _origEntry.call(this, ...args);
-            if (!game.user.isGM) return options;
-            if (!game.settings.get("westmarch", "enableFolderMove")) return options;
+    for (const { hook, collection, folderType, label } of FM_ENTRIES) {
+        Hooks.on(hook, (app, options) => {
+            if (!game.settings.get("westmarch", "enableFolderMove")) return;
+            if (!game.user.isGM) return;
 
             options.push(
                 {
@@ -145,43 +139,25 @@ function patchDirectory({ uiKey, collection, folderType, label }) {
                     }
                 }
             );
-            return options;
-        };
-        proto._getEntryContextOptions._wmPatched = true;
+        });
     }
 
-    // ---- Dossiers ----
-    if (proto._getFolderContextOptions && !proto._getFolderContextOptions._wmPatched) {
-        const _origFolder = proto._getFolderContextOptions;
-        proto._getFolderContextOptions = function(...args) {
-            const options = _origFolder.call(this, ...args);
-            if (!game.user.isGM) return options;
-            if (!game.settings.get("westmarch", "enableFolderMove")) return options;
+    // ---- Dossiers (hook commun à tous les types) ----
+    Hooks.on("getFolderContextOptions", (app, options) => {
+        if (!game.settings.get("westmarch", "enableFolderMove")) return;
+        if (!game.user.isGM) return;
 
-            options.push({
-                name: "Déplacer vers…",
-                icon: '<i class="fas fa-folder-open"></i>',
-                callback: async (li) => {
-                    const fId    = li.dataset?.folderId ?? li.dataset?.entryId;
-                    const folder = game.folders.get(fId);
-                    if (!folder) return;
-                    const destId = await openFolderPicker(folderType, `Déplacer — ${folder.name}`, fId);
-                    if (destId === false) return;
-                    await folder.update({ folder: destId });
-                }
-            });
-            return options;
-        };
-        proto._getFolderContextOptions._wmPatched = true;
-    }
-}
-
-// ============================================================
-// SECTION : Export
-// ============================================================
-
-export function FolderMoveHooks() {
-    Hooks.on("ready", () => {
-        for (const dir of FM_DIRS) patchDirectory(dir);
+        options.push({
+            name: "Déplacer vers…",
+            icon: '<i class="fas fa-folder-open"></i>',
+            callback: async (li) => {
+                const fId    = li.dataset?.folderId ?? li.dataset?.entryId;
+                const folder = game.folders.get(fId);
+                if (!folder) return;
+                const destId = await openFolderPicker(folder.type, `Déplacer — ${folder.name}`, fId);
+                if (destId === false) return;
+                await folder.update({ folder: destId });
+            }
+        });
     });
 }
