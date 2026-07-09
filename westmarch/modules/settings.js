@@ -268,6 +268,16 @@ export function registerSettings() {
         requiresReload: false
     });
 
+    game.settings.register("westmarch", "enablePolymorph", {
+        name: "Transformation polymorphe (Wild Shape / Polymorph)",
+        hint: "Permet au GM de configurer des 'formes polymorphes' (acteurs existants) sur un acteur. Ajoute une barre en bas du HUD du token avec un bouton pour transformer le token vers la forme sélectionnée et un bouton pour revenir à la forme originale. Propriétaire du token et GM uniquement.",
+        scope: "world",
+        config: true,
+        type: Boolean,
+        default: true,
+        requiresReload: false
+    });
+
     game.settings.register("westmarch", "enableRageSize", {
         name: "Taille Large pendant la Rage (Voie du Géant)",
         hint: "Pour les barbares possédant la feature 'Giant's Havoc' (Voie du Géant, palier 3) : dès qu'ils reçoivent l'effet actif 'Rage', leurs tokens passent automatiquement en taille 2x2 (Large) s'ils sont plus petits, et reviennent à leur taille d'origine dès que la rage se termine. N'a aucun effet sur les barbares d'une autre sous-classe.",

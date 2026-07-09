@@ -1,7 +1,7 @@
 ================================================================================
                         WESTMARCH SYSTÈME — MODULE FOUNDRY VTT
                                Auteur : Soruta (Discord: s0ruta)
-                                       Version : 1.8.8
+                                       Version : 1.8.9
                               Compatibilité : Foundry VTT v13
 ================================================================================
 
@@ -37,6 +37,7 @@ westmarch/
 │   ├── mejrestock.js       Réapprovisionnement automatique des boutiques MEJ (timer par article)
 │   ├── tm.js               Temps morts : gains d'argent et craft par personnage
 │   ├── player.js           Liste des joueurs, menu contextuel et gestion des parties
+│   ├── polymorph.js        Transformation de token : Wild Shape / Polymorph (druide, sorcier...)
 │   ├── rage.js             Passage en taille Large (2x2) pendant la Rage du Barbare
 │   ├── scenes.js           Téléportation de groupe depuis le répertoire de scènes
 │   ├── session.js          Journal de session : capture XP, ennemis, PNJ, objets et génère un rapport
@@ -181,6 +182,20 @@ player.js
    joueur) avec Create Party, Create Party with Log, Join Party, Leave Party,
    Kick Party, Invite Party et Join Scene. La party est stockée comme un flag
    "partyId" sur chaque utilisateur (l'id du GM chef).
+
+polymorph.js
+   Permet de gérer les transformations de token (Wild Shape, Polymorph ou
+   toute autre forme). Le GM configure sur un acteur une liste de "formes
+   polymorphes" (références vers d'autres acteurs existants, avec un label
+   optionnel) via la section dédiée de la config du prototype token. Un
+   bouton 🐾 (Transformer) apparaît en bas du HUD du token si des formes
+   sont configurées : un clic ouvre un dialogue de sélection avec aperçu.
+   La transformation repointe le token vers l'acteur bête (actorLink: false,
+   image et taille du prototypeToken), en sauvegardant l'état original dans
+   un flag du token de scène. Un bouton 👤 (Rétablir) apparaît dès que le
+   token est transformé et restaure exactement l'état d'origine (acteur,
+   image, taille). Seuls le propriétaire du token et le GM voient ces
+   boutons. Géré par le setting "Transformation polymorphe" (enablePolymorph).
 
 rage.js
    Spécifique à la sous-classe Voie du Géant (feature "Giant's Havoc",
@@ -626,6 +641,20 @@ NOTES TECHNIQUES
 ================================================================================
                         WESTMARCH SYSTÈME — MISES À JOUR
 ================================================================================
+
+v1.8.9 | 2026-07-09
+   polymorph.js — Nouveau module : transformation de token (Wild Shape / Polymorph).
+                  Configurable dans la config du prototype token (section "Formes
+                  polymorphes") : on associe des acteurs existants (ours brun, aigle...)
+                  à un acteur PC. Une barre en bas du HUD du token expose un bouton
+                  "🐾 Transformer" (ouvre un dialogue de sélection de forme) et un
+                  bouton "👤 Rétablir" quand le token est transformé. La transformation
+                  repointe le token vers l'acteur bête (actorLink false), en sauvegardant
+                  l'état original dans un flag du token de scène pour restauration exacte.
+                  Propriétaire du token + GM uniquement. Nouveau setting enablePolymorph.
+   index.js     — Import et appel PolymorphHooks().
+   settings.js  — Ajout setting enablePolymorph.
+   Version      — 1.8.8 → 1.8.9
 
 v1.8.8 | 2026-07-08
    tm.js          — Câblage event listeners : retour au callback render: dans

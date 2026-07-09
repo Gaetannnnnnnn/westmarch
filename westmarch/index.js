@@ -22,6 +22,7 @@ import { MejShopHooks } from './modules/mejshop.js';
 import { MejRestockHooks } from './modules/mejrestock.js';
 import { CalDateHooks } from './modules/caldate.js';
 import { TmHooks } from './modules/tm.js';
+import { PolymorphHooks } from './modules/polymorph.js';
 
 Hooks.on("init", async () => {
     Handlebars.registerHelper('for', function(from, to, incr, block) {
@@ -59,4 +60,5 @@ Hooks.on("init", async () => {
     MejRestockHooks();
     CalDateHooks();
     TmHooks();
+    PolymorphHooks();
 });
