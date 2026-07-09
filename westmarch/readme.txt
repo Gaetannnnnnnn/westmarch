@@ -1,7 +1,7 @@
 ================================================================================
                         WESTMARCH SYSTÈME — MODULE FOUNDRY VTT
                                Auteur : Soruta (Discord: s0ruta)
-                                       Version : 1.9.4
+                                       Version : 1.9.5
                               Compatibilité : Foundry VTT v13
 ================================================================================
 
@@ -642,6 +642,15 @@ NOTES TECHNIQUES
 ================================================================================
                         WESTMARCH SYSTÈME — MISES À JOUR
 ================================================================================
+
+v1.9.5 | 2026-07-09
+   foldermove.js — Refonte complète : abandon du mode multi-sélection au profit
+                  d'entrées dans le menu contextuel (clic droit) du sidebar.
+                  Clic droit sur un document → "Déplacer vers…" / "Dupliquer vers…".
+                  Clic droit sur un dossier → "Déplacer vers…" (déplace le dossier
+                  entier). Un sélecteur d'arbre de dossiers s'ouvre pour choisir la
+                  destination. GM uniquement.
+   Version       — 1.9.4 → 1.9.5
 
 v1.9.4 | 2026-07-09
    foldermove.js — Nouveau module : multi-sélection et déplacement/duplication
