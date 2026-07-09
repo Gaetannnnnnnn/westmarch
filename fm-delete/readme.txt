@@ -1,7 +1,7 @@
 ================================================================================
                      FM-DELETE — MODULE FOUNDRY VTT
                           Auteur : Soruta (Discord: s0ruta)
-                                  Version : 1.0.2
+                                  Version : 1.0.3
                          Compatibilité : Foundry VTT v13
 ================================================================================
 
@@ -41,6 +41,17 @@ Puis activer le module dans Foundry : Paramètres → Gestion des modules.
 ================================================================================
                             FM-DELETE — MISES À JOUR
 ================================================================================
+
+v1.0.3 | 2026-07-09
+   index.js   — _serverDelete : diagnostic confirmé — en Foundry v13, les
+                opérations non-upload (browse, delete, createDirectory) passent
+                par WebSocket, plus par HTTP. Le endpoint /files/ ne répond
+                plus à action=deleteFile → 404.
+                Nouvel ordre : (1) FilePicker.delete() si dispo, (2) FilePicker
+                .manage("deleteFile", {storage, target}) méthode v13 socket,
+                (3) game.socket.emit("manageFiles", ...) direct, puis HTTP
+                JSON/FormData en dernier recours (compat v12).
+   Version    — 1.0.2 → 1.0.3
 
 v1.0.2 | 2026-07-08
    index.js   — _serverDelete : Foundry v13 utilise JSON (Content-Type:

@@ -26,9 +26,16 @@
 // Transforme le token vers l'acteur bête donné.
 // Sauvegarde l'état original dans un flag du token de scène avant
 // toute modification, de façon atomique (une seule opération update).
+// Après transformation, les PV courants et max du PJ sont transférés
+// sur l'acteur synthétique de la bête (instance non liée du token).
 async function applyTransform(tokenDoc, beastActor) {
     const alreadySaved = !!tokenDoc.getFlag("westmarch", "polymorphOriginal");
     const pt = beastActor.prototypeToken;
+
+    // Lire les PV du PJ AVANT de changer l'actorId.
+    const pcActor   = tokenDoc.actor;
+    const pcHpValue = pcActor?.system?.attributes?.hp?.value ?? null;
+    const pcHpMax   = pcActor?.system?.attributes?.hp?.max   ?? null;
 
     const updateData = {
         actorId:       beastActor.id,
@@ -53,6 +60,19 @@ async function applyTransform(tokenDoc, beastActor) {
     }
 
     await tokenDoc.update(updateData);
+
+    // Après await, tokenDoc.actor est l'instance synthétique de la bête
+    // (actorLink: false → copie locale non liée à l'acteur de base).
+    // On lui applique les PV du PJ : current = ce qu'il avait, max = son max.
+    if (pcHpValue !== null || pcHpMax !== null) {
+        const syntheticActor = tokenDoc.actor;
+        if (syntheticActor) {
+            const hpUpdate = {};
+            if (pcHpValue !== null) hpUpdate["system.attributes.hp.value"] = pcHpValue;
+            if (pcHpMax   !== null) hpUpdate["system.attributes.hp.max"]   = pcHpMax;
+            await syntheticActor.update(hpUpdate);
+        }
+    }
 }
 
 // Rétablit le token dans son état PC d'origine à partir du flag sauvegardé.

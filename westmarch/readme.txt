@@ -1,7 +1,7 @@
 ================================================================================
                         WESTMARCH SYSTÈME — MODULE FOUNDRY VTT
                                Auteur : Soruta (Discord: s0ruta)
-                                       Version : 1.8.9
+                                       Version : 1.9.0
                               Compatibilité : Foundry VTT v13
 ================================================================================
 
@@ -641,6 +641,15 @@ NOTES TECHNIQUES
 ================================================================================
                         WESTMARCH SYSTÈME — MISES À JOUR
 ================================================================================
+
+v1.9.0 | 2026-07-09
+   polymorph.js — Transfert des PV lors de la transformation : au moment de
+                  se transformer, les PV courants et le max du PJ sont copiés
+                  sur l'acteur synthétique de la bête (ex : PJ à 45/80 PV →
+                  bête démarre à 45/80). Les PV du PJ ne sont pas modifiés.
+                  Implémenté via une seconde update sur tokenDoc.actor après
+                  le changement d'actorId.
+   Version      — 1.8.9 → 1.9.0
 
 v1.8.9 | 2026-07-09
    polymorph.js — Nouveau module : transformation de token (Wild Shape / Polymorph).

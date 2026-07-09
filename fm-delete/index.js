@@ -180,21 +180,52 @@ async function _deleteFile(app, path, filename) {
 // ============================================================
 // Appel serveur Foundry pour la suppression
 //
-// Foundry v13 : les opérations non-upload du FilePicker utilisent JSON
-// (Content-Type: application/json) plutôt que FormData.
-// En cas d'échec on retente avec FormData (compat v12).
+// Foundry v13 : les opérations non-upload du FilePicker (browse, delete,
+// createDirectory) passent par WebSocket (game.socket), plus par HTTP.
+// Seul l'upload reste en HTTP multipart. Le endpoint /files/ ne répond
+// donc plus à action=deleteFile → HTTP 404.
+//
+// Ordre des tentatives :
+//  1. FilePicker.delete()   — méthode statique si disponible
+//  2. FilePicker.manage()   — méthode statique v13 (passe par socket)
+//  3. game.socket direct    — fallback socket si manage() absent
+//  4. HTTP JSON             — compat v12 / ancien
+//  5. HTTP FormData         — compat v12 / ancien
 // ============================================================
 
 async function _serverDelete(source, path, bucket) {
-    // Méthode 1 : API statique si elle existe sur la classe v13
     const FP = _getFP();
+
+    // Méthode 1 : FilePicker.delete() statique (si disponible)
     if (FP && typeof FP.delete === "function") {
         return FP.delete(source, path, { bucket });
     }
 
-    const filesUrl = foundry.utils?.getRoute?.("files") ?? "/files/";
+    // Méthode 2 : FilePicker.manage() — v13, utilise le socket en interne.
+    // Corps : { storage, target } (v13 renomme "source" en "storage").
+    if (FP && typeof FP.manage === "function") {
+        const body = { storage: source, target: path };
+        if (bucket) body.bucket = bucket;
+        const result = await FP.manage("deleteFile", body);
+        if (result?.error) throw new Error(result.error);
+        return result;
+    }
 
-    // Méthode 2 : JSON (Foundry v13 — opérations non-upload)
+    // Méthode 3 : socket direct — même protocole que FilePicker.manage()
+    // mais sans passer par la classe (au cas où elle serait inaccessible).
+    if (game?.socket) {
+        return new Promise((resolve, reject) => {
+            const body = { action: "deleteFile", storage: source, target: path };
+            if (bucket) body.bucket = bucket;
+            game.socket.emit("manageFiles", body, (response) => {
+                if (response?.error) reject(new Error(response.error));
+                else resolve(response);
+            });
+        });
+    }
+
+    // Méthode 4 : HTTP JSON (Foundry v12 / ancien v13)
+    const filesUrl = foundry.utils?.getRoute?.("files") ?? "/files/";
     const payload = { action: "deleteFile", source, target: path };
     if (bucket) payload.bucket = bucket;
 
@@ -204,7 +235,7 @@ async function _serverDelete(source, path, bucket) {
         body: JSON.stringify(payload)
     });
 
-    // Méthode 3 : FormData (Foundry v12 / fallback)
+    // Méthode 5 : HTTP FormData (Foundry v12 / fallback)
     if (!resp.ok) {
         const fd = new FormData();
         fd.set("action", "deleteFile");
@@ -220,7 +251,6 @@ async function _serverDelete(source, path, bucket) {
         throw new Error(msg);
     }
 
-    // Méthode 3 : si le serveur répond avec une erreur dans le JSON
     let json = {};
     try { json = await resp.json(); } catch(_) {}
     if (json.error) throw new Error(json.error);
