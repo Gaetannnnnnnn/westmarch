@@ -14,6 +14,47 @@
     padding: 0;
 }
 
+/* ---- Barre de titre --------------------------------------- */
+
+.rel-title-bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 10px 6px;
+    flex-shrink: 0;
+}
+
+.rel-title {
+    font-size: 12px;
+    font-weight: 700;
+    color: #bbb;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* ---- En-têtes de section (Joueurs / PNJ) — style dnd5e ---- */
+
+.rel-section-hdr {
+    padding: 4px 10px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #999;
+    background: rgba(0,0,0,0.25);
+    border-top: 1px solid #2a2a2a;
+    border-bottom: 1px solid #2a2a2a;
+    flex-shrink: 0;
+}
+
+.rel-section-count {
+    opacity: 0.5;
+    font-weight: 400;
+}
+
 /* ---- Barre de recherche — identique au filtre dnd5e -------- */
 /* Préfixe .rel-tab sur tout pour battre la spécificité de dnd5e/Foundry */
 

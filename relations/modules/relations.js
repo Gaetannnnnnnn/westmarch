@@ -163,18 +163,51 @@ export function buildTabHtml(actor) {
     const rels    = relList(actor);
     const rows    = rels.map(r => buildRowHtml(r, actor, canEdit)).join("");
 
+    // Grouper PJ (dossier "PJ" et sous-dossiers) vs PNJ
+    const pjRels  = rels.filter(r => { const a = game.actors.get(r.targetId); return a && isInPJFolder(a); });
+    const pnjRels = rels.filter(r => !pjRels.some(p => p.id === r.id));
+
+    // En-tête de section (style dnd5e "Cantrips")
+    function sectionHdr(label, count) {
+        return `<div class="rel-section-hdr">
+            ${label} <span class="rel-section-count">(${count})</span>
+        </div>`;
+    }
+
+    let listContent;
+    if (!rels.length) {
+        listContent = emptyStateHtml(canEdit);
+    } else {
+        listContent =
+            (pjRels.length  ? sectionHdr("Joueurs", pjRels.length)  + pjRels.map( r => buildRowHtml(r, actor, canEdit)).join("") : "") +
+            (pnjRels.length ? sectionHdr("PNJ",     pnjRels.length) + pnjRels.map(r => buildRowHtml(r, actor, canEdit)).join("") : "");
+    }
+
+    // Styles inline — contournement cache CSS Foundry pour la barre de recherche
+    const SI = {
+        bar:   `display:flex;align-items:center;gap:4px;padding:4px 8px;flex-shrink:0;border-bottom:1px solid #3d2b1a;background:transparent;`,
+        wrap:  `flex:1;display:flex;align-items:center;gap:4px;background:transparent;border:none;box-shadow:none;`,
+        icon:  `color:#888;font-size:11px;flex-shrink:0;`,
+        input: `flex:1;background:transparent;border:none;box-shadow:none;outline:none;color:#ccc;font-size:11px;padding:0;min-width:0;font-family:inherit;`,
+        clear: `display:none;color:#666;font-size:10px;cursor:pointer;padding:2px 4px;`,
+        add:   `display:flex;align-items:center;gap:4px;padding:2px 8px;background:none;border:none;box-shadow:none;color:#aaa;font-size:11px;cursor:pointer;white-space:nowrap;flex-shrink:0;`,
+    };
+
     return `
     <div class="rel-tab" data-actor-id="${actor.id}">
-        <div class="rel-search-bar">
-            <div class="rel-search-wrap">
-                <i class="fas fa-search"></i>
-                <input class="rel-search-input" type="search" placeholder="Rechercher une relation…">
-                <a class="rel-search-clear" style="display:none;" title="Effacer"><i class="fas fa-times"></i></a>
+        <div class="rel-title-bar">
+            <span class="rel-title"><i class="fas fa-heart" style="color:#e91e8c;"></i> Relations</span>
+            ${canEdit ? `<a class="rel-add-btn" style="${SI.add}"><i class="fas fa-plus"></i> Ajouter</a>` : ""}
+        </div>
+        <div class="rel-search-bar" style="${SI.bar}">
+            <div class="rel-search-wrap" style="${SI.wrap}">
+                <i class="fas fa-search" style="${SI.icon}"></i>
+                <input class="rel-search-input" type="text" placeholder="Rechercher une relation…" style="${SI.input}">
+                <a class="rel-search-clear" style="${SI.clear}" title="Effacer"><i class="fas fa-times"></i></a>
             </div>
-            ${canEdit ? `<a class="rel-add-btn"><i class="fas fa-plus"></i> Ajouter</a>` : ""}
         </div>
         <div class="rel-list">
-            ${rows || emptyStateHtml(canEdit)}
+            ${listContent}
         </div>
     </div>`;
 }

@@ -1,7 +1,7 @@
 ================================================================================
                         ASHARA - RELATIONS — MODULE FOUNDRY VTT
                                Auteur : Soruta (Discord: s0ruta)
-                                       Version : 1.2.8
+                                       Version : 1.3.1
                               Compatibilité : Foundry VTT v13
 ================================================================================
 
@@ -189,6 +189,37 @@ NOTES TECHNIQUES
 ================================================================================
                         ASHARA - RELATIONS — MISES À JOUR
 ================================================================================
+
+v1.3.1 | 2026-07-10
+   relations.js  — Retour du titre "♥ Relations" en haut de l'onglet
+                  (.rel-title-bar) avec le bouton Ajouter à droite.
+                  Groupement des relations en deux sections : "Joueurs"
+                  (acteurs dans le dossier PJ et ses sous-dossiers) et
+                  "PNJ" (tous les autres). Les sections n'apparaissent
+                  que si elles contiennent au moins une relation. Joueurs
+                  toujours affichés en premier.
+   relations.css — Ajout styles .rel-title-bar, .rel-title,
+                  .rel-section-hdr, .rel-section-count.
+   Version       — 1.3.0 → 1.3.1
+
+v1.3.0 | 2026-07-10
+   relations.js  — Styles de la barre de recherche passés en inline
+                  directement dans le HTML généré (contournement du
+                  cache CSS de Foundry qui empêchait les modifications
+                  du fichier .css de prendre effet sans Ctrl+Shift+R).
+                  Changement type="search" → type="text" pour éviter
+                  le fond blanc natif des navigateurs sur les inputs
+                  de recherche.
+   Version       — 1.2.9 → 1.3.0
+
+v1.2.9 | 2026-07-10
+   relations.css — Tentative de fix spécificité CSS : préfixe .rel-tab
+                  sur tous les sélecteurs de la barre de recherche,
+                  ajout de !important sur les propriétés critiques
+                  (background, border, box-shadow, appearance) pour
+                  battre les règles de dnd5e et Foundry. Contourné
+                  définitivement en 1.3.0 via inline styles.
+   Version       — 1.2.8 → 1.2.9
 
 v1.2.8 | 2026-07-10
    relations.js  — Fix bouton × de la barre de recherche : le wrapper
