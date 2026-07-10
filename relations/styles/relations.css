@@ -1,0 +1,240 @@
+/* ============================================================
+   relations.css — Ashara Relations
+   ============================================================ */
+
+/* ---- Onglet ------------------------------------------------ */
+
+.rel-tab {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 8px;
+    height: 100%;
+    overflow-y: auto;
+    box-sizing: border-box;
+}
+
+.rel-toolbar {
+    display: flex;
+    justify-content: flex-end;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #2e2e2e;
+}
+
+.rel-add-btn {
+    font-size: 12px;
+    color: #80b3ff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 8px;
+    border-radius: 3px;
+    transition: background 0.1s;
+}
+.rel-add-btn:hover { background: rgba(128,179,255,0.1); color: #aaccff; }
+
+.rel-empty {
+    color: #555;
+    font-style: italic;
+    font-size: 12px;
+    text-align: center;
+    padding: 20px 0;
+    margin: 0;
+}
+
+.rel-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+/* ---- Ligne de relation ------------------------------------- */
+
+.rel-row {
+    border: 1px solid #2e2e2e;
+    border-radius: 5px;
+    overflow: hidden;
+    background: rgba(255,255,255,0.02);
+    transition: border-color 0.15s;
+}
+.rel-row:hover { border-color: #444; }
+
+.rel-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    min-height: 38px;
+}
+
+.rel-avatar {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid #444;
+    flex-shrink: 0;
+}
+
+.rel-name {
+    font-size: 13px;
+    font-weight: 600;
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.rel-type {
+    font-size: 11px;
+    color: #bbb;
+    background: #252525;
+    border: 1px solid #3a3a3a;
+    border-radius: 10px;
+    padding: 2px 9px;
+    flex-shrink: 0;
+    max-width: 110px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.rel-level { flex-shrink: 0; }
+
+.rel-level-icon { font-size: 14px; }
+
+.rel-secret {
+    color: #555;
+    font-size: 11px;
+    flex-shrink: 0;
+}
+
+.rel-btns {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+.rel-btns a { cursor: pointer; color: #666; font-size: 12px; transition: color 0.1s; }
+.rel-btns a:hover           { color: #ccc; }
+.rel-btns .rel-delete:hover { color: #e74c3c; }
+.rel-btns .rel-edit:hover   { color: #80b3ff; }
+
+/* ---- Section notes dépliable ------------------------------ */
+
+.rel-notes {
+    padding: 8px 10px;
+    background: rgba(0,0,0,0.2);
+    border-top: 1px solid #2a2a2a;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.rel-lastpos-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.rel-field-label {
+    font-size: 11px;
+    color: #777;
+    flex-shrink: 0;
+    white-space: nowrap;
+}
+
+.rel-lastpos-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid #333;
+    color: #bbb;
+    font-size: 12px;
+    padding: 2px 0;
+    font-family: inherit;
+}
+.rel-lastpos-input:focus { outline: none; border-bottom-color: #555; color: #ddd; }
+.rel-lastpos-input::placeholder { color: #444; }
+
+.rel-lastpos-row.rel-readonly {
+    font-size: 12px;
+    color: #777;
+    gap: 6px;
+}
+
+.rel-note-input {
+    width: 100%;
+    min-height: 52px;
+    background: transparent;
+    border: none;
+    border-top: 1px solid #2a2a2a;
+    color: #bbb;
+    font-size: 12px;
+    line-height: 1.6;
+    resize: vertical;
+    box-sizing: border-box;
+    padding: 6px 0 2px;
+    font-family: inherit;
+}
+.rel-note-input:focus { outline: none; color: #ddd; }
+.rel-note-input::placeholder { color: #444; }
+
+.rel-note-ro {
+    color: #777;
+    font-size: 12px;
+    line-height: 1.6;
+    margin: 0;
+    white-space: pre-wrap;
+}
+
+/* ---- Picker acteur (dialog) -------------------------------- */
+
+.rel-picker-list {
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid #333;
+    border-radius: 4px;
+    background: #111;
+}
+
+.rel-picker-section-hdr {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    cursor: pointer;
+    background: #1a1a1a;
+    border-bottom: 1px solid #2a2a2a;
+    font-size: 12px;
+    color: #aaa;
+    user-select: none;
+}
+.rel-picker-section-hdr:hover { background: #222; }
+.rel-picker-section-hdr small { color: #666; margin-left: auto; }
+
+.rel-picker-section-body { }
+
+.rel-picker-actor {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 10px;
+    cursor: pointer;
+    border-bottom: 1px solid #1a1a1a;
+    transition: background 0.1s;
+}
+.rel-picker-actor:hover     { background: rgba(255,255,255,0.05); }
+.rel-picker-actor.selected  { background: rgba(76,175,80,0.15); outline: 1px solid #4caf50; }
+
+.rel-picker-actor img {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid #444;
+    flex-shrink: 0;
+}
+.rel-picker-actor span { font-size: 12px; }

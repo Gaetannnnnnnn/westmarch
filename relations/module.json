@@ -1,0 +1,26 @@
+{
+  "id": "ashara-relations",
+  "title": "Ashara - Relations",
+  "version": "1.0.0",
+  "changelog": "2026-07-10",
+  "authors": [
+    {
+      "name": "Soruta",
+      "discord": "s0ruta"
+    }
+  ],
+  "compatibility": {
+    "minimum": "13",
+    "verified": "13"
+  },
+  "description": "Système de relations entre acteurs pour les campagnes Ashara. Détection automatique des rencontres, onglet dédié sur la fiche acteur.",
+  "esmodules": [
+    "./index.js"
+  ],
+  "styles": [
+    "./styles/relations.css"
+  ],
+  "url": "https://github.com/Gaetannnnnnnn/westmarch.git",
+  "manifest": "https://raw.githubusercontent.com/Gaetannnnnnnn/westmarch/main/relations/module.json",
+  "download": "https://github.com/Gaetannnnnnnn/westmarch/raw/main/relations.zip"
+}

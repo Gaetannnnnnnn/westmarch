@@ -407,4 +407,5 @@ export function registerSettings() {
         masterCheckbox.on('change', applyMasterState);
         applyMasterState();
     });
+
 }

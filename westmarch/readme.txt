@@ -1,7 +1,7 @@
 ================================================================================
                         WESTMARCH SYSTÈME — MODULE FOUNDRY VTT
                                Auteur : Soruta (Discord: s0ruta)
-                                       Version : 1.9.9
+                                       Version : 2.0.2
                               Compatibilité : Foundry VTT v13
 ================================================================================
 
@@ -643,6 +643,40 @@ NOTES TECHNIQUES
                         WESTMARCH SYSTÈME — MISES À JOUR
 ================================================================================
 
+v2.0.2 | 2026-07-10
+   relations.js  — Nouveau module : système de relations entre acteurs.
+                  Stockage par flags ("relations"/"list") sur chaque acteur.
+                  Onglet "Relations" injecté dans la fiche via renderApplication.
+                  CRUD complet : ajouter, modifier, supprimer (avec confirmation).
+                  Niveau d'affinité -3 → +3 (dots colorés rouge/vert).
+                  Notes dépliables par relation, auto-save au blur (debounce 1.2s).
+                  État déplié et tab actif conservés entre les re-renders.
+                  GM only pour édition, lecture pour les propriétaires.
+                  Setting "enableRelations" dans la configuration du module.
+   relations.css — Styles dédiés à l'onglet Relations.
+   module.json   — Ajout de styles/relations.css dans les feuilles de style.
+   Version       — 2.0.1 → 2.0.2
+
+v2.0.1 | 2026-07-10
+   foldermove.js — Fix callback jQuery vs HTMLElement : le `li` passé par le
+                  ContextMenu de Foundry v13 peut être un objet jQuery. On
+                  résout maintenant l'élément via `li instanceof HTMLElement ?
+                  li : li[0]` + fallback `$(li).attr("data-folder-id")` pour
+                  les dossiers et `data-entry-id` pour les documents.
+                  Ajout de try/catch + ui.notifications.error dans tous les
+                  callbacks pour éviter les échecs silencieux.
+   Version       — 2.0.0 → 2.0.1
+
+v2.0.0 | 2026-07-10
+   foldermove.js — Refonte de la fenêtre de sélection de dossier :
+                  Arbre repliable/dépliable (clic sur ▶), barre de recherche
+                  en temps réel (filtre les dossiers + remonte leurs parents),
+                  focus automatique sur la recherche à l'ouverture, meilleure
+                  mise en page (racine toujours visible). Cliquer sur le nom
+                  d'un dossier confirme directement sans passer par un bouton.
+                  Suppression de buildFolderTreeHtml (remplacé inline).
+   Version       — 1.9.9 → 2.0.0
+
 v1.9.9 | 2026-07-09
    foldermove.js — Fix hooks définitif (debug console) : les hooks v13 pour
                   les entrées de sidebar suivent le pattern get${documentName}
@@ -661,213 +695,3 @@ v1.9.8 | 2026-07-09
                   journal) via Hooks.on("ready"). Confirme que les options
                   "Déplacer vers…" et "Dupliquer vers…" apparaissent dans le
                   clic droit des documents et des dossiers.
-   Version       — 1.9.7 → 1.9.8
-
-v1.9.7 | 2026-07-09
-   foldermove.js — Dossiers : abandon des hooks (absents en v13 pour les
-                  menus de dossiers, confirmé par debug console). Patch direct
-                  de _getFolderContextOptions sur chaque prototype de directory
-                  (SceneDirectory, ActorDirectory, ItemDirectory, JournalDirectory)
-                  via Hooks.on("ready"). Ajoute "Déplacer vers…" dans le clic
-                  droit des dossiers pour les déplacer vers un dossier parent.
-   Version       — 1.9.6 → 1.9.7
-
-v1.9.6 | 2026-07-09
-   foldermove.js — Fix hooks : noms corrigés pour Foundry v13 (suffixe
-                  "Options" : getSceneDirectoryEntryContextOptions, etc.) et
-                  lecture de l'id via li.dataset (HTMLElement v13) au lieu de
-                  li.data() jQuery.
-   Version       — 1.9.5 → 1.9.6
-
-v1.9.5 | 2026-07-09
-   foldermove.js — Refonte complète : abandon du mode multi-sélection au profit
-                  d'entrées dans le menu contextuel (clic droit) du sidebar.
-                  Clic droit sur un document → "Déplacer vers…" / "Dupliquer vers…".
-                  Clic droit sur un dossier → "Déplacer vers…" (déplace le dossier
-                  entier). Un sélecteur d'arbre de dossiers s'ouvre pour choisir la
-                  destination. GM uniquement.
-   Version       — 1.9.4 → 1.9.5
-
-v1.9.4 | 2026-07-09
-   foldermove.js — Nouveau module : multi-sélection et déplacement/duplication
-                  de documents en lot dans le sidebar (Scènes, Acteurs, Objets,
-                  Journaux). Un bouton ☑ dans l'en-tête de chaque onglet active
-                  le mode sélection (GM uniquement) : cliquer sur des documents
-                  les coche (outline vert). Une barre en bas expose deux boutons :
-                  "Déplacer" et "Dupliquer", qui ouvrent un sélecteur d'arbre de
-                  dossiers. Sur confirmation, tous les documents sélectionnés sont
-                  déplacés (doc.update({ folder })) ou dupliqués (doc.clone({ folder },
-                  { save: true })). Nouveau setting enableFolderMove.
-   index.js      — Import + appel FolderMoveHooks().
-   settings.js   — Ajout setting enableFolderMove.
-   Version       — 1.9.3 → 1.9.4
-
-v1.9.3 | 2026-07-09
-   tm.js        — Reliable Talent (Roublard niv. 11) : lors du test de
-                  compétence TM, si l'acteur possède un item "Reliable Talent"
-                  ou "Talent Fiable" et est maîtrisé dans la compétence
-                  (maîtrise, expertise ou tools), le d20 brut est clampé à 10
-                  minimum avant d'ajouter le modificateur.
-   Version      — 1.9.2 → 1.9.3
-
-v1.9.2 | 2026-07-09
-   tm.js        — Couleur du texte des messages chat TM : ajout de color:#000
-                  en style inline sur le whisper joueur et le résumé GM.
-                  Le texte était invisible (couleur sombre sur fond sombre).
-   Version      — 1.9.1 → 1.9.2
-
-v1.9.1 | 2026-07-09
-   polymorph.js — Fix transfert de PV : remplace tokenDoc.actor.update() par
-                  tokenDoc.delta.update() pour cibler uniquement l'ActorDelta
-                  du token (v13). actor.update() risquait de modifier le base
-                  actor dans game.actors au lieu du delta local du token.
-   Version      — 1.9.0 → 1.9.1
-
-v1.9.0 | 2026-07-09
-   polymorph.js — Transfert des PV lors de la transformation : au moment de
-                  se transformer, les PV courants et le max du PJ sont copiés
-                  sur l'acteur synthétique de la bête (ex : PJ à 45/80 PV →
-                  bête démarre à 45/80). Les PV du PJ ne sont pas modifiés.
-                  Implémenté via une seconde update sur tokenDoc.actor après
-                  le changement d'actorId.
-   Version      — 1.8.9 → 1.9.0
-
-v1.8.9 | 2026-07-09
-   polymorph.js — Nouveau module : transformation de token (Wild Shape / Polymorph).
-                  Configurable dans la config du prototype token (section "Formes
-                  polymorphes") : on associe des acteurs existants (ours brun, aigle...)
-                  à un acteur PC. Une barre en bas du HUD du token expose un bouton
-                  "🐾 Transformer" (ouvre un dialogue de sélection de forme) et un
-                  bouton "👤 Rétablir" quand le token est transformé. La transformation
-                  repointe le token vers l'acteur bête (actorLink false), en sauvegardant
-                  l'état original dans un flag du token de scène pour restauration exacte.
-                  Propriétaire du token + GM uniquement. Nouveau setting enablePolymorph.
-   index.js     — Import et appel PolymorphHooks().
-   settings.js  — Ajout setting enablePolymorph.
-   Version      — 1.8.8 → 1.8.9
-
-v1.8.8 | 2026-07-08
-   tm.js          — Câblage event listeners : retour au callback render: dans
-                    DialogV2.wait(). L'approche Hooks.on("renderApplicationV2")
-                    ne fonctionnait pas pour les DialogV2 (hook possiblement non
-                    déclenché ou structure html différente). Nouveau callback render:
-                    ignore l'argument (type variable en v13) et accède au DOM
-                    directement via document.getElementById puis .closest() pour
-                    des queries scopées au dialogue.
-   Version        — 1.8.7 → 1.8.8
-
-v1.8.7 | 2026-07-08
-   tm.js          — SceneControlTool#onClick → onChange (déprécié depuis v13,
-                    suppression prévue en v15).
-   fake-warning.js — idem.
-   Version        — 1.8.6 → 1.8.7
-
-v1.8.6 | 2026-07-08
-   tm.js      — Câblage event listeners migré de render: callback (DialogV2.wait)
-                vers Hooks.on("renderApplicationV2", ...) identifié par un élément
-                unique (#tm-show-list / #tm-add-to-cart). La signature du callback
-                render: varie selon les builds v13 et était silencieusement ignorée ;
-                renderApplicationV2 est le hook officiel v13, déjà utilisé ailleurs
-                dans le module — garantit le câblage du checkbox et des boutons.
-   Version    — 1.8.5 → 1.8.6
-
-v1.8.5 | 2026-07-08
-   tm.js      — DialogV2 render callback : signature corrigée (event, html) → (html).
-                En v13, DialogV2.wait() appelle render(htmlElement) avec un seul
-                argument — le second paramètre était donc undefined, causant des
-                $(html).find() vides et aucun event listener câblé.
-   Version    — 1.8.4 → 1.8.5
-
-v1.8.4 | 2026-07-08
-   tm.js      — Bouton GM "Temps morts" : correction complète pour Foundry v13.
-                getSceneControlButtons : création défensive du groupe westmarch
-                si fake-warning.js n'a pas encore tourné (robustesse ordre hook).
-                openDowntimeDialog + openDeclarationDialog : migration de
-                new Dialog() + Hooks.once("renderDialog") vers DialogV2.wait()
-                (Dialog déprécié en v13, renderDialog passait un raw HTMLElement
-                causant des html.find() silencieux). Tous les event listeners
-                câblés dans le callback render natif avec $(html) wrapping.
-   Version    — 1.8.3 → 1.8.4
-
-v1.8.3 | 2026-07-06
-   tgcm.js    — renderChatMessage → renderChatMessageHTML (v13 non déprécié).
-                Résolution acteur : Midi QOL stocke "ActorXXXX" sans le point,
-                fromUuidSync échouait → fallback game.actors.get(id) après
-                suppression du préfixe "Actor". data-hp-total lu correctement.
-
-v1.8.2 | 2026-07-06
-   tgcm.js    — Refonte affichage TGCM : tout centralisé dans renderChatMessage
-                (fire sur tous les clients). Masquage ligne HP Midi QOL +
-                floating text depuis data-hp-total (valeur réelle, dnd5e clamp
-                HP à 0 avant update donc currentHP-newHP=1 est faux). Fallback
-                canvas tokenId si fromUuidSync échoue côté joueurs. Suppression
-                du mécanisme flag/updateActor.
-
-v1.8.1 | 2026-07-06
-   tgcm.js    — Floating text dégâts visible sur tous les clients : le montant
-                est piggybacked dans flags.westmarch._tgcmDamage lors du update
-                actor (broadcast Foundry), updateActor le lit sur tous les clients
-                et affiche le scrolling text rouge. Le setTimeout GM-only est
-                supprimé. Le flag est nettoyé par le GM après affichage.
-
-v1.8.0 | 2026-07-06
-   tgcm.js    — Carte chat Midi QOL : masquage complet de la ligne de PV
-                (midi-qol-dmg-row) pour les tokens TGCM protégés. Les joueurs
-                voient les dégâts infligés mais pas l'état HP du mob.
-
-v1.7.8 | 2026-07-06
-   tm.js      — Dialog GM : barre de recherche (filtre temps réel) au-dessus
-                de la liste des personnages. Focus automatique à l'ouverture
-                de la liste.
-
-v1.7.7 | 2026-07-06
-   tgcm.js    — Affichage dégâts : suppression de la Map/updateActor.
-                L'affichage est maintenant déclenché directement depuis
-                preUpdateActor via setTimeout(100ms), hors de la call
-                stack synchrone. Midi QOL calcule son display depuis le
-                delta HP réel (0 si HP clampé) donc on prend en charge
-                l'affichage nous-mêmes avec les dégâts réels.
-
-v1.7.6 | 2026-07-06
-   tm.js      — getPlayerActors : filtre désormais uniquement les acteurs
-                dans le dossier "PJ" (a.folder?.name === "PJ") en plus
-                des conditions existantes (type character + hasPlayerOwner).
-
-v1.7.5 | 2026-07-06
-   tgcm.js    — Correction affichage dégâts TGCM : passage d'une Map
-                module-level (_tgcmPendingDamage) pour transmettre les
-                dégâts réels entre preUpdateActor et updateActor, car
-                Foundry v13 clone l'objet options entre les deux hooks.
-                Suppression du check Midi QOL (son affichage est dans le
-                chat, le scrolling text TGCM est sur le token — pas de
-                doublon). diff:false conservé pour les coups successifs.
-
-v1.7.4 | 2026-07-06
-   player.js  — Join Scene : un GM peut désormais rejoindre la scène de
-                n'importe quel autre GM via clic droit → Join Scene, sans
-                condition de party.
-
-v1.7.3 | 2026-07-06
-   tgcm.js    — Affichage des dégâts réels (overkill compris) : options.diff=false
-                force l'update Foundry même quand HP est déjà à 1, ce qui permet
-                à Midi QOL d'afficher le montant sur les coups successifs. Sans
-                Midi QOL, un floating text rouge est généré manuellement via
-                canvas.interface.createScrollingText.
-
-v1.7.2 | 2026-07-06
-   tgcm.js    — Correction interception HP : retour au hook preUpdateActor
-                (pré-écriture) au lieu de updateActor post-update. Le HP
-                ne passe plus jamais à 0 en base → les joueurs ne voient
-                plus "1→0" ni le +1 de soin. Le nombre de dégâts Midi QOL
-                reste affiché normalement (basé sur le jet, pas le delta HP).
-
-v1.7.1 | 2026-07-06
-   tm.js      — Notification TM simplifiée : 1 seul message avec le nombre
-                total de TM en attente + liste des noms, envoyé à chaque
-                nouvelle déclaration.
-
-v1.7.0 | 2026-07-06
-   tm.js      — Notification Discord TM : suppression du polling horaire
-                (17h-20h). La notif est maintenant envoyée immédiatement
-                quand un joueur clique "Déclarer le TM". Message : nom du
-                personnage + résumé des activités + nb total en attente si >1.
