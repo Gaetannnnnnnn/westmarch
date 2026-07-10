@@ -1,7 +1,7 @@
 ================================================================================
                         ASHARA - RELATIONS — MODULE FOUNDRY VTT
                                Auteur : Soruta (Discord: s0ruta)
-                                       Version : 1.0.5
+                                       Version : 1.0.9
                               Compatibilité : Foundry VTT v13
 ================================================================================
 
@@ -183,6 +183,42 @@ NOTES TECHNIQUES
 ================================================================================
                         ASHARA - RELATIONS — MISES À JOUR
 ================================================================================
+
+v1.0.9 | 2026-07-10
+   relations.js  — Ajout du label du niveau actuel à gauche des icônes
+                  (.rel-level-label, coloré selon le niveau). Mise à jour
+                  optimiste incluse : label + couleur changent immédiatement
+                  au clic sans attendre le re-render.
+   relations.css — Style .rel-level-label (11px bold, min-width 70px aligné
+                  à droite pour stabiliser la largeur entre les niveaux).
+   Version       — 1.0.8 → 1.0.9
+
+v1.0.8 | 2026-07-10
+   relations.js  — Remplacement du bouton ✏ Modifier par un sélecteur de
+                  niveau inline : les 7 icônes (-3→+3) sont affichées
+                  directement sur chaque ligne, l'actif en couleur, les
+                  autres grisés (opacity 0.22). Clic immédiat → relUpdate
+                  avec mise à jour optimiste du DOM avant re-render.
+   relations.css — Ajout styles .rel-level-selector et .rel-level-btn.
+   Version       — 1.0.7 → 1.0.8
+
+v1.0.7 | 2026-07-10
+   relations.js  — Fix suppression/re-render : extraction d'un helper
+                  activateOurs() appelé au clic ET via setTimeout(0) lors
+                  d'un re-render avec wasActive=true (après l'init dnd5e).
+                  Suppression de clearActiveOnClose : la fiche se souvient
+                  maintenant du dernier onglet ouvert (Relations ou autre)
+                  entre les fermetures/réouvertures, comme les autres onglets.
+   Version       — 1.0.6 → 1.0.7
+
+v1.0.6 | 2026-07-10
+   relations.js  — Fix onglets vides après retour depuis Relations : quand on
+                  quittait l'onglet Relations, les inline display:none posés
+                  sur les panneaux dnd5e n'étaient pas retirés, empêchant
+                  dnd5e de les réafficher via ses classes CSS. Fix : au clic
+                  sur un autre tab, on retire tous nos inline styles avec
+                  .css("display","") avant que dnd5e reprenne la main.
+   Version       — 1.0.5 → 1.0.6
 
 v1.0.5 | 2026-07-10
    relations.js  — Fix double-panneau à la réouverture : ajout des hooks

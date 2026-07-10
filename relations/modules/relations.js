@@ -35,6 +35,23 @@ function levelIcon(level) {
     return `<i class="fas ${cfg.icon} rel-level-icon" style="color:${cfg.color};" title="${cfg.label} (${level > 0 ? "+" : ""}${level ?? 0})"></i>`;
 }
 
+function levelSelector(currentLevel, canEdit) {
+    const cur = LEVEL_CFG[String(currentLevel ?? 0)] ?? LEVEL_CFG["0"];
+    if (!canEdit) return `<div class="rel-level">${levelIcon(currentLevel)}</div>`;
+    const btns = Object.entries(LEVEL_CFG).map(([lvl, cfg]) => {
+        const active  = parseInt(lvl) === (currentLevel ?? 0);
+        const color   = active ? `style="color:${cfg.color};"` : "";
+        const classes = `rel-level-btn${active ? " active" : ""}`;
+        return `<a class="${classes}" data-level="${lvl}" title="${cfg.label}">
+            <i class="fas ${cfg.icon}" ${color}></i>
+        </a>`;
+    }).join("");
+    return `<div class="rel-level-selector">
+        <span class="rel-level-label" style="color:${cur.color};">${cur.label}</span>
+        ${btns}
+    </div>`;
+}
+
 // ---- CRUD --------------------------------------------------
 
 function relList(actor) {
@@ -95,11 +112,10 @@ function buildTabHtml(actor) {
                 <img class="rel-avatar" src="${img}" alt="${name}">
                 <span class="rel-name">${name}</span>
                 <span class="rel-type">${r.type ?? ""}</span>
-                <div class="rel-level">${levelIcon(r.level ?? 0)}</div>
+                ${levelSelector(r.level ?? 0, canEdit)}
                 ${r.secret ? '<i class="fas fa-eye-slash rel-secret" title="GM uniquement"></i>' : ""}
                 <div class="rel-btns">
                     <a class="rel-toggle" title="Notes"><i class="fas fa-chevron-${open ? "up" : "down"}"></i></a>
-                    ${canEdit ? `<a class="rel-edit" title="Modifier"><i class="fas fa-pen"></i></a>` : ""}
                     ${canEdit ? `<a class="rel-delete" title="Supprimer"><i class="fas fa-trash"></i></a>` : ""}
                 </div>
             </div>
@@ -399,14 +415,18 @@ function wireTab(actor, $html) {
         }
     });
 
-    // Modifier
-    $tab.on("click", ".rel-edit", async function () {
-        const relId = String($(this).closest(".rel-row").data("rel-id"));
-        const rel   = relList(actor).find(r => r.id === relId);
-        if (!rel) return;
-        const data = await openEditDialog(actor, rel);
-        if (!data) return;
-        await relUpdate(actor, relId, data);
+    // Changer le niveau directement depuis les icônes inline
+    $tab.on("click", ".rel-level-btn", async function () {
+        const $btn  = $(this);
+        const relId = String($btn.closest(".rel-row").data("rel-id"));
+        const level = parseInt($btn.data("level"));
+        const cfg   = LEVEL_CFG[String(level)];
+        // Mise à jour optimiste du DOM (évite le flash avant re-render)
+        const $sel  = $btn.closest(".rel-level-selector");
+        $sel.find(".rel-level-btn").removeClass("active").find("i").css("color", "");
+        $btn.addClass("active").find("i").css("color", cfg.color);
+        $sel.find(".rel-level-label").text(cfg.label).css("color", cfg.color);
+        await relUpdate(actor, relId, { level });
     });
 
     // Supprimer
@@ -463,6 +483,15 @@ function injectTab(app, html) {
 
     const wasActive = _activeActs.has(actor.id);
 
+    // --- Helper : activer notre panneau (réutilisé au clic ET au re-render) ---
+    const activateOurs = () => {
+        $body.find('.tab[data-group="primary"]:not([data-tab="ashara-relations"])')
+             .css("display", "none");
+        $nav.find(".item").removeClass("active");
+        $panel.css("display", "flex");
+        $nav.find('.item[data-tab="ashara-relations"]').addClass("active");
+    };
+
     // --- Bouton nav ---
     $nav.append(`
         <a class="item control${wasActive ? " active" : ""}" role="tab"
@@ -471,10 +500,9 @@ function injectTab(app, html) {
             <i class="fas fa-heart"></i>
         </a>`);
 
-    // --- Panneau de contenu — display géré explicitement ---
+    // --- Panneau de contenu ---
     const $panel = $(`<div class="tab" data-group="primary" data-tab="ashara-relations"
-        style="display:${wasActive ? "flex" : "none"};flex-direction:column;
-               height:100%;overflow:hidden;box-sizing:border-box;">
+        style="display:none;flex-direction:column;height:100%;overflow:hidden;box-sizing:border-box;">
         ${buildTabHtml(actor)}
     </div>`);
 
@@ -483,25 +511,26 @@ function injectTab(app, html) {
     if ($last.length) $last.after($panel);
     else              $body.append($panel);
 
+    // --- Si Relations était actif, restaurer après l'init des tabs dnd5e ---
+    if (wasActive) {
+        setTimeout(activateOurs, 0);
+    }
+
     // --- Clic sur notre tab ---
     $html.find('.item[data-tab="ashara-relations"]').on("click", function (ev) {
         ev.preventDefault();
         ev.stopPropagation();
         _activeActs.add(actor.id);
-        // Cacher tous les autres panneaux (sans toucher à leurs classes)
-        $body.find('.tab[data-group="primary"]:not([data-tab="ashara-relations"])').hide();
-        // Désactiver tous les items nav
-        $nav.find(".item").removeClass("active");
-        // Afficher le nôtre
-        $panel.css("display", "flex");
-        $(this).addClass("active");
+        activateOurs();
     });
 
-    // --- Clic sur un autre tab — cacher le nôtre ---
+    // --- Clic sur un autre tab — cacher le nôtre et libérer les autres ---
     $nav.find(".item:not([data-tab='ashara-relations'])").on("click", function () {
         _activeActs.delete(actor.id);
-        $panel.hide();
-        // Laisser dnd5e gérer l'affichage du bon panneau
+        $panel.css("display", "none");
+        $body.find('.tab[data-group="primary"]:not([data-tab="ashara-relations"])')
+             .css("display", "");
+        // dnd5e gère le reste
     });
 
     wireTab(actor, $html);
@@ -555,20 +584,10 @@ async function scanVisibleTokens() {
 
 // ---- Export ------------------------------------------------
 
-function clearActiveOnClose(app) {
-    const actor = app.actor ?? app.document ?? app.object;
-    if (!actor || actor.documentName !== "Actor") return;
-    _activeActs.delete(actor.id);
-}
-
 export function RelationsHooks() {
     // Injection de l'onglet (ApplicationV2 en v13 + fallback v1)
     Hooks.on("renderApplicationV2", injectTab);
     Hooks.on("renderApplication",   injectTab);
-
-    // Nettoyage à la fermeture — évite que le tab soit encore "actif" à la réouverture
-    Hooks.on("closeApplicationV2", clearActiveOnClose);
-    Hooks.on("closeApplication",   clearActiveOnClose);
 
     // Détection automatique — chargement de scène
     Hooks.on("canvasReady", () => scanVisibleTokens());
