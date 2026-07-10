@@ -123,14 +123,27 @@ function buildTabHtml(actor) {
         </div>`;
     }).join("");
 
+    const emptyState = `
+        <div class="rel-empty">
+            <i class="fas fa-heart-broken"></i>
+            <span>Aucune relation enregistrée.</span>
+            ${canEdit ? `<a class="rel-add-btn" style="margin-top:4px;">
+                <i class="fas fa-plus"></i> Ajouter une relation
+            </a>` : ""}
+        </div>`;
+
     return `
     <div class="rel-tab" data-actor-id="${actor.id}">
         ${canEdit ? `
-        <div class="rel-toolbar">
-            <a class="rel-add-btn"><i class="fas fa-plus"></i> Ajouter une relation</a>
-        </div>` : ""}
+        <div class="rel-header-bar">
+            <h3><i class="fas fa-heart" style="color:#e91e8c;margin-right:6px;"></i>Relations</h3>
+            <a class="rel-add-btn"><i class="fas fa-plus"></i> Ajouter</a>
+        </div>` : `
+        <div class="rel-header-bar">
+            <h3><i class="fas fa-heart" style="color:#e91e8c;margin-right:6px;"></i>Relations</h3>
+        </div>`}
         <div class="rel-list">
-            ${rows || '<p class="rel-empty">Aucune relation enregistrée.</p>'}
+            ${rows || emptyState}
         </div>
     </div>`;
 }
@@ -453,10 +466,10 @@ function injectTab(app, html) {
     const wasActive = _activeActs.has(actor.id);
 
     $nav.append(`
-        <a class="item${wasActive ? " active" : ""}" role="tab"
-           data-group="primary" data-tab="ashara-relations" tabindex="0">
+        <a class="item control${wasActive ? " active" : ""}" role="tab"
+           data-group="primary" data-tab="ashara-relations"
+           data-tooltip="Relations" aria-label="Relations">
             <i class="fas fa-heart"></i>
-            <span>Relations</span>
         </a>`);
 
     $body.append(`

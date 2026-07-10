@@ -1,7 +1,7 @@
 ================================================================================
                         ASHARA - RELATIONS — MODULE FOUNDRY VTT
                                Auteur : Soruta (Discord: s0ruta)
-                                       Version : 1.0.2
+                                       Version : 1.0.3
                               Compatibilité : Foundry VTT v13
 ================================================================================
 
@@ -183,6 +183,16 @@ NOTES TECHNIQUES
 ================================================================================
                         ASHARA - RELATIONS — MISES À JOUR
 ================================================================================
+
+v1.0.3 | 2026-07-10
+   relations.js  — Fix icône onglet : ajout classe "control" + data-tooltip,
+                  suppression du <span> (dnd5e v3 tabs = icon only).
+                  Refonte HTML onglet : en-tête avec titre + bouton "Ajouter",
+                  état vide centré avec icône fa-heart-broken.
+   relations.css — Refonte complète : layout flex colonne, header-bar dédié,
+                  boutons d'action masqués sauf au hover sur la ligne,
+                  état vide centré, picker plus compact et lisible.
+   Version       — 1.0.2 → 1.0.3
 
 v1.0.2 | 2026-07-10
    relations.js  — Fix acteur : en dnd5e v3 / Foundry v13, l'acteur est dans
