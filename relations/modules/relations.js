@@ -90,7 +90,14 @@ async function relDelete(actor, id) {
 
 function isInPJFolder(actor) {
     const pjFolder = game.folders.find(f => f.type === "Actor" && f.name === "PJ");
-    return !!pjFolder && actor.folder?.id === pjFolder.id;
+    if (!pjFolder) return false;
+    // Remonter l'arbre des dossiers (gère les sous-dossiers de PJ)
+    let folder = actor.folder;
+    while (folder) {
+        if (folder.id === pjFolder.id) return true;
+        folder = folder.folder; // dossier parent
+    }
+    return false;
 }
 
 // Acteurs character disponibles pour une nouvelle relation
@@ -115,7 +122,6 @@ export function buildRowHtml(r, actor, canEdit) {
             <img class="rel-avatar" src="${img}" alt="${name}">
             <span class="rel-name">${name}</span>
             ${levelSelector(r.level ?? 0, canEdit)}
-            ${r.secret ? '<i class="fas fa-eye-slash rel-secret" title="GM uniquement"></i>' : ""}
             <div class="rel-btns">
                 <a class="rel-toggle" title="Notes"><i class="fas fa-chevron-${open ? "up" : "down"}"></i></a>
                 ${canEdit ? `<a class="rel-delete" title="Supprimer"><i class="fas fa-trash"></i></a>` : ""}
@@ -154,7 +160,7 @@ export function emptyStateHtml(canEdit) {
 export function buildTabHtml(actor) {
     const isGM    = game.user.isGM;
     const canEdit = isGM || actor.isOwner;
-    const rels    = relList(actor).filter(r => !r.secret || isGM);
+    const rels    = relList(actor);
     const rows    = rels.map(r => buildRowHtml(r, actor, canEdit)).join("");
 
     return `
@@ -215,12 +221,6 @@ function buildPickerHtml(pj, uid) {
                 : ""}
         </div>
         <hr style="border-color:#333;margin:0;">
-        <label style="font-size:12px;color:#aaa;">Type de relation
-            <input id="${uid}-type" type="text" placeholder="Allié, Ennemi, Famille…"
-                style="margin-top:4px;display:block;width:100%;box-sizing:border-box;
-                    background:#1a1a1a;color:#ddd;border:1px solid #555;
-                    border-radius:4px;padding:5px 8px;font-size:12px;">
-        </label>
         <label style="font-size:12px;color:#aaa;">Niveau d'affinité
             <div style="display:flex;align-items:center;gap:10px;margin-top:6px;">
                 <span style="font-size:11px;color:#e74c3c;flex-shrink:0;">Hostile</span>
@@ -229,9 +229,6 @@ function buildPickerHtml(pj, uid) {
                 <span id="${uid}-lvlval" style="min-width:28px;text-align:center;
                     font-size:14px;font-weight:bold;color:#ddd;">0</span>
             </div>
-        </label>
-        <label style="font-size:12px;color:#aaa;display:flex;align-items:center;gap:8px;cursor:pointer;">
-            <input id="${uid}-secret" type="checkbox"> Secret (GM uniquement)
         </label>
     </div>`;
 }
@@ -310,9 +307,7 @@ async function openAddDialog(actor) {
                         targetId:   selectedActorId,
                         targetName: target?.name ?? "Inconnu",
                         targetImg:  target?.img  ?? "",
-                        type:   d.querySelector(`#${uid}-type`).value.trim(),
                         level:  parseInt(d.querySelector(`#${uid}-level`).value) || 0,
-                        secret: d.querySelector(`#${uid}-secret`).checked,
                         lastPosition: game.scenes.current?.name ?? "",
                     };
                 }

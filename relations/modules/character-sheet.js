@@ -21,7 +21,7 @@ export class AshCharacterSheet extends dnd5e.applications.actor.CharacterActorSh
     // Ajoute l'onglet dans la barre de navigation dnd5e
     static TABS = [
         ...super.TABS,
-        { tab: "relations", label: "Relations", icon: "fas fa-heart" }
+        { tab: "relations", group: "primary", label: "Relations", icon: "fas fa-heart" }
     ];
 
     // Garde le même nom pour remplacer la fiche par défaut sans conflits
@@ -38,8 +38,6 @@ export class AshCharacterSheet extends dnd5e.applications.actor.CharacterActorSh
     _attachPartListeners(partId, htmlElement, options) {
         super._attachPartListeners(partId, htmlElement, options);
         if (partId !== "relations") return;
-        // htmlElement peut être le .rel-tab lui-même ou son parent
-        const $root = $(htmlElement);
-        wireTab(this.actor, $root.hasClass("rel-tab") ? $root.parent() : $root);
+        wireTab(this.actor, $(htmlElement));
     }
 }

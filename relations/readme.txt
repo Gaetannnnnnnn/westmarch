@@ -1,7 +1,7 @@
 ================================================================================
                         ASHARA - RELATIONS — MODULE FOUNDRY VTT
                                Auteur : Soruta (Discord: s0ruta)
-                                       Version : 1.2.1
+                                       Version : 1.2.4
                               Compatibilité : Foundry VTT v13
 ================================================================================
 
@@ -183,6 +183,37 @@ NOTES TECHNIQUES
 ================================================================================
                         ASHARA - RELATIONS — MISES À JOUR
 ================================================================================
+
+v1.2.4 | 2026-07-10
+   relations.js  — Fix isInPJFolder : remonte l'arbre des dossiers via
+                  folder.folder au lieu de vérifier uniquement le parent
+                  direct. Un acteur dans PJ/Actifs/Nom était classé PNJ
+                  au lieu de Joueurs car actor.folder pointait sur "Actifs"
+                  et non sur "PJ".
+   Version       — 1.2.3 → 1.2.4
+
+v1.2.3 | 2026-07-10
+   templates/         — Fix : ajout du wrapper <section class="tab"
+                       data-group="primary" data-tab="relations"> dans
+                       character-relations.hbs. Sans ce wrapper, dnd5e ne
+                       reconnaissait pas l'élément comme un panneau d'onglet
+                       et le rendait toujours visible dans le container #tabs,
+                       causant l'affichage des relations en bas de Détails.
+   character-sheet.js — Simplification _attachPartListeners (pas de détection
+                       hasClass nécessaire, le root est maintenant la section).
+   Version            — 1.2.2 → 1.2.3
+
+v1.2.2 | 2026-07-10
+   character-sheet.js — Ajout group:"primary" dans TABS pour que le bouton
+                       Relations soit dans le même groupe que les autres
+                       onglets dnd5e.
+   relations.js       — Suppression des champs "Type de relation" et "Secret
+                       (GM uniquement)" du dialog d'ajout, du filtrage secret
+                       dans buildTabHtml, et de l'icône cadenas dans les
+                       lignes. La relation stocke désormais uniquement :
+                       targetId, targetName, targetImg, level, note,
+                       lastPosition.
+   Version            — 1.2.1 → 1.2.2
 
 v1.2.1 | 2026-07-10
    relations.js  — Fix ordre des icônes de niveau : Object.entries() place
