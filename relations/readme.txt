@@ -1,7 +1,7 @@
 ================================================================================
                         ASHARA - RELATIONS — MODULE FOUNDRY VTT
                                Auteur : Soruta (Discord: s0ruta)
-                                       Version : 1.2.4
+                                       Version : 1.2.8
                               Compatibilité : Foundry VTT v13
 ================================================================================
 
@@ -27,7 +27,10 @@ relations/
 ├── index.js                Point d'entrée — initialise les settings et les hooks
 ├── modules/
 │   ├── settings.js         Enregistrement des paramètres du module
-│   └── relations.js        Logique principale (CRUD, onglet, picker, auto-détection)
+│   ├── relations.js        Logique principale (CRUD, onglet, picker, auto-détection)
+│   └── character-sheet.js  Sous-classe AshCharacterSheet (PARTS / TABS natifs dnd5e v3)
+├── templates/
+│   └── character-relations.hbs  Template Handlebars de l'onglet Relations
 └── styles/
     └── relations.css       Styles de l'onglet et du picker d'acteur
 
@@ -173,16 +176,56 @@ NOTES TECHNIQUES
 
 - Compatible Foundry VTT v13 minimum.
 - Utilise foundry.applications.api.DialogV2 pour tous les dialogs.
-- L'injection de l'onglet via renderApplication est compatible avec les
-  fiches ApplicationV2 (dnd5e v3+). La gestion du tab actif est manuelle
-  (stopPropagation sur le clic, manipulation directe des classes CSS "active")
-  pour éviter les conflits avec le TabsV2 interne de Foundry.
-- jQuery ($) est utilisé pour la manipulation DOM dans les hooks (disponible
+- L'onglet Relations est ajouté via sous-classe (AshCharacterSheet étend
+  dnd5e.applications.actor.CharacterActorSheet). L'intégration native via
+  static PARTS / static TABS gère le rendu, la navigation et la mémorisation
+  de l'onglet actif sans injection DOM manuelle.
+- actor.update({render:false}) supprime tout re-render déclenché par les
+  modifications de flags depuis l'onglet (plus de "kick" hors de l'onglet).
+  Le DOM est géré manuellement (add/delete/level sans re-render).
+- jQuery ($) est utilisé pour la manipulation DOM dans wireTab (disponible
   globalement dans Foundry VTT).
 
 ================================================================================
                         ASHARA - RELATIONS — MISES À JOUR
 ================================================================================
+
+v1.2.8 | 2026-07-10
+   relations.js  — Fix bouton × de la barre de recherche : le wrapper
+                  <label> relayait le clic vers l'input, déclenchant des
+                  comportements inattendus dans dnd5e (contenu de l'onglet
+                  qui disparaît). Remplacé par un <div>. Ajout de
+                  stopPropagation sur le handler du bouton clear.
+   Version       — 1.2.7 → 1.2.8
+
+v1.2.7 | 2026-07-10
+   relations.css — Refonte barre de recherche pour correspondre au style
+                  natif dnd5e : fond transparent (plus de box/border-radius
+                  autour de l'input), séparateur border-bottom doré,
+                  bouton Ajouter en texte gris sans boîte bleue.
+   Version       — 1.2.6 → 1.2.7
+
+v1.2.6 | 2026-07-10
+   character-sheet.js — Fix onglet Relations vide à l'ouverture : quand la
+                       fiche se rouvre sur l'onglet Relations, dnd5e appelait
+                       changeTab avant que notre part soit dans le DOM. Fix :
+                       override _onRender qui rappelle changeTab("relations")
+                       après que toutes les parts sont insérées.
+   relations.css      — Fix hauteur .rel-tab : height:100% → flex:1 +
+                       min-height:0 pour fonctionner dans un conteneur flex
+                       sans hauteur explicite.
+   Version            — 1.2.5 → 1.2.6
+
+v1.2.5 | 2026-07-10
+   relations.js  — Remplacement du header-bar custom ("♥ RELATIONS" +
+                  bouton Ajouter) par une barre de recherche en haut de
+                  l'onglet. Filtrage en temps réel des relations par nom
+                  au fil de la frappe. Message "Aucune relation trouvée."
+                  si aucun résultat. Bouton clear (×) pour effacer.
+   relations.css — Styles .rel-search-bar, .rel-search-wrap,
+                  .rel-search-input, .rel-search-clear. Suppression des
+                  styles .rel-header-bar / h3.
+   Version       — 1.2.4 → 1.2.5
 
 v1.2.4 | 2026-07-10
    relations.js  — Fix isInPJFolder : remonte l'arbre des dossiers via

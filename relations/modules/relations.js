@@ -166,11 +166,11 @@ export function buildTabHtml(actor) {
     return `
     <div class="rel-tab" data-actor-id="${actor.id}">
         <div class="rel-search-bar">
-            <label class="rel-search-wrap">
+            <div class="rel-search-wrap">
                 <i class="fas fa-search"></i>
                 <input class="rel-search-input" type="search" placeholder="Rechercher une relation…">
                 <a class="rel-search-clear" style="display:none;" title="Effacer"><i class="fas fa-times"></i></a>
-            </label>
+            </div>
             ${canEdit ? `<a class="rel-add-btn"><i class="fas fa-plus"></i> Ajouter</a>` : ""}
         </div>
         <div class="rel-list">
@@ -501,8 +501,9 @@ export function wireTab(actor, $html) {
         }
     });
 
-    $tab.on("click", ".rel-search-clear", function () {
-        $tab.find(".rel-search-input").val("").trigger("input").focus();
+    $tab.on("click", ".rel-search-clear", function (e) {
+        e.stopPropagation();
+        $tab.find(".rel-search-input").val("").trigger("input");
     });
 }
 

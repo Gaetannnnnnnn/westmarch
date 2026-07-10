@@ -14,78 +14,77 @@
     padding: 0;
 }
 
-/* ---- Barre de recherche (style dnd5e Sorts) --------------- */
+/* ---- Barre de recherche — identique au filtre dnd5e -------- */
 
 .rel-search-bar {
     display: flex;
     align-items: center;
-    gap: 6px;
-    padding: 7px 8px 6px;
+    gap: 4px;
+    padding: 4px 8px;
     flex-shrink: 0;
+    border-bottom: 1px solid var(--dnd5e-color-gold-dark, var(--color-border-dark-1, #3d2b1a));
 }
 
+/* Le label wrapper est transparent — pas de fond, pas de bordure */
 .rel-search-wrap {
     flex: 1;
     display: flex;
     align-items: center;
-    gap: 5px;
-    padding: 0 8px;
-    background: var(--dnd5e-color-card, rgba(0,0,0,0.35));
-    border: 1px solid var(--color-border-dark, #444);
-    border-radius: 4px;
-    height: 28px;
+    gap: 4px;
+    background: none;
+    border: none;
+    padding: 2px 0;
 }
 
 .rel-search-wrap > i {
-    color: var(--color-text-dark-secondary, #777);
+    color: var(--color-text-dark-secondary, #888);
     font-size: 11px;
     flex-shrink: 0;
 }
 
 .rel-search-input {
     flex: 1;
-    background: transparent;
+    background: none;
     border: none;
     color: var(--color-text-dark-primary, #ccc);
-    font-size: 12px;
+    font-size: 11px;
+    font-family: var(--dnd5e-font-roboto, var(--font-primary, inherit));
     padding: 0;
-    font-family: inherit;
     min-width: 0;
 }
 .rel-search-input:focus { outline: none; }
-.rel-search-input::placeholder { color: var(--color-text-dark-inactive, #555); }
-/* Masquer le bouton natif × de type="search" (on gère nous-même) */
+.rel-search-input::placeholder { color: var(--color-text-dark-inactive, #555); font-style: italic; }
 .rel-search-input::-webkit-search-cancel-button { display: none; }
 
 .rel-search-clear {
-    color: #666;
+    color: var(--color-text-dark-inactive, #555);
     font-size: 10px;
     cursor: pointer;
     flex-shrink: 0;
+    padding: 2px 4px;
     transition: color 0.1s;
 }
-.rel-search-clear:hover { color: #bbb; }
+.rel-search-clear:hover { color: var(--color-text-dark-primary, #ccc); }
 
+/* Bouton Ajouter — style texte dnd5e, pas de boîte bleue */
 .rel-add-btn {
-    font-size: 12px;
-    color: #80b3ff;
-    cursor: pointer;
     display: flex;
     align-items: center;
-    gap: 5px;
-    padding: 0 10px;
-    height: 28px;
-    border: 1px solid #334;
-    border-radius: 4px;
-    background: rgba(128,179,255,0.05);
-    transition: background 0.1s, color 0.1s;
+    gap: 4px;
+    padding: 2px 6px;
+    background: none;
+    border: none;
+    border-radius: 3px;
+    color: var(--color-text-dark-secondary, #aaa);
+    font-size: 11px;
+    cursor: pointer;
     white-space: nowrap;
     flex-shrink: 0;
+    transition: color 0.1s, background 0.1s;
 }
 .rel-add-btn:hover {
-    background: rgba(128,179,255,0.14);
-    color: #aaccff;
-    border-color: #80b3ff;
+    color: var(--color-text-dark-primary, #ddd);
+    background: rgba(255,255,255,0.07);
 }
 
 /* ---- Zone de liste scrollable ----------------------------- */
