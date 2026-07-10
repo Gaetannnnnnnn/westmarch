@@ -1,7 +1,7 @@
 ================================================================================
                         WESTMARCH SYSTÈME — MODULE FOUNDRY VTT
                                Auteur : Soruta (Discord: s0ruta)
-                                       Version : 2.0.2
+                                       Version : 2.0.3
                               Compatibilité : Foundry VTT v13
 ================================================================================
 
@@ -642,6 +642,13 @@ NOTES TECHNIQUES
 ================================================================================
                         WESTMARCH SYSTÈME — MISES À JOUR
 ================================================================================
+
+v2.0.3 | 2026-07-10
+   tm.js         — Fix lisibilité du panier TM : le conteneur à fond clair
+                  (#f5f5f5) héritait la couleur blanche du thème sombre de
+                  Foundry, rendant le texte invisible. Ajout de color:#222
+                  explicite sur le div du panier.
+   module.json   — Version 2.0.2 → 2.0.3
 
 v2.0.2 | 2026-07-10
    relations.js  — Nouveau module : système de relations entre acteurs.

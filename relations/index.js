@@ -12,4 +12,8 @@ Hooks.on("init", () => {
         makeDefault: true,
         label:       "Ashara — Fiche personnage"
     });
+
+    // Expose la classe pour les modules dépendants (ex: ashara-bestiary)
+    CONFIG.asharaSheets ??= {};
+    CONFIG.asharaSheets.relations = AshCharacterSheet;
 });

@@ -1,7 +1,7 @@
 ================================================================================
                        ASHARA - BESTIAIRE — MODULE FOUNDRY VTT
                                Auteur : Soruta (Discord: s0ruta)
-                                       Version : 1.0.1
+                                       Version : 1.0.2
                               Compatibilité : Foundry VTT v13
 ================================================================================
 
@@ -26,10 +26,11 @@ bestiary/
 ├── readme.txt              Ce fichier
 ├── module.json             Manifeste du module (id, version, compatibilité)
 ├── index.js                Point d'entrée — init (settings + hooks) + setup
-│                           (enregistrement de la fiche étendue)
+│                           (lecture de CONFIG.asharaSheets + enregistrement)
 ├── modules/
 │   ├── settings.js         Enregistrement des paramètres du module
-│   └── bestiary.js         Logique principale (CRUD, onglet, scan, wireTab)
+│   ├── bestiary.js         Logique principale (CRUD, onglet, scan, wireTab)
+│   └── character-sheet.js  Factory createBestiarySheet(BaseSheet)
 ├── templates/
 │   └── character-bestiary.hbs  Template Handlebars de l'onglet Bestiaire
 └── styles/
@@ -107,13 +108,13 @@ bestiary.js
       Un guard anti-doublon (_scanning) évite les appels concurrents.
 
    5. COHABITATION AVEC ASHARA-RELATIONS
-      Si ashara-relations est actif, bestiary détecte automatiquement la fiche
-      enregistrée par relations (AshCharacterSheet) et l'étend. La chaîne
-      d'héritage résultante est :
+      Relations expose sa fiche via CONFIG.asharaSheets.relations pendant son
+      hook "init". Bestiary lit cette référence dans son hook "setup" (garanti
+      après tous les "init") pour construire la chaîne d'héritage :
         AshBestiarySheet → AshCharacterSheet → CharacterActorSheet (dnd5e)
       Les deux onglets (Relations + Bestiaire) coexistent dans la même fiche
       sans conflit. Si relations n'est pas actif, bestiary étend directement
-      la fiche dnd5e native.
+      la fiche dnd5e native (CONFIG.asharaSheets absent → fallback).
 
 bestiary.css
    Styles de l'onglet Bestiaire. Suit la charte visuelle sombre d'Ashara.
@@ -164,8 +165,12 @@ NOTES TECHNIQUES
 
 - Compatible Foundry VTT v13 minimum.
 - Utilise foundry.applications.api.DialogV2 pour la confirmation de suppression.
-- La fiche est enregistrée via le hook "setup" (après tous les hooks "init")
-  pour pouvoir détecter et étendre la fiche d'ashara-relations si présente.
+- La fiche est enregistrée via le hook "setup" (après tous les hooks "init").
+  Relations expose AshCharacterSheet dans CONFIG.asharaSheets.relations pendant
+  son "init" ; bestiary le lit dans "setup" pour un héritage garanti.
+  La classe AshBestiarySheet est générée par la factory createBestiarySheet()
+  définie dans character-sheet.js (même structure que character-sheet.js de
+  relations).
 - actor.update({render:false}) supprime tout re-render déclenché par les
   modifications de flags depuis l'onglet.
 - jQuery ($) est utilisé pour la manipulation DOM dans wireTab.
@@ -174,6 +179,16 @@ NOTES TECHNIQUES
 ================================================================================
                        ASHARA - BESTIAIRE — MISES À JOUR
 ================================================================================
+
+v1.0.2 | 2026-07-10
+   character-sheet.js — Nouveau fichier. Factory createBestiarySheet(BaseSheet)
+                        qui génère AshBestiarySheet avec static PARTS, TABS et
+                        _onRender + changeTab (même pattern que character-sheet.js
+                        de relations). Remplace la classe inline dans index.js.
+   index.js           — Simplifié : suppression de la détection instanceof.
+                        Lit CONFIG.asharaSheets.relations dans "setup" pour
+                        récupérer AshCharacterSheet de façon fiable.
+   module.json        — Version 1.0.1 → 1.0.2
 
 v1.0.1 | 2026-07-10
    index.js     — Fix détection de la fiche Relations : remplacement de la

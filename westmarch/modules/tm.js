@@ -665,7 +665,7 @@ async function openDeclarationDialog(actor) {
         content: `
 <div style="display:flex; flex-direction:column; gap:8px; padding:4px 0;">
     <!-- PANIER -->
-    <div style="background:#f5f5f5; border:1px solid #ddd; border-radius:4px; padding:8px;">
+    <div style="background:#f5f5f5; border:1px solid #ddd; border-radius:4px; padding:8px; color:#222;">
         <div style="font-weight:bold; margin-bottom:4px; font-size:0.95em;">
             🛒 TM — <span id="tm-cart-count">${cartItems.length} activité${cartItems.length !== 1 ? "s" : ""}</span>
         </div>

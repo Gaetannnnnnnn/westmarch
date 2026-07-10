@@ -1,7 +1,7 @@
 ================================================================================
                         ASHARA - RELATIONS — MODULE FOUNDRY VTT
                                Auteur : Soruta (Discord: s0ruta)
-                                       Version : 1.3.4
+                                       Version : 1.3.5
                               Compatibilité : Foundry VTT v13
 ================================================================================
 
@@ -193,13 +193,21 @@ NOTES TECHNIQUES
   modifications de flags depuis l'onglet. Le DOM est géré manuellement
   (add/delete/level sans re-render).
 - jQuery ($) est utilisé pour la manipulation DOM dans wireTab.
-- Cohabitation avec ashara-bestiary : bestiary étend AshCharacterSheet via
-  le hook "setup" pour ajouter son propre onglet sans conflit.
+- Cohabitation avec ashara-bestiary : Relations expose AshCharacterSheet via
+  CONFIG.asharaSheets.relations pendant son init. Bestiary lit cette référence
+  dans son hook "setup" pour hériter directement de la bonne classe, sans
+  détection fragile.
 
 
 ================================================================================
                         ASHARA - RELATIONS — MISES À JOUR
 ================================================================================
+
+v1.3.5 | 2026-07-10
+   index.js     — Expose AshCharacterSheet via CONFIG.asharaSheets.relations
+                  après registerSheet, pour qu'ashara-bestiary puisse hériter
+                  directement de la bonne classe sans détection instanceof.
+   module.json  — Version 1.3.4 → 1.3.5
 
 v1.3.4 | 2026-07-10
    readme.txt    — Réécriture complète : suppression des sections obsolètes
