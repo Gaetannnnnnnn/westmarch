@@ -165,14 +165,14 @@ export function buildTabHtml(actor) {
 
     return `
     <div class="rel-tab" data-actor-id="${actor.id}">
-        ${canEdit ? `
-        <div class="rel-header-bar">
-            <h3><i class="fas fa-heart" style="color:#e91e8c;margin-right:6px;"></i>Relations</h3>
-            <a class="rel-add-btn"><i class="fas fa-plus"></i> Ajouter</a>
-        </div>` : `
-        <div class="rel-header-bar">
-            <h3><i class="fas fa-heart" style="color:#e91e8c;margin-right:6px;"></i>Relations</h3>
-        </div>`}
+        <div class="rel-search-bar">
+            <label class="rel-search-wrap">
+                <i class="fas fa-search"></i>
+                <input class="rel-search-input" type="search" placeholder="Rechercher une relation…">
+                <a class="rel-search-clear" style="display:none;" title="Effacer"><i class="fas fa-times"></i></a>
+            </label>
+            ${canEdit ? `<a class="rel-add-btn"><i class="fas fa-plus"></i> Ajouter</a>` : ""}
+        </div>
         <div class="rel-list">
             ${rows || emptyStateHtml(canEdit)}
         </div>
@@ -477,6 +477,32 @@ export function wireTab(actor, $html) {
         clearTimeout(_noteTimer);
         const relId = String($(this).data("rel-id"));
         await relUpdate(actor, relId, { note: this.value });
+    });
+
+    // Recherche en temps réel
+    $tab.on("input", ".rel-search-input", function () {
+        const q = this.value.trim().toLowerCase();
+        $tab.find(".rel-search-clear").toggle(!!q);
+        let visible = 0;
+        $tab.find(".rel-row").each(function () {
+            const match = !q || $(this).find(".rel-name").text().toLowerCase().includes(q);
+            $(this).toggle(match);
+            if (match) visible++;
+        });
+        // Message "aucun résultat" si des lignes existent mais aucune ne correspond
+        $tab.find(".rel-no-results").remove();
+        if (q && $tab.find(".rel-row").length && !visible) {
+            $tab.find(".rel-list").append(
+                `<div class="rel-no-results rel-empty">
+                    <i class="fas fa-search"></i>
+                    <span>Aucune relation trouvée.</span>
+                </div>`
+            );
+        }
+    });
+
+    $tab.on("click", ".rel-search-clear", function () {
+        $tab.find(".rel-search-input").val("").trigger("input").focus();
     });
 }
 

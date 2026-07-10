@@ -7,31 +7,64 @@
 .rel-tab {
     display: flex;
     flex-direction: column;
-    height: 100%;
+    flex: 1;        /* grandit dans le conteneur flex du .tab dnd5e */
+    min-height: 0;  /* nécessaire pour que overflow: hidden fonctionne en flex */
     overflow: hidden;
     box-sizing: border-box;
     padding: 0;
 }
 
-/* ---- En-tête de l'onglet ---------------------------------- */
+/* ---- Barre de recherche (style dnd5e Sorts) --------------- */
 
-.rel-header-bar {
+.rel-search-bar {
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    padding: 8px 12px;
-    border-bottom: 1px solid #2e2e2e;
+    gap: 6px;
+    padding: 7px 8px 6px;
     flex-shrink: 0;
 }
 
-.rel-header-bar h3 {
-    margin: 0;
-    font-size: 12px;
-    font-weight: 600;
-    color: #999;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
+.rel-search-wrap {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 0 8px;
+    background: var(--dnd5e-color-card, rgba(0,0,0,0.35));
+    border: 1px solid var(--color-border-dark, #444);
+    border-radius: 4px;
+    height: 28px;
 }
+
+.rel-search-wrap > i {
+    color: var(--color-text-dark-secondary, #777);
+    font-size: 11px;
+    flex-shrink: 0;
+}
+
+.rel-search-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    color: var(--color-text-dark-primary, #ccc);
+    font-size: 12px;
+    padding: 0;
+    font-family: inherit;
+    min-width: 0;
+}
+.rel-search-input:focus { outline: none; }
+.rel-search-input::placeholder { color: var(--color-text-dark-inactive, #555); }
+/* Masquer le bouton natif × de type="search" (on gère nous-même) */
+.rel-search-input::-webkit-search-cancel-button { display: none; }
+
+.rel-search-clear {
+    color: #666;
+    font-size: 10px;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: color 0.1s;
+}
+.rel-search-clear:hover { color: #bbb; }
 
 .rel-add-btn {
     font-size: 12px;
@@ -40,14 +73,17 @@
     display: flex;
     align-items: center;
     gap: 5px;
-    padding: 3px 10px;
+    padding: 0 10px;
+    height: 28px;
     border: 1px solid #334;
     border-radius: 4px;
     background: rgba(128,179,255,0.05);
     transition: background 0.1s, color 0.1s;
+    white-space: nowrap;
+    flex-shrink: 0;
 }
 .rel-add-btn:hover {
-    background: rgba(128,179,255,0.12);
+    background: rgba(128,179,255,0.14);
     color: #aaccff;
     border-color: #80b3ff;
 }

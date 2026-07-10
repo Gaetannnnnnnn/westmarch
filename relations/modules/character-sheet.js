@@ -40,4 +40,14 @@ export class AshCharacterSheet extends dnd5e.applications.actor.CharacterActorSh
         if (partId !== "relations") return;
         wireTab(this.actor, $(htmlElement));
     }
+
+    // Re-applique le changeTab après que TOUTES les parts sont dans le DOM.
+    // Sans ça, dnd5e active l'onglet mémorisé avant que notre part "relations"
+    // soit insérée, laissant la section sans la classe "active" à l'ouverture.
+    async _onRender(context, options) {
+        await super._onRender(context, options);
+        if (this.tabGroups?.primary === "relations") {
+            this.changeTab("relations", "primary", { updatePosition: false });
+        }
+    }
 }
