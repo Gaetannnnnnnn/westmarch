@@ -1,7 +1,7 @@
 ================================================================================
                         ASHARA - RELATIONS — MODULE FOUNDRY VTT
                                Auteur : Soruta (Discord: s0ruta)
-                                       Version : 1.0.3
+                                       Version : 1.0.5
                               Compatibilité : Foundry VTT v13
 ================================================================================
 
@@ -183,6 +183,24 @@ NOTES TECHNIQUES
 ================================================================================
                         ASHARA - RELATIONS — MISES À JOUR
 ================================================================================
+
+v1.0.5 | 2026-07-10
+   relations.js  — Fix double-panneau à la réouverture : ajout des hooks
+                  closeApplicationV2 + closeApplication qui retirent l'acteur
+                  de _activeActs à la fermeture de sa fiche. Sans ce fix, le
+                  panneau Relations restait marqué "actif" et s'affichait en
+                  même temps que le panneau Details de dnd5e à la réouverture.
+   Version       — 1.0.4 → 1.0.5
+
+v1.0.4 | 2026-07-10
+   relations.js  — Fix affichage onglet : passage à la gestion explicite du
+                  display (inline style) au lieu des classes CSS "active".
+                  Clic sur notre tab : hide() sur tous les autres panneaux,
+                  display:flex sur le nôtre. Clic sur un autre tab : hide()
+                  sur notre panneau, dnd5e gère le reste sans interférence.
+                  Insertion après le dernier tab existant (after()) au lieu
+                  d'un simple append sur .sheet-body.
+   Version       — 1.0.3 → 1.0.4
 
 v1.0.3 | 2026-07-10
    relations.js  — Fix icône onglet : ajout classe "control" + data-tooltip,

@@ -454,9 +454,7 @@ function injectTab(app, html) {
     if (!game.settings.get(MODULE, "enabled")) return;
     if (actor.type !== "character") return;
 
-    // html peut être un HTMLElement (ApplicationV2) ou jQuery (Application v1)
-    const $html = html instanceof HTMLElement ? $(html) : $(html);
-
+    const $html = $(html);
     if ($html.find('[data-tab="ashara-relations"]').length) return;
 
     const $nav  = $html.find("nav.tabs, nav.sheet-navigation, .tabs[data-group]").first();
@@ -465,6 +463,7 @@ function injectTab(app, html) {
 
     const wasActive = _activeActs.has(actor.id);
 
+    // --- Bouton nav ---
     $nav.append(`
         <a class="item control${wasActive ? " active" : ""}" role="tab"
            data-group="primary" data-tab="ashara-relations"
@@ -472,24 +471,37 @@ function injectTab(app, html) {
             <i class="fas fa-heart"></i>
         </a>`);
 
-    $body.append(`
-        <div class="tab${wasActive ? " active" : ""}"
-             data-group="primary" data-tab="ashara-relations">
-            ${buildTabHtml(actor)}
-        </div>`);
+    // --- Panneau de contenu — display géré explicitement ---
+    const $panel = $(`<div class="tab" data-group="primary" data-tab="ashara-relations"
+        style="display:${wasActive ? "flex" : "none"};flex-direction:column;
+               height:100%;overflow:hidden;box-sizing:border-box;">
+        ${buildTabHtml(actor)}
+    </div>`);
 
+    // Insérer après le dernier tab existant (même container)
+    const $last = $body.find('.tab[data-group="primary"]').last();
+    if ($last.length) $last.after($panel);
+    else              $body.append($panel);
+
+    // --- Clic sur notre tab ---
     $html.find('.item[data-tab="ashara-relations"]').on("click", function (ev) {
         ev.preventDefault();
         ev.stopPropagation();
         _activeActs.add(actor.id);
-        $html.find(".tab[data-group='primary']").removeClass("active");
-        $html.find("nav.tabs .item, .tabs[data-group] .item").removeClass("active");
-        $html.find('.tab[data-tab="ashara-relations"]').addClass("active");
+        // Cacher tous les autres panneaux (sans toucher à leurs classes)
+        $body.find('.tab[data-group="primary"]:not([data-tab="ashara-relations"])').hide();
+        // Désactiver tous les items nav
+        $nav.find(".item").removeClass("active");
+        // Afficher le nôtre
+        $panel.css("display", "flex");
         $(this).addClass("active");
     });
 
-    $html.find("nav.tabs .item:not([data-tab='ashara-relations']), .tabs[data-group] .item:not([data-tab='ashara-relations'])").on("click", () => {
+    // --- Clic sur un autre tab — cacher le nôtre ---
+    $nav.find(".item:not([data-tab='ashara-relations'])").on("click", function () {
         _activeActs.delete(actor.id);
+        $panel.hide();
+        // Laisser dnd5e gérer l'affichage du bon panneau
     });
 
     wireTab(actor, $html);
@@ -543,10 +555,20 @@ async function scanVisibleTokens() {
 
 // ---- Export ------------------------------------------------
 
+function clearActiveOnClose(app) {
+    const actor = app.actor ?? app.document ?? app.object;
+    if (!actor || actor.documentName !== "Actor") return;
+    _activeActs.delete(actor.id);
+}
+
 export function RelationsHooks() {
     // Injection de l'onglet (ApplicationV2 en v13 + fallback v1)
     Hooks.on("renderApplicationV2", injectTab);
     Hooks.on("renderApplication",   injectTab);
+
+    // Nettoyage à la fermeture — évite que le tab soit encore "actif" à la réouverture
+    Hooks.on("closeApplicationV2", clearActiveOnClose);
+    Hooks.on("closeApplication",   clearActiveOnClose);
 
     // Détection automatique — chargement de scène
     Hooks.on("canvasReady", () => scanVisibleTokens());
