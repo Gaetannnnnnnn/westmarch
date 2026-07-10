@@ -435,17 +435,19 @@ function wireTab(actor, $html) {
 // ---- Injection de l'onglet ---------------------------------
 
 function injectTab(app, html) {
-    if (!app.actor) return;
+    // En dnd5e v3 / Foundry v13 : l'acteur est dans app.document ou app.object
+    const actor = app.actor ?? app.document ?? app.object;
+    if (!actor || actor.documentName !== "Actor") return;
     if (!game.settings.get(MODULE, "enabled")) return;
-
-    const actor = app.actor;
     if (actor.type !== "character") return;
 
-    const $html = $(html);
+    // html peut être un HTMLElement (ApplicationV2) ou jQuery (Application v1)
+    const $html = html instanceof HTMLElement ? $(html) : $(html);
+
     if ($html.find('[data-tab="ashara-relations"]').length) return;
 
-    const $nav  = $html.find("nav.tabs, .tabs[data-group]").first();
-    const $body = $html.find(".tab-body, section.tab-body").first();
+    const $nav  = $html.find("nav.tabs, nav.sheet-navigation, .tabs[data-group]").first();
+    const $body = $html.find(".tab-body, section.tab-body, .sheet-body, section.sheet-body").first();
     if (!$nav.length || !$body.length) return;
 
     const wasActive = _activeActs.has(actor.id);
@@ -529,8 +531,9 @@ async function scanVisibleTokens() {
 // ---- Export ------------------------------------------------
 
 export function RelationsHooks() {
-    // Injection de l'onglet
-    Hooks.on("renderApplication", injectTab);
+    // Injection de l'onglet (ApplicationV2 en v13 + fallback v1)
+    Hooks.on("renderApplicationV2", injectTab);
+    Hooks.on("renderApplication",   injectTab);
 
     // Détection automatique — chargement de scène
     Hooks.on("canvasReady", () => scanVisibleTokens());

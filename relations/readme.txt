@@ -1,7 +1,7 @@
 ================================================================================
                         ASHARA - RELATIONS — MODULE FOUNDRY VTT
                                Auteur : Soruta (Discord: s0ruta)
-                                       Version : 1.0.0
+                                       Version : 1.0.2
                               Compatibilité : Foundry VTT v13
 ================================================================================
 
@@ -183,6 +183,22 @@ NOTES TECHNIQUES
 ================================================================================
                         ASHARA - RELATIONS — MISES À JOUR
 ================================================================================
+
+v1.0.2 | 2026-07-10
+   relations.js  — Fix acteur : en dnd5e v3 / Foundry v13, l'acteur est dans
+                  app.document (DocumentSheetV2), pas app.actor. Résolution
+                  via app.actor ?? app.document ?? app.object avec vérification
+                  documentName === "Actor" pour éviter les faux positifs.
+   Version       — 1.0.1 → 1.0.2
+
+v1.0.1 | 2026-07-10
+   relations.js  — Fix hook : ajout de renderApplicationV2 (fiches dnd5e v3
+                  basées sur ApplicationV2 en Foundry v13 ne déclenchent pas
+                  renderApplication). Double hook renderApplicationV2 +
+                  renderApplication pour compatibilité maximale.
+                  Sélecteurs body élargis : ajout de .sheet-body et
+                  section.sheet-body pour dnd5e v3.
+   Version       — 1.0.0 → 1.0.1
 
 v1.0.0 | 2026-07-10
    Version initiale du module.

@@ -227,14 +227,16 @@ export function FolderMoveHooks() {
             icon: '<i class="fas fa-folder-open"></i>',
             callback: async (li) => {
                 try {
-                    // li peut être un HTMLElement ou un objet jQuery selon la version
-                    const el  = (li instanceof HTMLElement) ? li : li?.[0];
-                    const fId = el?.dataset?.folderId
-                             ?? el?.dataset?.entryId
-                             ?? $(li).attr("data-folder-id");
+                    // En v13 le callback reçoit le <header> interne du dossier,
+                    // pas le <li> — on remonte au parent portant data-folder-id.
+                    const el      = (li instanceof HTMLElement) ? li : li?.[0];
+                    const holder  = el?.closest?.("[data-folder-id]") ?? el;
+                    const fId     = holder?.dataset?.folderId
+                                 ?? holder?.dataset?.entryId
+                                 ?? $(li).closest("[data-folder-id]").attr("data-folder-id");
                     const folder = game.folders.get(fId);
                     if (!folder) {
-                        console.warn("[FM] dossier introuvable — fId:", fId, "li:", li);
+                        console.warn("[FM] dossier introuvable — fId:", fId, "holder:", holder);
                         return;
                     }
                     const destId = await openFolderPicker(folder.type, `Déplacer — ${folder.name}`, fId);

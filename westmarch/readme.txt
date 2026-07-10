@@ -657,6 +657,13 @@ v2.0.2 | 2026-07-10
    module.json   — Ajout de styles/relations.css dans les feuilles de style.
    Version       — 2.0.1 → 2.0.2
 
+v2.0.2 | 2026-07-10
+   foldermove.js — Fix dossier : en v13 le callback du menu contextuel reçoit
+                  le <header class="folder-header"> interne, pas le <li> parent
+                  portant data-folder-id. On remonte maintenant via
+                  el.closest("[data-folder-id]") pour récupérer l'ID correct.
+   Version       — 2.0.1 → 2.0.2
+
 v2.0.1 | 2026-07-10
    foldermove.js — Fix callback jQuery vs HTMLElement : le `li` passé par le
                   ContextMenu de Foundry v13 peut être un objet jQuery. On
