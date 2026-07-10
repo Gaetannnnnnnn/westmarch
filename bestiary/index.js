@@ -1,14 +1,4 @@
-// ============================================================
-// index.js — Point d'entrée du module ashara-bestiary
-//
-// Architecture multi-module :
-//   Le hook "setup" (après "init") permet de détecter la fiche
-//   actuellement enregistrée comme défaut (ex: AshCharacterSheet
-//   du module ashara-relations) et de l'étendre, garantissant
-//   la cohabitation des deux modules sans conflit.
-// ============================================================
-
-import { registerSettings }                    from './modules/settings.js';
+import { registerSettings }                             from './modules/settings.js';
 import { BestiaryHooks, buildTabHtml, wireTab, MODULE } from './modules/bestiary.js';
 
 Hooks.on("init", () => {
@@ -16,36 +6,37 @@ Hooks.on("init", () => {
     BestiaryHooks();
 });
 
-// "setup" garantit que tous les hooks "init" (y compris Relations)
-// ont déjà tourné → on peut lire la fiche par défaut et l'étendre.
 Hooks.on("setup", () => {
-    // Trouver la fiche par défaut actuelle des personnages
-    const charSheets = CONFIG.Actor.sheetClasses?.character ?? {};
-    let BaseSheet = dnd5e.applications.actor.CharacterActorSheet;
+    const charSheets  = CONFIG.Actor.sheetClasses?.character ?? {};
+    const dnd5eNative = dnd5e.applications.actor.CharacterActorSheet;
+
+    // Trouver la fiche enregistrée par un module (ex: Relations)
+    // = n'importe quelle fiche qui étend CharacterActorSheet sans être la native dnd5e
+    let BaseSheet = dnd5eNative;
     for (const info of Object.values(charSheets)) {
-        if (info.default) { BaseSheet = info.cls; break; }
+        if (info?.cls && info.cls !== dnd5eNative
+                      && info.cls.prototype instanceof dnd5eNative) {
+            BaseSheet = info.cls;
+            break;
+        }
     }
 
     class AshBestiarySheet extends BaseSheet {
 
-        // Ajoute la part "bestiary" à celles existantes (incl. Relations si actif)
         static PARTS = {
             ...super.PARTS,
             bestiary: {
-                container: { classes: ["tab-body"], id: "tabs" },
-                template:  `modules/${MODULE}/templates/character-bestiary.hbs`,
+                container:  { classes: ["tab-body"], id: "tabs" },
+                template:   `modules/${MODULE}/templates/character-bestiary.hbs`,
                 scrollable: [""]
             }
         };
 
-        // Ajoute l'onglet Bestiaire à la suite des onglets existants
         static TABS = [
             ...super.TABS,
             { tab: "bestiary", group: "primary", label: "Bestiaire", icon: "fas fa-dragon" }
         ];
 
-        // Même nom que la fiche Relations → remplace dans le registre Foundry
-        // tout en héritant de tous ses PARTS/TABS via la chaîne d'héritage.
         static get name() { return "CharacterActorSheet"; }
 
         async _prepareContext(options = {}) {
@@ -69,8 +60,8 @@ Hooks.on("setup", () => {
     }
 
     Actors.registerSheet("dnd5e", AshBestiarySheet, {
-        types: ["character"],
+        types:       ["character"],
         makeDefault: true,
-        label: "Ashara — Fiche personnage"
+        label:       "Ashara — Fiche personnage"
     });
 });
