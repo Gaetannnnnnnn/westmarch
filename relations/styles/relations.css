@@ -15,48 +15,63 @@
 }
 
 /* ---- Barre de recherche — identique au filtre dnd5e -------- */
+/* Préfixe .rel-tab sur tout pour battre la spécificité de dnd5e/Foundry */
 
-.rel-search-bar {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    padding: 4px 8px;
+.rel-tab .rel-search-bar {
+    display: flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    padding: 4px 8px !important;
     flex-shrink: 0;
-    border-bottom: 1px solid var(--dnd5e-color-gold-dark, var(--color-border-dark-1, #3d2b1a));
+    border-bottom: 1px solid var(--dnd5e-color-gold-dark, #3d2b1a) !important;
+    background: transparent !important;
+    box-shadow: none !important;
 }
 
-/* Le label wrapper est transparent — pas de fond, pas de bordure */
-.rel-search-wrap {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    background: none;
-    border: none;
-    padding: 2px 0;
+.rel-tab .rel-search-wrap {
+    flex: 1 !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    background: none !important;
+    border: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    padding: 2px 0 !important;
 }
 
-.rel-search-wrap > i {
+.rel-tab .rel-search-wrap > i {
     color: var(--color-text-dark-secondary, #888);
     font-size: 11px;
     flex-shrink: 0;
 }
 
-.rel-search-input {
-    flex: 1;
-    background: none;
-    border: none;
-    color: var(--color-text-dark-primary, #ccc);
-    font-size: 11px;
-    font-family: var(--dnd5e-font-roboto, var(--font-primary, inherit));
-    padding: 0;
-    min-width: 0;
+/* Reset complet de l'input — écrase dnd5e ET les styles natifs du navigateur */
+.rel-tab .rel-search-input,
+.rel-tab .rel-search-input:focus,
+.rel-tab .rel-search-input:hover {
+    -webkit-appearance: none !important;
+    appearance: none !important;
+    flex: 1 !important;
+    background: transparent !important;
+    border: none !important;
+    box-shadow: none !important;
+    outline: none !important;
+    border-radius: 0 !important;
+    color: var(--color-text-dark-primary, #ccc) !important;
+    font-size: 11px !important;
+    font-family: var(--dnd5e-font-roboto, var(--font-primary, inherit)) !important;
+    padding: 0 !important;
+    min-width: 0 !important;
 }
-.rel-search-input:focus { outline: none; }
-.rel-search-input::placeholder { color: var(--color-text-dark-inactive, #555); font-style: italic; }
-.rel-search-input::-webkit-search-cancel-button { display: none; }
+.rel-tab .rel-search-input::placeholder {
+    color: var(--color-text-dark-inactive, #555) !important;
+    font-style: italic;
+}
+.rel-tab .rel-search-input::-webkit-search-cancel-button,
+.rel-tab .rel-search-input::-webkit-search-decoration { display: none !important; }
 
-.rel-search-clear {
+.rel-tab .rel-search-clear {
     color: var(--color-text-dark-inactive, #555);
     font-size: 10px;
     cursor: pointer;
@@ -64,27 +79,31 @@
     padding: 2px 4px;
     transition: color 0.1s;
 }
-.rel-search-clear:hover { color: var(--color-text-dark-primary, #ccc); }
+.rel-tab .rel-search-clear:hover { color: var(--color-text-dark-primary, #ccc); }
 
-/* Bouton Ajouter — style texte dnd5e, pas de boîte bleue */
-.rel-add-btn {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    padding: 2px 6px;
-    background: none;
-    border: none;
-    border-radius: 3px;
-    color: var(--color-text-dark-secondary, #aaa);
-    font-size: 11px;
-    cursor: pointer;
+/* Bouton Ajouter — style texte plat, aucune boîte */
+.rel-tab .rel-add-btn,
+.rel-tab .rel-add-btn:hover,
+.rel-tab .rel-add-btn:focus {
+    display: flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    padding: 2px 6px !important;
+    background: none !important;
+    border: none !important;
+    box-shadow: none !important;
+    border-radius: 3px !important;
+    color: var(--color-text-dark-secondary, #aaa) !important;
+    font-size: 11px !important;
+    cursor: pointer !important;
     white-space: nowrap;
     flex-shrink: 0;
+    outline: none !important;
     transition: color 0.1s, background 0.1s;
 }
-.rel-add-btn:hover {
-    color: var(--color-text-dark-primary, #ddd);
-    background: rgba(255,255,255,0.07);
+.rel-tab .rel-add-btn:hover {
+    color: var(--color-text-dark-primary, #ddd) !important;
+    background: rgba(255,255,255,0.07) !important;
 }
 
 /* ---- Zone de liste scrollable ----------------------------- */
