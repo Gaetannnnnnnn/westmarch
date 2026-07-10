@@ -161,17 +161,50 @@ export function buildTabHtml(actor) {
     const isGM    = game.user.isGM;
     const canEdit = isGM || actor.isOwner;
     const rels    = relList(actor);
-    const rows    = rels.map(r => buildRowHtml(r, actor, canEdit)).join("");
 
     // Grouper PJ (dossier "PJ" et sous-dossiers) vs PNJ
     const pjRels  = rels.filter(r => { const a = game.actors.get(r.targetId); return a && isInPJFolder(a); });
     const pnjRels = rels.filter(r => !pjRels.some(p => p.id === r.id));
 
-    // En-tête de section (style dnd5e "Cantrips")
+    // ---- Styles inline (contournement cache CSS Foundry) ----
+    const S = {
+        // Conteneur titre
+        titleBar: `display:flex;align-items:center;justify-content:space-between;` +
+                  `padding:8px 12px 6px;flex-shrink:0;` +
+                  `border-bottom:1px solid rgba(255,255,255,0.07);`,
+        // Texte "♥ Relations"
+        title:    `display:flex;align-items:center;gap:6px;` +
+                  `font-size:12px;font-weight:700;text-transform:uppercase;` +
+                  `letter-spacing:0.06em;color:#ccc;`,
+        // Bouton "+ Ajouter"
+        addBtn:   `display:flex;align-items:center;gap:5px;` +
+                  `padding:3px 9px;` +
+                  `background:rgba(255,255,255,0.04);` +
+                  `border:1px solid rgba(255,255,255,0.1);border-radius:4px;` +
+                  `color:#aaa;font-size:11px;cursor:pointer;white-space:nowrap;` +
+                  `transition:background 0.12s,color 0.12s;`,
+        // Barre de recherche
+        searchBar:`display:flex;align-items:center;gap:6px;` +
+                  `padding:5px 10px;flex-shrink:0;` +
+                  `border-bottom:1px solid rgba(255,255,255,0.06);`,
+        wrap:     `flex:1;display:flex;align-items:center;gap:6px;` +
+                  `background:rgba(0,0,0,0.25);border:1px solid rgba(255,255,255,0.08);` +
+                  `border-radius:4px;padding:4px 8px;`,
+        srchIcon: `color:#555;font-size:11px;flex-shrink:0;`,
+        srchInput:`flex:1;background:transparent;border:none;box-shadow:none;outline:none;` +
+                  `color:#bbb;font-size:11px;padding:0;min-width:0;font-family:inherit;`,
+        clear:    `display:none;color:#444;font-size:10px;cursor:pointer;padding:2px 3px;`,
+        // En-tête de section
+        secHdr:   `display:flex;align-items:center;gap:6px;` +
+                  `padding:4px 12px;flex-shrink:0;` +
+                  `font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:0.09em;` +
+                  `color:#666;background:rgba(0,0,0,0.3);` +
+                  `border-top:1px solid #1e1e1e;border-bottom:1px solid #1e1e1e;`,
+        secCount: `color:#444;font-weight:400;font-size:10px;`,
+    };
+
     function sectionHdr(label, count) {
-        return `<div class="rel-section-hdr">
-            ${label} <span class="rel-section-count">(${count})</span>
-        </div>`;
+        return `<div style="${S.secHdr}">${label}<span style="${S.secCount}">${count}</span></div>`;
     }
 
     let listContent;
@@ -183,29 +216,30 @@ export function buildTabHtml(actor) {
             (pnjRels.length ? sectionHdr("PNJ",     pnjRels.length) + pnjRels.map(r => buildRowHtml(r, actor, canEdit)).join("") : "");
     }
 
-    // Styles inline — contournement cache CSS Foundry pour la barre de recherche
-    const SI = {
-        bar:   `display:flex;align-items:center;gap:4px;padding:4px 8px;flex-shrink:0;border-bottom:1px solid #3d2b1a;background:transparent;`,
-        wrap:  `flex:1;display:flex;align-items:center;gap:4px;background:transparent;border:none;box-shadow:none;`,
-        icon:  `color:#888;font-size:11px;flex-shrink:0;`,
-        input: `flex:1;background:transparent;border:none;box-shadow:none;outline:none;color:#ccc;font-size:11px;padding:0;min-width:0;font-family:inherit;`,
-        clear: `display:none;color:#666;font-size:10px;cursor:pointer;padding:2px 4px;`,
-        add:   `display:flex;align-items:center;gap:4px;padding:2px 8px;background:none;border:none;box-shadow:none;color:#aaa;font-size:11px;cursor:pointer;white-space:nowrap;flex-shrink:0;`,
-    };
-
     return `
     <div class="rel-tab" data-actor-id="${actor.id}">
-        <div class="rel-title-bar">
-            <span class="rel-title"><i class="fas fa-heart" style="color:#e91e8c;"></i> Relations</span>
-            ${canEdit ? `<a class="rel-add-btn" style="${SI.add}"><i class="fas fa-plus"></i> Ajouter</a>` : ""}
+
+        <div style="${S.titleBar}">
+            <span style="${S.title}">
+                <i class="fas fa-heart" style="color:#e91e8c;font-size:11px;"></i>
+                Relations
+            </span>
+            ${canEdit ? `<a class="rel-add-btn" style="${S.addBtn}">
+                <i class="fas fa-plus" style="font-size:10px;"></i> Ajouter
+            </a>` : ""}
         </div>
-        <div class="rel-search-bar" style="${SI.bar}">
-            <div class="rel-search-wrap" style="${SI.wrap}">
-                <i class="fas fa-search" style="${SI.icon}"></i>
-                <input class="rel-search-input" type="text" placeholder="Rechercher une relation…" style="${SI.input}">
-                <a class="rel-search-clear" style="${SI.clear}" title="Effacer"><i class="fas fa-times"></i></a>
+
+        <div style="${S.searchBar}">
+            <div class="rel-search-wrap" style="${S.wrap}">
+                <i class="fas fa-search" style="${S.srchIcon}"></i>
+                <input class="rel-search-input" type="text"
+                    placeholder="Rechercher une relation…" style="${S.srchInput}">
+                <a class="rel-search-clear" style="${S.clear}" title="Effacer">
+                    <i class="fas fa-times"></i>
+                </a>
             </div>
         </div>
+
         <div class="rel-list">
             ${listContent}
         </div>
