@@ -88,17 +88,20 @@ async function relDelete(actor, id) {
 
 // ---- Helpers acteurs ---------------------------------------
 
-function isInPJFolder(actor) {
-    const pjFolder = game.folders.find(f => f.type === "Actor" && f.name === "PJ");
-    if (!pjFolder) return false;
-    // Remonter l'arbre des dossiers (gère les sous-dossiers de PJ)
-    let folder = actor.folder;
-    while (folder) {
-        if (folder.id === pjFolder.id) return true;
-        folder = folder.folder; // dossier parent
+// Remonte l'arbre de dossiers pour savoir si actor est sous folderName
+function isInFolder(actor, folderName) {
+    const root = game.folders.find(f => f.type === "Actor" && f.name === folderName);
+    if (!root) return false;
+    let f = actor.folder;
+    while (f) {
+        if (f.id === root.id) return true;
+        f = f.folder;
     }
     return false;
 }
+
+function isInPJFolder(actor)        { return isInFolder(actor, "PJ"); }
+function isInCreaturesFolder(actor) { return isInFolder(actor, "Créatures"); }
 
 // Acteurs character disponibles pour une nouvelle relation
 // (type character uniquement, excluant soi-même et les déjà-liés)
@@ -147,11 +150,11 @@ export function buildRowHtml(r, actor, canEdit) {
     </div>`;
 }
 
-export function emptyStateHtml(canEdit) {
+export function emptyStateHtml(canAdd) {
     return `<div class="rel-empty">
         <i class="fas fa-heart-broken"></i>
         <span>Aucune relation enregistrée.</span>
-        ${canEdit ? `<a class="rel-add-btn" style="margin-top:4px;">
+        ${canAdd ? `<a class="rel-add-btn" style="margin-top:4px;">
             <i class="fas fa-plus"></i> Ajouter une relation
         </a>` : ""}
     </div>`;
@@ -162,9 +165,13 @@ export function buildTabHtml(actor) {
     const canEdit = isGM || actor.isOwner;
     const rels    = relList(actor);
 
-    // Grouper PJ (dossier "PJ" et sous-dossiers) vs PNJ
+    // Grouper : Joueurs (dossier PJ), PNJ (ni PJ ni Créatures)
     const pjRels  = rels.filter(r => { const a = game.actors.get(r.targetId); return a && isInPJFolder(a); });
-    const pnjRels = rels.filter(r => !pjRels.some(p => p.id === r.id));
+    const pnjRels = rels.filter(r => {
+        if (pjRels.some(p => p.id === r.id)) return false;
+        const a = game.actors.get(r.targetId);
+        return !(a && isInCreaturesFolder(a));
+    });
 
     // ---- Styles inline (contournement cache CSS Foundry) ----
     const S = {
@@ -209,7 +216,7 @@ export function buildTabHtml(actor) {
 
     let listContent;
     if (!rels.length) {
-        listContent = emptyStateHtml(canEdit);
+        listContent = emptyStateHtml(isGM);
     } else {
         listContent =
             (pjRels.length  ? sectionHdr("Joueurs", pjRels.length)  + pjRels.map( r => buildRowHtml(r, actor, canEdit)).join("") : "") +
@@ -224,7 +231,7 @@ export function buildTabHtml(actor) {
                 <i class="fas fa-heart" style="color:#e91e8c;font-size:11px;"></i>
                 Relations
             </span>
-            ${canEdit ? `<a class="rel-add-btn" style="${S.addBtn}">
+            ${isGM ? `<a class="rel-add-btn" style="${S.addBtn}">
                 <i class="fas fa-plus" style="font-size:10px;"></i> Ajouter
             </a>` : ""}
         </div>
@@ -250,8 +257,8 @@ export function buildTabHtml(actor) {
 
 function buildPickerHtml(pj, uid) {
     const actors = availableActors(pj);
-    const joueurs = actors.filter(a => isInPJFolder(a));
-    const pnjs    = actors.filter(a => !isInPJFolder(a));
+    const joueurs = actors.filter(a =>  isInPJFolder(a));
+    const pnjs    = actors.filter(a => !isInPJFolder(a) && !isInCreaturesFolder(a));
 
     function actorRow(a) {
         return `<div class="rel-picker-actor" data-actor-id="${a.id}" data-name="${a.name.toLowerCase()}">
@@ -522,7 +529,7 @@ export function wireTab(actor, $html) {
         await relDelete(actor, relId);
         // Afficher l'état vide si plus aucune ligne
         if (!$tab.find(".rel-row").length) {
-            $tab.find(".rel-list").html(emptyStateHtml(canEdit));
+            $tab.find(".rel-list").html(emptyStateHtml(game.user.isGM));
         }
     });
 

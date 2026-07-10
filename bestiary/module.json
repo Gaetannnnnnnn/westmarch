@@ -1,0 +1,29 @@
+{
+  "id": "ashara-bestiary",
+  "title": "Ashara - Bestiaire",
+  "version": "1.0.0",
+  "changelog": "2026-07-10",
+  "authors": [
+    {
+      "name": "Soruta",
+      "discord": "s0ruta"
+    }
+  ],
+  "compatibility": {
+    "minimum": "13",
+    "verified": "13"
+  },
+  "description": "Bestiaire personnel par personnage. Répertorie automatiquement les créatures du dossier 'Créatures' rencontrées sur les scènes.",
+  "esmodules": [
+    "./index.js"
+  ],
+  "styles": [
+    "./styles/bestiary.css"
+  ],
+  "templates": [
+    "./templates/character-bestiary.hbs"
+  ],
+  "url": "https://github.com/Gaetannnnnnnn/westmarch.git",
+  "manifest": "https://raw.githubusercontent.com/Gaetannnnnnnn/westmarch/main/bestiary/module.json",
+  "download": "https://github.com/Gaetannnnnnnn/westmarch/raw/main/bestiary.zip"
+}
