@@ -1,7 +1,7 @@
 ================================================================================
                         ASHARA - RELATIONS — MODULE FOUNDRY VTT
                                Auteur : Soruta (Discord: s0ruta)
-                                       Version : 1.0.9
+                                       Version : 1.2.1
                               Compatibilité : Foundry VTT v13
 ================================================================================
 
@@ -183,6 +183,44 @@ NOTES TECHNIQUES
 ================================================================================
                         ASHARA - RELATIONS — MISES À JOUR
 ================================================================================
+
+v1.2.1 | 2026-07-10
+   relations.js  — Fix ordre des icônes de niveau : Object.entries() place
+                  les clés entières positives ("0","1","2","3") avant les
+                  négatives en JS, inversant l'ordre. Fix : .sort() explicite
+                  par parseInt avant le .map(). Suppression du badge .rel-type
+                  sur les lignes de relation.
+   Version       — 1.2.0 → 1.2.1
+
+v1.2.0 | 2026-07-10
+   character-sheet.js — Nouveau fichier. Sous-classe AshCharacterSheet
+                       étend dnd5e.applications.actor.CharacterActorSheet.
+                       Enregistre l'onglet Relations via static PARTS /
+                       static TABS (intégration native ApplicationV2 dnd5e
+                       v3). _prepareContext injecte relationsHtml dans le
+                       contexte. _attachPartListeners branche wireTab.
+   templates/         — Nouveau dossier. character-relations.hbs = template
+                       Handlebars minimaliste ({{{relationsHtml}}}).
+   index.js           — Importe AshCharacterSheet + Actors.registerSheet
+                       pour en faire la fiche par défaut des personnages.
+   module.json        — Ajout "templates" + version 1.2.0.
+   relations.js       — Suppression de injectTab() et des hooks
+                       renderApplicationV2/renderApplication (remplacés par
+                       le mécanisme PARTS natif). Export de MODULE,
+                       buildTabHtml, buildRowHtml, emptyStateHtml, wireTab.
+   Version            — 1.1.0 → 1.2.0
+
+v1.1.0 | 2026-07-10
+   relations.js  — Refonte CRUD : relSave utilise actor.update({render:false})
+                  au lieu de setFlag pour supprimer tout re-render déclenché
+                  depuis l'onglet Relations. Le DOM est géré manuellement :
+                  add → buildRowHtml + append ; delete → $row.remove() +
+                  emptyStateHtml si liste vide ; level/note/lastpos → DOM
+                  optimiste uniquement. Plus aucun kick hors de l'onglet.
+                  Extraction de buildRowHtml() et emptyStateHtml() pour
+                  réutilisation entre buildTabHtml et wireTab.
+                  relAdd retourne désormais l'objet relation créé.
+   Version       — 1.0.9 → 1.1.0
 
 v1.0.9 | 2026-07-10
    relations.js  — Ajout du label du niveau actuel à gauche des icônes

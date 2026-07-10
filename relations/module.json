@@ -1,7 +1,7 @@
 {
   "id": "ashara-relations",
   "title": "Ashara - Relations",
-  "version": "1.0.9",
+  "version": "1.2.1",
   "changelog": "2026-07-10",
   "authors": [
     {
@@ -19,6 +19,9 @@
   ],
   "styles": [
     "./styles/relations.css"
+  ],
+  "templates": [
+    "./templates/character-relations.hbs"
   ],
   "url": "https://github.com/Gaetannnnnnnn/westmarch.git",
   "manifest": "https://raw.githubusercontent.com/Gaetannnnnnnn/westmarch/main/relations/module.json",

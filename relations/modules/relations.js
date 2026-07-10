@@ -9,7 +9,7 @@
 // © Soruta — module propriétaire Ashara, ne pas redistribuer.
 // ============================================================
 
-const MODULE = "ashara-relations";
+export const MODULE = "ashara-relations";
 
 // ---- État de session ---------------------------------------
 
@@ -38,7 +38,8 @@ function levelIcon(level) {
 function levelSelector(currentLevel, canEdit) {
     const cur = LEVEL_CFG[String(currentLevel ?? 0)] ?? LEVEL_CFG["0"];
     if (!canEdit) return `<div class="rel-level">${levelIcon(currentLevel)}</div>`;
-    const btns = Object.entries(LEVEL_CFG).map(([lvl, cfg]) => {
+    // Trier explicitement -3→+3 (Object.entries met les clés entières positives en premier en JS)
+    const btns = Object.entries(LEVEL_CFG).sort(([a],[b]) => parseInt(a) - parseInt(b)).map(([lvl, cfg]) => {
         const active  = parseInt(lvl) === (currentLevel ?? 0);
         const color   = active ? `style="color:${cfg.color};"` : "";
         const classes = `rel-level-btn${active ? " active" : ""}`;
@@ -58,15 +59,23 @@ function relList(actor) {
     return actor.getFlag(MODULE, "list") ?? [];
 }
 
+// {render: false} → jamais de re-render depuis l'onglet (DOM géré manuellement)
 async function relSave(actor, list) {
-    await actor.setFlag(MODULE, "list", list);
+    await actor.update({ [`flags.${MODULE}.list`]: list }, { render: false });
 }
 
+// Retourne le nouvel objet relation (ou null si doublon)
 async function relAdd(actor, data) {
     const list = relList(actor);
-    if (list.some(r => r.targetId === data.targetId)) return; // doublon
-    list.push({ id: foundry.utils.randomID(12), note: "", lastPosition: "", secret: false, ...data });
+    if (list.some(r => r.targetId === data.targetId)) return null;
+    const rel = {
+        id: foundry.utils.randomID(12),
+        note: "", lastPosition: game.scenes.current?.name ?? "",
+        secret: false, ...data
+    };
+    list.push(rel);
     await relSave(actor, list);
+    return rel;
 }
 
 async function relUpdate(actor, id, patch) {
@@ -95,58 +104,58 @@ function availableActors(actor) {
 
 // ---- HTML onglet -------------------------------------------
 
-function buildTabHtml(actor) {
+export function buildRowHtml(r, actor, canEdit) {
+    const target = game.actors.get(r.targetId);
+    const img    = target?.img  ?? r.targetImg  ?? "icons/svg/mystery-man.svg";
+    const name   = target?.name ?? r.targetName ?? "Inconnu";
+    const open   = _expanded.has(r.id);
+    return `
+    <div class="rel-row" data-rel-id="${r.id}">
+        <div class="rel-header">
+            <img class="rel-avatar" src="${img}" alt="${name}">
+            <span class="rel-name">${name}</span>
+            ${levelSelector(r.level ?? 0, canEdit)}
+            ${r.secret ? '<i class="fas fa-eye-slash rel-secret" title="GM uniquement"></i>' : ""}
+            <div class="rel-btns">
+                <a class="rel-toggle" title="Notes"><i class="fas fa-chevron-${open ? "up" : "down"}"></i></a>
+                ${canEdit ? `<a class="rel-delete" title="Supprimer"><i class="fas fa-trash"></i></a>` : ""}
+            </div>
+        </div>
+        <div class="rel-notes"${open ? "" : ' style="display:none;"'}>
+            ${canEdit ? `
+            <div class="rel-lastpos-row">
+                <label class="rel-field-label"><i class="fas fa-map-marker-alt"></i> Dernière position</label>
+                <input class="rel-lastpos-input" type="text" data-rel-id="${r.id}"
+                    value="${r.lastPosition ?? ""}" placeholder="Scène, lieu…">
+            </div>
+            <textarea class="rel-note-input" data-rel-id="${r.id}"
+                placeholder="Notes sur cette relation…">${r.note ?? ""}</textarea>
+            ` : `
+            <div class="rel-lastpos-row rel-readonly">
+                <i class="fas fa-map-marker-alt"></i>
+                <span>${r.lastPosition || "<em>Position inconnue</em>"}</span>
+            </div>
+            <p class="rel-note-ro">${r.note || "<em>Aucune note.</em>"}</p>
+            `}
+        </div>
+    </div>`;
+}
+
+export function emptyStateHtml(canEdit) {
+    return `<div class="rel-empty">
+        <i class="fas fa-heart-broken"></i>
+        <span>Aucune relation enregistrée.</span>
+        ${canEdit ? `<a class="rel-add-btn" style="margin-top:4px;">
+            <i class="fas fa-plus"></i> Ajouter une relation
+        </a>` : ""}
+    </div>`;
+}
+
+export function buildTabHtml(actor) {
     const isGM    = game.user.isGM;
     const canEdit = isGM || actor.isOwner;
     const rels    = relList(actor).filter(r => !r.secret || isGM);
-
-    const rows = rels.map(r => {
-        const target = game.actors.get(r.targetId);
-        const img    = target?.img  ?? r.targetImg  ?? "icons/svg/mystery-man.svg";
-        const name   = target?.name ?? r.targetName ?? "Inconnu";
-        const open   = _expanded.has(r.id);
-
-        return `
-        <div class="rel-row" data-rel-id="${r.id}">
-            <div class="rel-header">
-                <img class="rel-avatar" src="${img}" alt="${name}">
-                <span class="rel-name">${name}</span>
-                <span class="rel-type">${r.type ?? ""}</span>
-                ${levelSelector(r.level ?? 0, canEdit)}
-                ${r.secret ? '<i class="fas fa-eye-slash rel-secret" title="GM uniquement"></i>' : ""}
-                <div class="rel-btns">
-                    <a class="rel-toggle" title="Notes"><i class="fas fa-chevron-${open ? "up" : "down"}"></i></a>
-                    ${canEdit ? `<a class="rel-delete" title="Supprimer"><i class="fas fa-trash"></i></a>` : ""}
-                </div>
-            </div>
-            <div class="rel-notes"${open ? "" : ' style="display:none;"'}>
-                ${canEdit ? `
-                <div class="rel-lastpos-row">
-                    <label class="rel-field-label"><i class="fas fa-map-marker-alt"></i> Dernière position</label>
-                    <input class="rel-lastpos-input" type="text" data-rel-id="${r.id}"
-                        value="${r.lastPosition ?? ""}" placeholder="Scène, lieu…">
-                </div>
-                <textarea class="rel-note-input" data-rel-id="${r.id}"
-                    placeholder="Notes sur cette relation…">${r.note ?? ""}</textarea>
-                ` : `
-                <div class="rel-lastpos-row rel-readonly">
-                    <i class="fas fa-map-marker-alt"></i>
-                    <span>${r.lastPosition || "<em>Position inconnue</em>"}</span>
-                </div>
-                <p class="rel-note-ro">${r.note || "<em>Aucune note.</em>"}</p>
-                `}
-            </div>
-        </div>`;
-    }).join("");
-
-    const emptyState = `
-        <div class="rel-empty">
-            <i class="fas fa-heart-broken"></i>
-            <span>Aucune relation enregistrée.</span>
-            ${canEdit ? `<a class="rel-add-btn" style="margin-top:4px;">
-                <i class="fas fa-plus"></i> Ajouter une relation
-            </a>` : ""}
-        </div>`;
+    const rows    = rels.map(r => buildRowHtml(r, actor, canEdit)).join("");
 
     return `
     <div class="rel-tab" data-actor-id="${actor.id}">
@@ -159,7 +168,7 @@ function buildTabHtml(actor) {
             <h3><i class="fas fa-heart" style="color:#e91e8c;margin-right:6px;"></i>Relations</h3>
         </div>`}
         <div class="rel-list">
-            ${rows || emptyState}
+            ${rows || emptyStateHtml(canEdit)}
         </div>
     </div>`;
 }
@@ -387,15 +396,20 @@ async function openEditDialog(actor, rel) {
 
 // ---- Événements de l'onglet --------------------------------
 
-function wireTab(actor, $html) {
+export function wireTab(actor, $html) {
     const $tab = $html.find(".rel-tab");
     if (!$tab.length) return;
 
-    // Ajouter
+    const canEdit = game.user.isGM || actor.isOwner;
+
+    // Ajouter — DOM uniquement, pas de re-render
     $tab.on("click", ".rel-add-btn", async () => {
         const data = await openAddDialog(actor);
         if (!data) return;
-        await relAdd(actor, data);
+        const rel = await relAdd(actor, data);
+        if (!rel) return;
+        $tab.find(".rel-empty").remove();
+        $tab.find(".rel-list").append(buildRowHtml(rel, actor, canEdit));
     });
 
     // Déplier / replier notes
@@ -429,9 +443,10 @@ function wireTab(actor, $html) {
         await relUpdate(actor, relId, { level });
     });
 
-    // Supprimer
+    // Supprimer — DOM uniquement, pas de re-render
     $tab.on("click", ".rel-delete", async function () {
-        const relId = String($(this).closest(".rel-row").data("rel-id"));
+        const $row  = $(this).closest(".rel-row");
+        const relId = String($row.data("rel-id"));
         const rel   = relList(actor).find(r => r.id === relId);
         if (!rel) return;
         const ok = await foundry.applications.api.DialogV2.confirm({
@@ -441,7 +456,12 @@ function wireTab(actor, $html) {
         });
         if (!ok) return;
         _expanded.delete(relId);
+        $row.remove();
         await relDelete(actor, relId);
+        // Afficher l'état vide si plus aucune ligne
+        if (!$tab.find(".rel-row").length) {
+            $tab.find(".rel-list").html(emptyStateHtml(canEdit));
+        }
     });
 
     // Auto-save dernière position
@@ -463,77 +483,6 @@ function wireTab(actor, $html) {
         const relId = String($(this).data("rel-id"));
         await relUpdate(actor, relId, { note: this.value });
     });
-}
-
-// ---- Injection de l'onglet ---------------------------------
-
-function injectTab(app, html) {
-    // En dnd5e v3 / Foundry v13 : l'acteur est dans app.document ou app.object
-    const actor = app.actor ?? app.document ?? app.object;
-    if (!actor || actor.documentName !== "Actor") return;
-    if (!game.settings.get(MODULE, "enabled")) return;
-    if (actor.type !== "character") return;
-
-    const $html = $(html);
-    if ($html.find('[data-tab="ashara-relations"]').length) return;
-
-    const $nav  = $html.find("nav.tabs, nav.sheet-navigation, .tabs[data-group]").first();
-    const $body = $html.find(".tab-body, section.tab-body, .sheet-body, section.sheet-body").first();
-    if (!$nav.length || !$body.length) return;
-
-    const wasActive = _activeActs.has(actor.id);
-
-    // --- Helper : activer notre panneau (réutilisé au clic ET au re-render) ---
-    const activateOurs = () => {
-        $body.find('.tab[data-group="primary"]:not([data-tab="ashara-relations"])')
-             .css("display", "none");
-        $nav.find(".item").removeClass("active");
-        $panel.css("display", "flex");
-        $nav.find('.item[data-tab="ashara-relations"]').addClass("active");
-    };
-
-    // --- Bouton nav ---
-    $nav.append(`
-        <a class="item control${wasActive ? " active" : ""}" role="tab"
-           data-group="primary" data-tab="ashara-relations"
-           data-tooltip="Relations" aria-label="Relations">
-            <i class="fas fa-heart"></i>
-        </a>`);
-
-    // --- Panneau de contenu ---
-    const $panel = $(`<div class="tab" data-group="primary" data-tab="ashara-relations"
-        style="display:none;flex-direction:column;height:100%;overflow:hidden;box-sizing:border-box;">
-        ${buildTabHtml(actor)}
-    </div>`);
-
-    // Insérer après le dernier tab existant (même container)
-    const $last = $body.find('.tab[data-group="primary"]').last();
-    if ($last.length) $last.after($panel);
-    else              $body.append($panel);
-
-    // --- Si Relations était actif, restaurer après l'init des tabs dnd5e ---
-    if (wasActive) {
-        setTimeout(activateOurs, 0);
-    }
-
-    // --- Clic sur notre tab ---
-    $html.find('.item[data-tab="ashara-relations"]').on("click", function (ev) {
-        ev.preventDefault();
-        ev.stopPropagation();
-        _activeActs.add(actor.id);
-        activateOurs();
-    });
-
-    // --- Clic sur un autre tab — cacher le nôtre et libérer les autres ---
-    $nav.find(".item:not([data-tab='ashara-relations'])").on("click", function () {
-        _activeActs.delete(actor.id);
-        $panel.css("display", "none");
-        $body.find('.tab[data-group="primary"]:not([data-tab="ashara-relations"])')
-             .css("display", "");
-        // dnd5e gère le reste
-    });
-
-    wireTab(actor, $html);
 }
 
 // ---- Détection automatique (GM only) -----------------------
@@ -585,10 +534,6 @@ async function scanVisibleTokens() {
 // ---- Export ------------------------------------------------
 
 export function RelationsHooks() {
-    // Injection de l'onglet (ApplicationV2 en v13 + fallback v1)
-    Hooks.on("renderApplicationV2", injectTab);
-    Hooks.on("renderApplication",   injectTab);
-
     // Détection automatique — chargement de scène
     Hooks.on("canvasReady", () => scanVisibleTokens());
 
