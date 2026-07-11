@@ -1,7 +1,7 @@
 ================================================================================
                         ASHARA - RELATIONS — MODULE FOUNDRY VTT
                                Auteur : Soruta (Discord: s0ruta)
-                                       Version : 1.3.8
+                                       Version : 1.4.2
                               Compatibilité : Foundry VTT v13
 ================================================================================
 
@@ -202,6 +202,35 @@ NOTES TECHNIQUES
 ================================================================================
                         ASHARA - RELATIONS — MISES À JOUR
 ================================================================================
+
+v1.4.2 | 2026-07-11
+   relations.js  — Fix détection tokens cachés : t.hidden est undefined sur les
+                  placeables canvas en Foundry v13. Remplacement par
+                  t.document?.hidden dans scanVisibleTokens (visibleChars + visibleNpcs).
+                  Les tokens en "Toggle Visibility State" sont désormais correctement
+                  exclus de la détection automatique.
+   module.json   — Version 1.4.1 → 1.4.2
+
+v1.4.1 | 2026-07-11
+   relations.js  — Détection automatique : les tokens NPC visibles sur la scène,
+                  hors dossiers "PJ" et "Creatures", sont désormais ajoutés
+                  automatiquement aux relations de chaque PJ présent (section PNJ).
+                  Même déclencheur que les PJ : canvasReady, createToken, updateToken.
+   module.json   — Version 1.4.0 → 1.4.1
+
+v1.4.0 | 2026-07-11
+   settings.js   — Ajout bandeau d'information en haut de la page de paramètres
+                  (version, description, auteur, mention propriétaire Ashara).
+                  Même style que WestMarch Système.
+   module.json   — Version 1.3.9 → 1.4.0
+
+v1.3.9 | 2026-07-11
+   relations.css — Barre de recherche : suppression des overrides !important
+                  (style plat dnd5e) au profit des styles inline déjà présents
+                  dans buildTabHtml, identiques à ceux du bestiaire (fond arrondi
+                  sombre, bordure subtile). Seuls le reset navigateur et le hover
+                  du bouton clear sont conservés en CSS.
+   module.json   — Version 1.3.8 → 1.3.9
 
 v1.3.8 | 2026-07-11
    relations.js  — Fix nom du dossier : "Créatures" → "Creatures" (sans accent)

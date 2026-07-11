@@ -82,6 +82,14 @@ function isInFolder(actor, folderName) {
     return false;
 }
 
+// Créatures disponibles pour ajout manuel (dossier Creatures, pas déjà dans le bestiaire)
+function availableCreatures(actor) {
+    const existing = new Set(beastList(actor).map(e => e.targetId));
+    return game.actors
+        .filter(a => isInFolder(a, "Creatures") && !existing.has(a.id))
+        .sort((a, b) => a.name.localeCompare(b.name));
+}
+
 // ---- HTML onglet -------------------------------------------
 
 function emptyStateHtml() {
@@ -112,7 +120,11 @@ function buildRowHtml(entry, actor, canEdit) {
             <div class="bst-scene-row">
                 <i class="fas fa-map-marker-alt"></i>
                 <span class="bst-field-label">Première rencontre :</span>
-                <span class="bst-scene-value">${entry.firstScene || "<em>Inconnue</em>"}</span>
+                ${canEdit
+                    ? `<input class="bst-scene-input" type="text" data-bst-id="${entry.id}"
+                           value="${entry.firstScene ?? ""}" placeholder="Scène, lieu…">`
+                    : `<span class="bst-scene-value">${entry.firstScene || "<em>Inconnue</em>"}</span>`
+                }
             </div>
             ${canEdit ? `
             <textarea class="bst-note-input" data-bst-id="${entry.id}"
@@ -136,8 +148,11 @@ export function buildTabHtml(actor) {
 
     // Styles inline — contournement cache CSS Foundry
     const S = {
-        titleBar:  `display:flex;align-items:center;padding:8px 12px 6px;flex-shrink:0;border-bottom:1px solid rgba(255,255,255,0.07);`,
+        titleBar:  `display:flex;align-items:center;justify-content:space-between;padding:8px 12px 6px;flex-shrink:0;border-bottom:1px solid rgba(255,255,255,0.07);`,
         title:     `display:flex;align-items:center;gap:6px;font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;color:#ccc;`,
+        addBtn:    `display:flex;align-items:center;gap:5px;padding:3px 9px;` +
+                   `background:rgba(255,255,255,0.04);border:1px solid rgba(255,255,255,0.1);border-radius:4px;` +
+                   `color:#aaa;font-size:11px;cursor:pointer;white-space:nowrap;transition:background 0.12s,color 0.12s;`,
         searchBar: `display:flex;align-items:center;gap:6px;padding:5px 10px;flex-shrink:0;border-bottom:1px solid rgba(255,255,255,0.06);`,
         wrap:      `flex:1;display:flex;align-items:center;gap:6px;background:rgba(0,0,0,0.25);border:1px solid rgba(255,255,255,0.08);border-radius:4px;padding:4px 8px;`,
         srchIcon:  `color:#555;font-size:11px;flex-shrink:0;`,
@@ -154,6 +169,9 @@ export function buildTabHtml(actor) {
                 <i class="fas fa-dragon" style="color:#e07b39;font-size:11px;"></i>
                 Bestiaire
             </span>
+            ${isGM ? `<a class="bst-add-btn" style="${S.addBtn}">
+                <i class="fas fa-plus" style="font-size:10px;"></i> Ajouter
+            </a>` : ""}
         </div>
         <div style="${S.searchBar}">
             <div class="bst-search-wrap" style="${S.wrap}">
@@ -171,11 +189,102 @@ export function buildTabHtml(actor) {
     </div>`;
 }
 
+// ---- Dialog ajout manuel (GM only) -------------------------
+
+function buildCreaturePickerHtml(creatures, uid) {
+    const rows = creatures.map(a => `
+        <div class="bst-picker-actor" data-actor-id="${a.id}" data-name="${a.name.toLowerCase()}">
+            <img src="${a.img ?? "icons/svg/mystery-man.svg"}" alt="${a.name}">
+            <span>${a.name}</span>
+        </div>`).join("");
+
+    return `
+    <div id="${uid}" style="display:flex;flex-direction:column;gap:10px;padding:4px 0;">
+        <input class="bst-picker-search" type="text" placeholder="🔍 Rechercher une créature…"
+            style="width:100%;box-sizing:border-box;padding:5px 8px;
+                   border:1px solid #555;border-radius:4px;background:#111;color:#ddd;font-size:12px;">
+        <div class="bst-picker-list" style="max-height:280px;overflow-y:auto;">
+            ${rows || `<p style="color:#666;font-style:italic;font-size:12px;text-align:center;padding:12px 0;">
+                Aucune créature disponible.</p>`}
+        </div>
+    </div>`;
+}
+
+async function openAddDialog(actor) {
+    const uid       = `bst-add-${Date.now()}`;
+    const creatures = availableCreatures(actor);
+    let selectedId  = null;
+    let result      = null;
+
+    await foundry.applications.api.DialogV2.wait({
+        window:      { title: "Ajouter au bestiaire" },
+        position:    { width: 360 },
+        rejectClose: false,
+        content:     buildCreaturePickerHtml(creatures, uid),
+        render: () => {
+            const d = document.getElementById(uid);
+            if (!d) return;
+
+            // Sélection d'une créature
+            d.querySelectorAll(".bst-picker-actor").forEach(el => {
+                el.addEventListener("click", () => {
+                    d.querySelectorAll(".bst-picker-actor").forEach(e => e.classList.remove("selected"));
+                    el.classList.add("selected");
+                    selectedId = el.dataset.actorId;
+                });
+            });
+
+            // Recherche en temps réel
+            d.querySelector(".bst-picker-search")?.addEventListener("input", function () {
+                const q = this.value.trim().toLowerCase();
+                d.querySelectorAll(".bst-picker-actor").forEach(el => {
+                    el.style.display = (!q || el.dataset.name.includes(q)) ? "" : "none";
+                });
+            });
+
+            setTimeout(() => d.querySelector(".bst-picker-search")?.focus(), 60);
+        },
+        buttons: [
+            {
+                action: "confirm", default: true,
+                label: "Ajouter", icon: '<i class="fas fa-check"></i>',
+                callback: () => {
+                    if (!selectedId) return;
+                    const target = game.actors.get(selectedId);
+                    result = {
+                        targetId:   selectedId,
+                        targetName: target?.name ?? "Inconnue",
+                        targetImg:  target?.img  ?? "",
+                        hostility:  0,
+                        note:       "",
+                        firstScene: game.scenes.current?.name ?? "",
+                    };
+                }
+            },
+            { action: "cancel", label: "Annuler", icon: '<i class="fas fa-times"></i>', callback: () => {} }
+        ]
+    });
+
+    return result;
+}
+
 // ---- Événements de l'onglet --------------------------------
 
 export function wireTab(actor, $html) {
     const $tab = $html.find(".bst-tab");
     if (!$tab.length) return;
+
+    // Ajouter manuellement (GM uniquement)
+    $tab.on("click", ".bst-add-btn", async () => {
+        const data = await openAddDialog(actor);
+        if (!data) return;
+        const list = beastList(actor);
+        if (list.some(e => e.targetId === data.targetId)) return; // doublon
+        const entry = { id: foundry.utils.randomID(12), ...data };
+        await beastSave(actor, [...list, entry]);
+        $tab.find(".bst-empty").remove();
+        $tab.find(".bst-list").append(buildRowHtml(entry, actor, true));
+    });
 
     // Déplier / replier notes
     $tab.on("click", ".bst-toggle", function () {
@@ -225,6 +334,11 @@ export function wireTab(actor, $html) {
         if (!$tab.find(".bst-row").length) {
             $tab.find(".bst-list").html(emptyStateHtml());
         }
+    });
+
+    // Auto-save première rencontre
+    $tab.on("blur", ".bst-scene-input", async function () {
+        await beastUpdate(actor, String($(this).data("bst-id")), { firstScene: this.value.trim() });
     });
 
     // Auto-save note (debounce + blur immédiat)
@@ -280,13 +394,13 @@ async function scanVisibleTokens() {
 
         // PJ visibles (dans le dossier "PJ" et sous-dossiers)
         const pjActors = tokens
-            .filter(t => !t.hidden && t.actor?.type === "character" && isInFolder(t.actor, "PJ"))
+            .filter(t => !t.document?.hidden && t.actor?.type === "character" && isInFolder(t.actor, "PJ"))
             .map(t => t.actor)
             .filter((a, i, arr) => arr.findIndex(b => b.id === a.id) === i);
 
         // Creatures visibles (dans le dossier "Creatures" et sous-dossiers)
         const creatures = tokens
-            .filter(t => !t.hidden && t.actor && isInFolder(t.actor, "Creatures"))
+            .filter(t => !t.document?.hidden && t.actor && isInFolder(t.actor, "Creatures"))
             .map(t => t.actor)
             .filter((a, i, arr) => arr.findIndex(b => b.id === a.id) === i);
 

@@ -1,7 +1,7 @@
 ================================================================================
                        ASHARA - BESTIAIRE — MODULE FOUNDRY VTT
                                Auteur : Soruta (Discord: s0ruta)
-                                       Version : 1.0.4
+                                       Version : 1.0.8
                               Compatibilité : Foundry VTT v13
 ================================================================================
 
@@ -179,6 +179,36 @@ NOTES TECHNIQUES
 ================================================================================
                        ASHARA - BESTIAIRE — MISES À JOUR
 ================================================================================
+
+v1.0.8 | 2026-07-11
+   bestiary.js   — Fix détection tokens cachés : t.hidden est undefined sur les
+                  placeables canvas en Foundry v13. Remplacement par
+                  t.document?.hidden dans scanVisibleTokens (pjActors + creatures).
+                  Les tokens en "Toggle Visibility State" sont désormais correctement
+                  exclus de la détection automatique.
+   module.json   — Version 1.0.7 → 1.0.8
+
+v1.0.7 | 2026-07-11
+   bestiary.js   — Champ "Première rencontre" rendu éditable (input texte) pour
+                  les utilisateurs pouvant modifier l'entrée (GM + propriétaire).
+                  Auto-save au blur, identique à "Dernière position" dans Relations.
+   bestiary.css  — Ajout style .bst-scene-input (soulignement discret, focus).
+   module.json   — Version 1.0.6 → 1.0.7
+
+v1.0.6 | 2026-07-11
+   settings.js   — Ajout bandeau d'information en haut de la page de paramètres
+                  (version, description, auteur, mention propriétaire Ashara).
+                  Même style que WestMarch Système.
+   module.json   — Version 1.0.5 → 1.0.6
+
+v1.0.5 | 2026-07-11
+   bestiary.js   — Ajout bouton "Ajouter" (GM uniquement) dans la barre de titre
+                  de l'onglet. Ouvre un dialog picker listant les créatures du
+                  dossier "Creatures" pas encore dans le bestiaire, avec barre
+                  de recherche en temps réel. La suppression reste accessible
+                  au GM et aux propriétaires (canEdit, inchangé).
+   bestiary.css  — Styles .bst-picker-actor (hover, selected) pour le picker.
+   module.json   — Version 1.0.4 → 1.0.5
 
 v1.0.4 | 2026-07-11
    bestiary.js   — Fix nom du dossier : "Créatures" → "Creatures" (sans accent)

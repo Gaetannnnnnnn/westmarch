@@ -55,72 +55,20 @@
     font-weight: 400;
 }
 
-/* ---- Barre de recherche — identique au filtre dnd5e -------- */
-/* Préfixe .rel-tab sur tout pour battre la spécificité de dnd5e/Foundry */
+/* ---- Barre de recherche ------------------------------------ */
+/* Le visuel est géré en inline dans buildTabHtml (même style que bestiary).
+   On garde uniquement le reset navigateur et le hover du bouton clear. */
 
-.rel-tab .rel-search-bar {
-    display: flex !important;
-    align-items: center !important;
-    gap: 4px !important;
-    padding: 4px 8px !important;
-    flex-shrink: 0;
-    border-bottom: 1px solid var(--dnd5e-color-gold-dark, #3d2b1a) !important;
-    background: transparent !important;
-    box-shadow: none !important;
-}
-
-.rel-tab .rel-search-wrap {
-    flex: 1 !important;
-    display: flex !important;
-    align-items: center !important;
-    gap: 4px !important;
-    background: none !important;
-    border: none !important;
-    box-shadow: none !important;
-    border-radius: 0 !important;
-    padding: 2px 0 !important;
-}
-
-.rel-tab .rel-search-wrap > i {
-    color: var(--color-text-dark-secondary, #888);
-    font-size: 11px;
-    flex-shrink: 0;
-}
-
-/* Reset complet de l'input — écrase dnd5e ET les styles natifs du navigateur */
 .rel-tab .rel-search-input,
 .rel-tab .rel-search-input:focus,
 .rel-tab .rel-search-input:hover {
     -webkit-appearance: none !important;
     appearance: none !important;
-    flex: 1 !important;
-    background: transparent !important;
-    border: none !important;
-    box-shadow: none !important;
-    outline: none !important;
-    border-radius: 0 !important;
-    color: var(--color-text-dark-primary, #ccc) !important;
-    font-size: 11px !important;
-    font-family: var(--dnd5e-font-roboto, var(--font-primary, inherit)) !important;
-    padding: 0 !important;
-    min-width: 0 !important;
-}
-.rel-tab .rel-search-input::placeholder {
-    color: var(--color-text-dark-inactive, #555) !important;
-    font-style: italic;
 }
 .rel-tab .rel-search-input::-webkit-search-cancel-button,
 .rel-tab .rel-search-input::-webkit-search-decoration { display: none !important; }
 
-.rel-tab .rel-search-clear {
-    color: var(--color-text-dark-inactive, #555);
-    font-size: 10px;
-    cursor: pointer;
-    flex-shrink: 0;
-    padding: 2px 4px;
-    transition: color 0.1s;
-}
-.rel-tab .rel-search-clear:hover { color: var(--color-text-dark-primary, #ccc); }
+.rel-tab .rel-search-clear:hover { color: #ccc; }
 
 /* Bouton Ajouter — style texte plat, aucune boîte */
 .rel-tab .rel-add-btn,

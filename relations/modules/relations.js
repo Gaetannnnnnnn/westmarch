@@ -594,9 +594,16 @@ async function scanVisibleTokens() {
     try {
         const tokens = canvas.tokens?.placeables ?? [];
 
-        // Tous les personnages visibles et non-cachés sur la scène
+        // PJ visibles sur la scène
         const visibleChars = tokens
-            .filter(t => !t.hidden && t.actor?.type === "character" && t.actor.id)
+            .filter(t => !t.document?.hidden && t.actor?.type === "character" && t.actor.id)
+            .map(t => t.actor)
+            .filter((a, i, arr) => arr.findIndex(b => b.id === a.id) === i); // dédupe
+
+        // NPC visibles hors dossiers "PJ" et "Creatures"
+        const visibleNpcs = tokens
+            .filter(t => !t.document?.hidden && t.actor?.type === "npc" && t.actor.id
+                      && !isInPJFolder(t.actor) && !isInCreaturesFolder(t.actor))
             .map(t => t.actor)
             .filter((a, i, arr) => arr.findIndex(b => b.id === a.id) === i); // dédupe
 
@@ -604,9 +611,10 @@ async function scanVisibleTokens() {
 
         for (const actor of visibleChars) {
             const existing  = new Set(relList(actor).map(r => r.targetId));
-            const toAdd     = visibleChars.filter(other =>
-                other.id !== actor.id && !existing.has(other.id)
-            );
+            const toAdd     = [
+                ...visibleChars.filter(other => other.id !== actor.id && !existing.has(other.id)),
+                ...visibleNpcs.filter(npc => !existing.has(npc.id)),
+            ];
             if (!toAdd.length) continue;
 
             const newRels = toAdd.map(other => ({
