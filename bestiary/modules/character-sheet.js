@@ -44,6 +44,7 @@ export function createBestiarySheet(BaseSheet) {
         async _onRender(context, options) {
             await super._onRender(context, options);
             if (this.tabGroups?.primary === "bestiary") {
+                delete this.tabGroups.primary;
                 this.changeTab("bestiary", "primary", { updatePosition: false });
             }
         }

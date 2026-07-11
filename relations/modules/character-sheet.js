@@ -44,9 +44,12 @@ export class AshCharacterSheet extends dnd5e.applications.actor.CharacterActorSh
     // Re-applique le changeTab après que TOUTES les parts sont dans le DOM.
     // Sans ça, dnd5e active l'onglet mémorisé avant que notre part "relations"
     // soit insérée, laissant la section sans la classe "active" à l'ouverture.
+    // On efface tabGroups.primary avant l'appel pour contourner l'early-return
+    // de changeTab (qui ne fait rien si l'onglet est déjà enregistré comme actif).
     async _onRender(context, options) {
         await super._onRender(context, options);
         if (this.tabGroups?.primary === "relations") {
+            delete this.tabGroups.primary;
             this.changeTab("relations", "primary", { updatePosition: false });
         }
     }

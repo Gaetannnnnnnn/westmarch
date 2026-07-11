@@ -101,14 +101,16 @@ function isInFolder(actor, folderName) {
 }
 
 function isInPJFolder(actor)        { return isInFolder(actor, "PJ"); }
-function isInCreaturesFolder(actor) { return isInFolder(actor, "Créatures"); }
+function isInCreaturesFolder(actor) { return isInFolder(actor, "Creatures"); }
 
-// Acteurs character disponibles pour une nouvelle relation
-// (type character uniquement, excluant soi-même et les déjà-liés)
+// Acteurs disponibles pour une nouvelle relation
+// (character + npc, excluant soi-même et les déjà-liés)
 function availableActors(actor) {
     const existing = new Set(relList(actor).map(r => r.targetId));
     return game.actors
-        .filter(a => a.type === "character" && a.id !== actor.id && !existing.has(a.id))
+        .filter(a => (a.type === "character" || a.type === "npc")
+                  && a.id !== actor.id
+                  && !existing.has(a.id))
         .sort((a, b) => a.name.localeCompare(b.name));
 }
 
@@ -165,7 +167,7 @@ export function buildTabHtml(actor) {
     const canEdit = isGM || actor.isOwner;
     const rels    = relList(actor);
 
-    // Grouper : Joueurs (dossier PJ), PNJ (ni PJ ni Créatures)
+    // Grouper : Joueurs (dossier PJ), PNJ (ni PJ ni Creatures)
     const pjRels  = rels.filter(r => { const a = game.actors.get(r.targetId); return a && isInPJFolder(a); });
     const pnjRels = rels.filter(r => {
         if (pjRels.some(p => p.id === r.id)) return false;
@@ -257,7 +259,7 @@ export function buildTabHtml(actor) {
 
 function buildPickerHtml(pj, uid) {
     const actors = availableActors(pj);
-    const joueurs = actors.filter(a =>  isInPJFolder(a));
+    const joueurs = actors.filter(a => a.type === "character" && isInPJFolder(a));
     const pnjs    = actors.filter(a => !isInPJFolder(a) && !isInCreaturesFolder(a));
 
     function actorRow(a) {

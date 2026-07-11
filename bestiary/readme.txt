@@ -1,7 +1,7 @@
 ================================================================================
                        ASHARA - BESTIAIRE — MODULE FOUNDRY VTT
                                Auteur : Soruta (Discord: s0ruta)
-                                       Version : 1.0.2
+                                       Version : 1.0.4
                               Compatibilité : Foundry VTT v13
 ================================================================================
 
@@ -179,6 +179,20 @@ NOTES TECHNIQUES
 ================================================================================
                        ASHARA - BESTIAIRE — MISES À JOUR
 ================================================================================
+
+v1.0.4 | 2026-07-11
+   bestiary.js   — Fix nom du dossier : "Créatures" → "Creatures" (sans accent)
+                  pour correspondre au nom réel du dossier Foundry. Corrige
+                  la détection automatique des créatures sur la scène.
+   module.json   — Version 1.0.3 → 1.0.4
+
+v1.0.3 | 2026-07-11
+   character-sheet.js — Fix onglet Bestiaire blanc à la réouverture : même
+                        cause que relations v1.3.6 — Foundry enregistrait
+                        l'onglet comme actif dans tabGroups avant l'insertion
+                        de la section dans le DOM, rendant changeTab inopérant.
+                        Fix : delete tabGroups.primary avant changeTab.
+   module.json        — Version 1.0.2 → 1.0.3
 
 v1.0.2 | 2026-07-10
    character-sheet.js — Nouveau fichier. Factory createBestiarySheet(BaseSheet)

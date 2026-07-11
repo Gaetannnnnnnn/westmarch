@@ -6,7 +6,7 @@
 //                hostility(-2→+2), note, firstScene } ]
 // Interface : onglet "Bestiaire" sur la fiche personnage (PJ uniquement)
 // Auto-det. : canvasReady / createToken / updateToken (GM only)
-//             → acteurs du dossier "Créatures" (et sous-dossiers)
+//             → acteurs du dossier "Creatures" (et sous-dossiers)
 // © Soruta — module propriétaire Ashara, ne pas redistribuer.
 // ============================================================
 
@@ -284,9 +284,9 @@ async function scanVisibleTokens() {
             .map(t => t.actor)
             .filter((a, i, arr) => arr.findIndex(b => b.id === a.id) === i);
 
-        // Créatures visibles (dans le dossier "Créatures" et sous-dossiers)
+        // Creatures visibles (dans le dossier "Creatures" et sous-dossiers)
         const creatures = tokens
-            .filter(t => !t.hidden && t.actor && isInFolder(t.actor, "Créatures"))
+            .filter(t => !t.hidden && t.actor && isInFolder(t.actor, "Creatures"))
             .map(t => t.actor)
             .filter((a, i, arr) => arr.findIndex(b => b.id === a.id) === i);
 

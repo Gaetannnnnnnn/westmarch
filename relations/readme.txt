@@ -1,7 +1,7 @@
 ================================================================================
                         ASHARA - RELATIONS — MODULE FOUNDRY VTT
                                Auteur : Soruta (Discord: s0ruta)
-                                       Version : 1.3.5
+                                       Version : 1.3.8
                               Compatibilité : Foundry VTT v13
 ================================================================================
 
@@ -202,6 +202,28 @@ NOTES TECHNIQUES
 ================================================================================
                         ASHARA - RELATIONS — MISES À JOUR
 ================================================================================
+
+v1.3.8 | 2026-07-11
+   relations.js  — Fix nom du dossier : "Créatures" → "Creatures" (sans accent)
+                  pour correspondre au nom réel du dossier Foundry. Corrige
+                  l'exclusion des créatures de la section PNJ et du picker.
+   module.json   — Version 1.3.7 → 1.3.8
+
+v1.3.7 | 2026-07-11
+   relations.js  — Section PNJ et picker d'ajout : inclut désormais les acteurs
+                  de type "npc" (en plus des "character") qui ne sont pas dans
+                  les dossiers "PJ" ou "Créatures". La section Joueurs reste
+                  limitée aux "character" dans le dossier "PJ".
+   module.json   — Version 1.3.6 → 1.3.7
+
+v1.3.6 | 2026-07-11
+   character-sheet.js — Fix onglet Relations blanc à la réouverture : l'appel
+                        à changeTab était ignoré (early-return) car Foundry avait
+                        déjà enregistré l'onglet comme actif dans tabGroups avant
+                        que notre section soit dans le DOM. Fix : delete
+                        tabGroups.primary avant changeTab pour forcer la
+                        réactivation réelle de la section.
+   module.json        — Version 1.3.5 → 1.3.6
 
 v1.3.5 | 2026-07-10
    index.js     — Expose AshCharacterSheet via CONFIG.asharaSheets.relations
