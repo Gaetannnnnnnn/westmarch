@@ -101,9 +101,10 @@ function emptyStateHtml() {
 }
 
 function buildRowHtml(entry, actor, canEdit) {
-    const target = game.actors.get(entry.targetId);
-    const img    = target?.img  ?? entry.targetImg  ?? "icons/svg/mystery-man.svg";
-    const name   = target?.name ?? entry.targetName ?? "Inconnue";
+    const target   = game.actors.get(entry.targetId);
+    const revealed = entry.revealed ?? true;
+    const img      = revealed ? (target?.img  ?? entry.targetImg  ?? "icons/svg/mystery-man.svg") : "icons/svg/mystery-man.svg";
+    const name     = revealed ? (target?.name ?? entry.targetName ?? "Inconnue") : "Inconnue";
     const open   = _expanded.has(entry.id);
 
     return `
@@ -259,6 +260,7 @@ async function openAddDialog(actor) {
                         hostility:  0,
                         note:       "",
                         firstScene: game.scenes.current?.name ?? "",
+                        revealed:   false,
                     };
                 }
             },
@@ -280,7 +282,7 @@ export function wireTab(actor, $html) {
         if ($(e.target).closest("a, input, .bst-h-btn, .bst-btns").length) return;
         const bstId  = String($(this).closest(".bst-row").data("bst-id"));
         const entry  = beastList(actor).find(en => en.id === bstId);
-        if (!entry) return;
+        if (!entry || !(entry.revealed ?? true)) return;
         const target = game.actors.get(entry.targetId);
         const img    = target?.img  ?? entry.targetImg  ?? "icons/svg/mystery-man.svg";
         const name   = target?.name ?? entry.targetName ?? "Inconnue";
@@ -434,6 +436,7 @@ async function scanVisibleTokens() {
             hostility:  0,
             note:       "",
             firstScene: sceneName,
+            revealed:   false,
         }));
 
         await myActor.update(
@@ -442,6 +445,37 @@ async function scanVisibleTokens() {
         );
     } finally {
         _scanning = false;
+    }
+}
+
+// ---- Anonymisation (GM only) --------------------------------
+
+function currentScenePJs() {
+    return (canvas.tokens?.placeables ?? [])
+        .filter(t => t.actor?.type === "character" && t.actor.id)
+        .map(t => t.actor)
+        .filter((a, i, arr) => arr.findIndex(b => b.id === a.id) === i);
+}
+
+async function revealBestiaryToParty(actorId) {
+    if (!game.user.isGM) return;
+    for (const pj of currentScenePJs()) {
+        const list = beastList(pj);
+        if (!list.some(e => e.targetId === actorId)) continue;
+        await pj.update({ [`flags.${MODULE}.list`]: list.map(e =>
+            e.targetId === actorId ? { ...e, revealed: true } : e
+        )});
+    }
+}
+
+async function anonymizeBestiary(actorId) {
+    if (!game.user.isGM) return;
+    for (const pj of currentScenePJs()) {
+        const list = beastList(pj);
+        if (!list.some(e => e.targetId === actorId)) continue;
+        await pj.update({ [`flags.${MODULE}.list`]: list.map(e =>
+            e.targetId === actorId ? { ...e, revealed: false } : e
+        )});
     }
 }
 
@@ -454,4 +488,25 @@ export function BestiaryHooks() {
         clearTimeout(_sightTimer);
         _sightTimer = setTimeout(() => scanVisibleTokens(), 500);
     });
+
+    // Boutons Révéler / Masquer (injectés uniquement si Relations n'est pas actif — vérif. dup.)
+    Hooks.on("renderActorSheet", (app, html) => {
+        if (!game.user.isGM) return;
+        const actor = app.actor ?? app.object;
+        if (!actor) return;
+        const $header = $(html).find(".window-header");
+        if (!$header.length || $header.find(".ashara-reveal-btn").length) return;
+        const id = actor.id;
+        const $reveal = $(`<a class="header-button control ashara-reveal-btn" title="Révéler à la party"><i class="fas fa-eye"></i> Révéler</a>`);
+        const $anon   = $(`<a class="header-button control ashara-anon-btn" title="Masquer à la party"><i class="fas fa-eye-slash"></i> Masquer</a>`);
+        $reveal.on("click", e => { e.preventDefault(); Hooks.callAll("ashara:revealToParty", id); });
+        $anon.on("click",   e => { e.preventDefault(); Hooks.callAll("ashara:anonymize",     id); });
+        const $close = $header.find(".close");
+        $anon.insertBefore($close);
+        $reveal.insertBefore($anon);
+    });
+
+    // Répondre aux hooks (appels depuis les boutons, quel que soit le module émetteur)
+    Hooks.on("ashara:revealToParty", actorId => revealBestiaryToParty(actorId));
+    Hooks.on("ashara:anonymize",     actorId => anonymizeBestiary(actorId));
 }

@@ -71,6 +71,7 @@ async function relAdd(actor, data) {
     if (list.some(r => r.targetId === data.targetId)) return null;
     const rel = {
         id: foundry.utils.randomID(12),
+        revealed: false,
         note: "", lastPosition: game.scenes.current?.name ?? "",
         secret: false, ...data
     };
@@ -119,9 +120,10 @@ function availableActors(actor) {
 // ---- HTML onglet -------------------------------------------
 
 export function buildRowHtml(r, actor, canEdit) {
-    const target = game.actors.get(r.targetId);
-    const img    = target?.img  ?? r.targetImg  ?? "icons/svg/mystery-man.svg";
-    const name   = target?.name ?? r.targetName ?? "Inconnu";
+    const target   = game.actors.get(r.targetId);
+    const revealed = r.revealed ?? true;
+    const img      = revealed ? (target?.img  ?? r.targetImg  ?? "icons/svg/mystery-man.svg") : "icons/svg/mystery-man.svg";
+    const name     = revealed ? (target?.name ?? r.targetName ?? "Inconnu") : "Inconnu";
     const open   = _expanded.has(r.id);
     return `
     <div class="rel-row" data-rel-id="${r.id}">
@@ -476,7 +478,7 @@ export function wireTab(actor, $html) {
         if ($(e.target).closest("a, input, .rel-level-btn, .rel-btns").length) return;
         const relId  = String($(this).closest(".rel-row").data("rel-id"));
         const rel    = relList(actor).find(r => r.id === relId);
-        if (!rel) return;
+        if (!rel || !(rel.revealed ?? true)) return;
         const target = game.actors.get(rel.targetId);
         const img    = target?.img  ?? rel.targetImg  ?? "icons/svg/mystery-man.svg";
         const name   = target?.name ?? rel.targetName ?? "Inconnu";
@@ -636,11 +638,46 @@ async function scanVisibleTokens() {
             note:         "",
             lastPosition: sceneName,
             secret:       false,
+            revealed:     false,
         }));
 
         await myActor.setFlag(MODULE, "list", [...relList(myActor), ...newRels]);
     } finally {
         _scanning = false;
+    }
+}
+
+// ---- Anonymisation (GM only) --------------------------------
+
+// PJs présents sur la scène active (party courante)
+function currentScenePJs() {
+    return (canvas.tokens?.placeables ?? [])
+        .filter(t => t.actor?.type === "character" && t.actor.id)
+        .map(t => t.actor)
+        .filter((a, i, arr) => arr.findIndex(b => b.id === a.id) === i);
+}
+
+// Révèle nom + portrait aux PJs de la scène qui ont déjà cet acteur dans leurs relations
+async function revealRelationsToParty(actorId) {
+    if (!game.user.isGM) return;
+    for (const pj of currentScenePJs()) {
+        const list = relList(pj);
+        if (!list.some(r => r.targetId === actorId)) continue;
+        await pj.update({ [`flags.${MODULE}.list`]: list.map(r =>
+            r.targetId === actorId ? { ...r, revealed: true } : r
+        )});
+    }
+}
+
+// Masque nom + portrait pour les PJs de la scène qui ont cet acteur dans leurs relations
+async function anonymizeRelations(actorId) {
+    if (!game.user.isGM) return;
+    for (const pj of currentScenePJs()) {
+        const list = relList(pj);
+        if (!list.some(r => r.targetId === actorId)) continue;
+        await pj.update({ [`flags.${MODULE}.list`]: list.map(r =>
+            r.targetId === actorId ? { ...r, revealed: false } : r
+        )});
     }
 }
 
@@ -655,4 +692,25 @@ export function RelationsHooks() {
         clearTimeout(_sightTimer);
         _sightTimer = setTimeout(() => scanVisibleTokens(), 500);
     });
+
+    // Boutons Révéler / Masquer injectés dans l'en-tête des fiches acteurs (GM uniquement)
+    Hooks.on("renderActorSheet", (app, html) => {
+        if (!game.user.isGM) return;
+        const actor = app.actor ?? app.object;
+        if (!actor) return;
+        const $header = $(html).find(".window-header");
+        if (!$header.length || $header.find(".ashara-reveal-btn").length) return;
+        const id = actor.id;
+        const $reveal = $(`<a class="header-button control ashara-reveal-btn" title="Révéler à la party"><i class="fas fa-eye"></i> Révéler</a>`);
+        const $anon   = $(`<a class="header-button control ashara-anon-btn" title="Masquer à la party"><i class="fas fa-eye-slash"></i> Masquer</a>`);
+        $reveal.on("click", e => { e.preventDefault(); Hooks.callAll("ashara:revealToParty", id); });
+        $anon.on("click",   e => { e.preventDefault(); Hooks.callAll("ashara:anonymize",     id); });
+        const $close = $header.find(".close");
+        $anon.insertBefore($close);
+        $reveal.insertBefore($anon);
+    });
+
+    // Répondre aux hooks inter-modules (Bestiary peut aussi écouter ces hooks)
+    Hooks.on("ashara:revealToParty", actorId => revealRelationsToParty(actorId));
+    Hooks.on("ashara:anonymize",     actorId => anonymizeRelations(actorId));
 }

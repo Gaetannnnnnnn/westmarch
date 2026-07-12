@@ -1,7 +1,7 @@
 ================================================================================
                         ASHARA - RELATIONS — MODULE FOUNDRY VTT
                                Auteur : Soruta (Discord: s0ruta)
-                                       Version : 1.4.7
+                                       Version : 1.4.8
                               Compatibilité : Foundry VTT v13
 ================================================================================
 
@@ -58,7 +58,8 @@ relations.js
           targetImg:    string (image mise en cache),
           level:        number (-3 à +3),
           note:         string (notes libres),
-          lastPosition: string (dernière position connue de la rencontre)
+          lastPosition: string (dernière position connue de la rencontre),
+          revealed:     boolean (true = nom/portrait visible, false = "Inconnu")
         }
 
    2. ICÔNES DE NIVEAU (-3 → +3)
@@ -115,18 +116,28 @@ relations.js
       La "Dernière position" est automatiquement remplie avec le nom de la
       scène courante au moment de l'ajout.
 
-   5. DÉTECTION AUTOMATIQUE (GM only)
-      Le module crée automatiquement des relations entre tous les personnages
-      de type "character" visibles (non cachés) sur une scène. La détection
-      se déclenche sur trois événements :
-        - canvasReady  : scan de tous les tokens visibles au chargement
-        - createToken  : nouveau token posé sur la scène et non caché
-        - updateToken  : token passant de hidden=true à hidden=false
-      Pour chaque paire de personnages visibles, si la relation n'existe pas
-      encore sur l'un ou l'autre, elle est créée avec les valeurs par défaut
-      (level 0, lastPosition = nom de la scène courante).
+   5. DÉTECTION AUTOMATIQUE (côté joueur)
+      Chaque joueur scanne automatiquement les tokens visibles sur son écran
+      et ajoute les nouvelles rencontres à ses relations. La détection se
+      déclenche sur :
+        - canvasReady  : scan au chargement de la scène
+        - sightRefresh : scan après tout changement de vision (mouvement,
+                        lumière, nouveau token) avec debounce 500ms
+      Les nouvelles entrées sont créées avec revealed: false (Inconnu).
       Un guard anti-doublon (_scanning) évite les appels concurrents.
-      Uniquement exécuté côté GM pour éviter les conflits de permissions.
+
+   6. ANONYMISATION (GM uniquement)
+      Deux boutons "Révéler" et "Masquer" sont injectés dans l'en-tête de
+      chaque fiche acteur (GM uniquement). Ils agissent sur les PJs présents
+      sur la scène active qui ont déjà cet acteur dans leurs relations :
+        - Révéler : passe revealed: true → nom et portrait réels affichés
+        - Masquer  : passe revealed: false → affiché comme "Inconnu"
+      Les entrées existantes sans champ revealed sont traitées comme
+      revealed: true (pas de régression sur les données existantes).
+      Si les deux modules (Relations + Bestiaire) sont actifs, un seul jeu
+      de boutons est injecté (garde anti-doublon sur .ashara-reveal-btn) ;
+      les deux modules écoutent le hook ashara:revealToParty et
+      ashara:anonymize et mettent à jour leurs données indépendamment.
 
    6. HELPERS DOSSIERS
       isInFolder(actor, folderName) : remonte l'arbre des dossiers (gère les
@@ -202,6 +213,18 @@ NOTES TECHNIQUES
 ================================================================================
                         ASHARA - RELATIONS — MISES À JOUR
 ================================================================================
+
+v1.4.8 | 2026-07-12
+   relations.js  — Système d'anonymisation : boutons "Révéler" et "Masquer"
+                  injectés dans l'en-tête de chaque fiche acteur (GM only).
+                  Agissent sur les PJs de la scène active qui ont déjà cet
+                  acteur dans leurs relations. Nouvelles entrées créées avec
+                  revealed: false (affiché "Inconnu" jusqu'à révélation).
+                  Entrées existantes (champ absent) traitées comme revealed:true
+                  (pas de régression). Clic sur portrait bloqué si non révélé.
+                  Communication inter-modules via hooks ashara:revealToParty /
+                  ashara:anonymize (Bestiaire écoute aussi ces hooks).
+   module.json   — Version 1.4.7 → 1.4.8
 
 v1.4.7 | 2026-07-12
    relations.js  — Clic sur une ligne ouvre le portrait de l'acteur via

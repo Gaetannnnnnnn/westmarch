@@ -1,7 +1,7 @@
 ================================================================================
                        ASHARA - BESTIAIRE — MODULE FOUNDRY VTT
                                Auteur : Soruta (Discord: s0ruta)
-                                       Version : 1.1.1
+                                       Version : 1.1.2
                               Compatibilité : Foundry VTT v13
 ================================================================================
 
@@ -60,7 +60,8 @@ bestiary.js
           targetImg:  string (image mise en cache),
           hostility:  number (-2 à +2, défaut 0),
           note:       string (notes libres),
-          firstScene: string (nom de la scène de première rencontre)
+          firstScene: string (nom de la scène de première rencontre),
+          revealed:   boolean (true = nom/portrait réels, false = "Inconnue")
         }
 
    2. NIVEAUX D'HOSTILITÉ (-2 → +2)
@@ -90,22 +91,29 @@ bestiary.js
       Les entrées sont triées par hostilité croissante (plus hostile en
       premier), puis par ordre alphabétique à hostilité égale.
 
-   4. DÉTECTION AUTOMATIQUE (GM only)
-      Le module ajoute automatiquement au bestiaire de chaque PJ les créatures
-      du dossier "Créatures" (et ses sous-dossiers) visibles sur la scène.
-      La détection se déclenche sur trois événements :
-        - canvasReady  : scan de tous les tokens visibles au chargement
-        - createToken  : nouveau token posé sur la scène (non caché)
-        - updateToken  : token passant de hidden=true à hidden=false
+   4. DÉTECTION AUTOMATIQUE (côté joueur)
+      Chaque joueur scanne les tokens visibles sur son écran et ajoute les
+      nouvelles créatures (dossier "Creatures") à son bestiaire. Déclencheurs :
+        - canvasReady  : scan au chargement de la scène
+        - sightRefresh : scan après tout changement de vision (mouvement,
+                        lumière, nouveau token) avec debounce 500ms
       Règles d'inclusion :
-        - PJ concernés : acteurs de type "character" dans le dossier "PJ"
-          (et sous-dossiers), avec un token visible sur la scène
-        - Créatures : acteurs dans le dossier "Créatures" (et sous-dossiers),
-          avec un token visible et non caché
+        - t.visible : vision réelle du client (LOS, fog of war, portée)
+        - Créatures : acteurs dans le dossier "Creatures" (et sous-dossiers)
         - Maximum 1 entrée par créature par personnage (pas de doublon)
-        - La "Première rencontre" est remplie avec le nom de la scène courante
-      Uniquement exécuté côté GM pour éviter les conflits de permissions.
+        - "Première rencontre" remplie avec le nom de la scène courante
+        - Nouvelles entrées créées avec revealed: false
       Un guard anti-doublon (_scanning) évite les appels concurrents.
+
+   5. ANONYMISATION (GM uniquement)
+      Boutons "Révéler" et "Masquer" injectés dans l'en-tête des fiches
+      acteurs (GM uniquement). Portée : PJs présents sur la scène active
+      qui ont déjà cette créature dans leur bestiaire.
+        - Révéler : passe revealed: true → nom et portrait réels affichés
+        - Masquer  : passe revealed: false → affiché "Inconnue"
+      Si Relations est aussi actif, Relations injecte les boutons (guard
+      anti-doublon) ; Bestiaire écoute les hooks ashara:revealToParty et
+      ashara:anonymize et met à jour ses propres données.
 
    5. COHABITATION AVEC ASHARA-RELATIONS
       Relations expose sa fiche via CONFIG.asharaSheets.relations pendant son
@@ -179,6 +187,17 @@ NOTES TECHNIQUES
 ================================================================================
                        ASHARA - BESTIAIRE — MISES À JOUR
 ================================================================================
+
+v1.1.2 | 2026-07-12
+   bestiary.js   — Système d'anonymisation : écoute les hooks ashara:revealToParty
+                  et ashara:anonymize pour mettre à jour le champ revealed de
+                  chaque entrée. Nouvelles entrées (scan + ajout manuel) créées
+                  avec revealed: false → affichées "Inconnue" jusqu'à révélation
+                  GM. Entrées sans champ revealed traitées comme true (pas de
+                  régression). Clic portrait bloqué si non révélé.
+                  Boutons Révéler/Masquer injectés dans les fiches si Relations
+                  n'est pas actif (guard anti-doublon .ashara-reveal-btn).
+   module.json   — Version 1.1.1 → 1.1.2
 
 v1.1.1 | 2026-07-12
    bestiary.js   — Clic sur une ligne ouvre le portrait de la créature via
