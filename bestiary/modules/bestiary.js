@@ -481,11 +481,15 @@ async function anonymizeBestiary(actorId) {
 export function BestiaryHooks() {
     // Scan initial — sight déjà calculé au moment de canvasReady
     Hooks.on("canvasReady", () => scanVisibleTokens());
-    // Couvre tout le reste : nouveau token, démasquage, mouvement, lumière
-    // (sightRefresh tire toujours après createToken/updateToken, donc ceux-ci sont redondants)
+    // sightRefresh couvre les scènes avec vision active
     Hooks.on("sightRefresh", () => {
         clearTimeout(_sightTimer);
         _sightTimer = setTimeout(() => scanVisibleTokens(), 500);
+    });
+    // createToken couvre les scènes sans vision (sightRefresh ne tire pas)
+    Hooks.on("createToken", () => {
+        clearTimeout(_sightTimer);
+        _sightTimer = setTimeout(() => scanVisibleTokens(), 300);
     });
 
     // Boutons Révéler / Masquer (injectés uniquement si Relations n'est pas actif — vérif. dup.)
@@ -494,7 +498,7 @@ export function BestiaryHooks() {
         if (!game.settings.get(MODULE, "anonymization")) return;
         const actor = app.document ?? app.actor ?? app.object;
         if (!actor) return;
-        const $header = $(html).find(".window-header");
+        const $header = $(app.element).find(".window-header");
         if (!$header.length || $header.find(".ashara-reveal-btn").length) return;
         const id = actor.id;
         const $reveal = $(`<button type="button" class="header-control ashara-reveal-btn" title="Révéler à la party"><i class="fas fa-eye"></i> Révéler</button>`);

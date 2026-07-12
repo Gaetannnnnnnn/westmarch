@@ -1,7 +1,7 @@
 ================================================================================
                         ASHARA - RELATIONS — MODULE FOUNDRY VTT
                                Auteur : Soruta (Discord: s0ruta)
-                                       Version : 1.5.3
+                                       Version : 1.5.4
                               Compatibilité : Foundry VTT v13
 ================================================================================
 
@@ -213,6 +213,15 @@ NOTES TECHNIQUES
 ================================================================================
                         ASHARA - RELATIONS — MISES À JOUR
 ================================================================================
+
+v1.5.4 | 2026-07-12
+   relations.js  — Fix boutons Révéler/Masquer : $(html) → $(app.element).
+                  renderActorSheetV2 passe le contenu dans html, pas le
+                  window frame. Le header était introuvable → boutons absents.
+   relations.js  — Hook createToken ajouté (debounce 300ms) : sightRefresh
+                  ne tire pas sur les scènes sans vision active. createToken
+                  garantit la détection même sans vision.
+   module.json   — Version 1.5.3 → 1.5.4
 
 v1.5.3 | 2026-07-12
    relations.js  — revealed conditionnel : les nouvelles entrées démarrent

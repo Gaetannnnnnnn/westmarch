@@ -1,7 +1,7 @@
 ================================================================================
                        ASHARA - BESTIAIRE — MODULE FOUNDRY VTT
                                Auteur : Soruta (Discord: s0ruta)
-                                       Version : 1.1.7
+                                       Version : 1.1.8
                               Compatibilité : Foundry VTT v13
 ================================================================================
 
@@ -187,6 +187,15 @@ NOTES TECHNIQUES
 ================================================================================
                        ASHARA - BESTIAIRE — MISES À JOUR
 ================================================================================
+
+v1.1.8 | 2026-07-12
+   bestiary.js   — Fix boutons Révéler/Masquer : $(html) → $(app.element).
+                  renderActorSheetV2 passe le contenu dans html, pas le
+                  window frame. Le header était introuvable → boutons absents.
+   bestiary.js   — Hook createToken ajouté (debounce 300ms) : sightRefresh
+                  ne tire pas sur les scènes sans vision active. createToken
+                  garantit la détection même sans vision.
+   module.json   — Version 1.1.7 → 1.1.8
 
 v1.1.7 | 2026-07-12
    bestiary.js   — revealed conditionnel : les nouvelles entrées démarrent
