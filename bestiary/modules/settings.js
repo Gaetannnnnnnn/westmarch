@@ -5,7 +5,16 @@
 export function registerSettings() {
     game.settings.register("ashara-bestiary", "enabled", {
         name: "Activer le bestiaire",
-        hint: "Active la détection automatique des créatures rencontrées sur les scènes (GM uniquement).",
+        hint: "Active la détection automatique des créatures rencontrées sur les scènes.",
+        scope: "world",
+        config: true,
+        type: Boolean,
+        default: true,
+    });
+
+    game.settings.register("ashara-bestiary", "anonymization", {
+        name: "Activer l'anonymisation",
+        hint: "Ajoute les boutons 'Révéler' et 'Masquer' dans l'en-tête des fiches acteurs (GM uniquement). Utilisé uniquement si ashara-relations n'est pas actif (sinon c'est lui qui injecte les boutons).",
         scope: "world",
         config: true,
         type: Boolean,

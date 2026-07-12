@@ -9,6 +9,16 @@ export function registerSettings() {
         requiresReload: false
     });
 
+    game.settings.register("ashara-relations", "anonymization", {
+        name: "Activer l'anonymisation",
+        hint: "Ajoute les boutons 'Révéler' et 'Masquer' dans l'en-tête des fiches acteurs (GM uniquement). Permet de contrôler si un acteur apparaît comme 'Inconnu' dans les onglets Relations des joueurs.",
+        scope: "world",
+        config: true,
+        type: Boolean,
+        default: true,
+        requiresReload: false
+    });
+
     Hooks.on("renderSettingsConfig", (app, html) => {
         const root  = $(html);
         const group = root.find('[name="ashara-relations.enabled"]').closest(".form-group");

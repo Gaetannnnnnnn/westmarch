@@ -492,6 +492,7 @@ export function BestiaryHooks() {
     // Boutons Révéler / Masquer (injectés uniquement si Relations n'est pas actif — vérif. dup.)
     Hooks.on("renderActorSheet", (app, html) => {
         if (!game.user.isGM) return;
+        if (!game.settings.get(MODULE, "anonymization")) return;
         const actor = app.actor ?? app.object;
         if (!actor) return;
         const $header = $(html).find(".window-header");

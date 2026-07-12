@@ -696,6 +696,7 @@ export function RelationsHooks() {
     // Boutons Révéler / Masquer injectés dans l'en-tête des fiches acteurs (GM uniquement)
     Hooks.on("renderActorSheet", (app, html) => {
         if (!game.user.isGM) return;
+        if (!game.settings.get(MODULE, "anonymization")) return;
         const actor = app.actor ?? app.object;
         if (!actor) return;
         const $header = $(html).find(".window-header");

@@ -1,7 +1,7 @@
 ================================================================================
                         ASHARA - RELATIONS — MODULE FOUNDRY VTT
                                Auteur : Soruta (Discord: s0ruta)
-                                       Version : 1.4.8
+                                       Version : 1.4.9
                               Compatibilité : Foundry VTT v13
 ================================================================================
 
@@ -213,6 +213,15 @@ NOTES TECHNIQUES
 ================================================================================
                         ASHARA - RELATIONS — MISES À JOUR
 ================================================================================
+
+v1.4.9 | 2026-07-12
+   settings.js   — Nouveau paramètre "Activer l'anonymisation" (world, GM only) :
+                  active/désactive les boutons Révéler/Masquer sur les fiches
+                  acteurs. Désactiver ce paramètre supprime les boutons sans
+                  affecter les données revealed existantes.
+   relations.js  — Guard game.settings.get(MODULE, "anonymization") dans le
+                  hook renderActorSheet.
+   module.json   — Version 1.4.8 → 1.4.9
 
 v1.4.8 | 2026-07-12
    relations.js  — Système d'anonymisation : boutons "Révéler" et "Masquer"
