@@ -17,6 +17,7 @@ export const MODULE = "ashara-bestiary";
 const _expanded  = new Set();   // IDs d'entrées dont les notes sont ouvertes
 let   _noteTimer = null;        // Debounce auto-save notes
 let   _scanning  = false;       // Guard anti-doublon scan
+let   _sightTimer = null;       // Debounce sightRefresh
 
 // ---- Niveaux d'hostilité (-2 → +2) -------------------------
 
@@ -274,6 +275,18 @@ export function wireTab(actor, $html) {
     const $tab = $html.find(".bst-tab");
     if (!$tab.length) return;
 
+    // Clic sur la ligne → ouvrir le portrait
+    $tab.on("click", ".bst-row-header", function (e) {
+        if ($(e.target).closest("a, input, .bst-h-btn, .bst-btns").length) return;
+        const bstId  = String($(this).closest(".bst-row").data("bst-id"));
+        const entry  = beastList(actor).find(en => en.id === bstId);
+        if (!entry) return;
+        const target = game.actors.get(entry.targetId);
+        const img    = target?.img  ?? entry.targetImg  ?? "icons/svg/mystery-man.svg";
+        const name   = target?.name ?? entry.targetName ?? "Inconnue";
+        new ImagePopout(img, { title: name }).render(true);
+    });
+
     // Ajouter manuellement (GM uniquement)
     $tab.on("click", ".bst-add-btn", async () => {
         const data = await openAddDialog(actor);
@@ -383,8 +396,8 @@ export function wireTab(actor, $html) {
 // ---- Détection automatique (GM only) -----------------------
 
 async function scanVisibleTokens() {
-    if (!game.user.isGM) return;
     if (!game.settings.get(MODULE, "enabled")) return;
+    if (game.user.isGM) return;  // scan côté joueur uniquement
     if (_scanning) return;
     _scanning = true;
 
@@ -392,49 +405,53 @@ async function scanVisibleTokens() {
         const tokens    = canvas.tokens?.placeables ?? [];
         const sceneName = game.scenes.current?.name ?? "";
 
-        // PJ visibles (dans le dossier "PJ" et sous-dossiers)
-        const pjActors = tokens
-            .filter(t => !t.document?.hidden && t.actor?.type === "character" && isInFolder(t.actor, "PJ"))
-            .map(t => t.actor)
-            .filter((a, i, arr) => arr.findIndex(b => b.id === a.id) === i);
+        // Acteur joué par l'utilisateur courant
+        const myActor = game.actors.find(a => a.type === "character" && a.isOwner);
+        if (!myActor) return;
 
-        // Creatures visibles (dans le dossier "Creatures" et sous-dossiers)
-        const creatures = tokens
-            .filter(t => !t.document?.hidden && t.actor && isInFolder(t.actor, "Creatures"))
-            .map(t => t.actor)
-            .filter((a, i, arr) => arr.findIndex(b => b.id === a.id) === i);
+        // Son token doit être présent sur la scène
+        const myToken = tokens.find(t => t.actor?.id === myActor.id);
+        if (!myToken) return;
 
-        if (!pjActors.length || !creatures.length) return;
+        const existing = new Set(beastList(myActor).map(e => e.targetId));
 
-        for (const pj of pjActors) {
-            const existing = new Set(beastList(pj).map(e => e.targetId));
-            const toAdd    = creatures.filter(c => !existing.has(c.id));
-            if (!toAdd.length) continue;
+        // Créatures visibles sur l'écran du joueur (t.visible = vision réelle du client)
+        const toAdd = tokens.filter(t =>
+            t.visible &&
+            t.actor?.id &&
+            t.actor.id !== myActor.id &&
+            isInFolder(t.actor, "Creatures") &&
+            !existing.has(t.actor.id)
+        );
 
-            const newEntries = toAdd.map(c => ({
-                id:         foundry.utils.randomID(12),
-                targetId:   c.id,
-                targetName: c.name,
-                targetImg:  c.img ?? "",
-                hostility:  0,
-                note:       "",
-                firstScene: sceneName,
-            }));
+        if (!toAdd.length) return;
 
-            await pj.update(
-                { [`flags.${MODULE}.list`]: [...beastList(pj), ...newEntries] },
-                { render: false }
-            );
-        }
+        const newEntries = toAdd.map(t => ({
+            id:         foundry.utils.randomID(12),
+            targetId:   t.actor.id,
+            targetName: t.actor.name,
+            targetImg:  t.actor.img ?? "",
+            hostility:  0,
+            note:       "",
+            firstScene: sceneName,
+        }));
+
+        await myActor.update(
+            { [`flags.${MODULE}.list`]: [...beastList(myActor), ...newEntries] },
+            { render: false }
+        );
     } finally {
         _scanning = false;
     }
 }
 
 export function BestiaryHooks() {
+    // Scan initial — sight déjà calculé au moment de canvasReady
     Hooks.on("canvasReady", () => scanVisibleTokens());
-    Hooks.on("createToken", (tokenDoc) => { if (!tokenDoc.hidden) scanVisibleTokens(); });
-    Hooks.on("updateToken", (tokenDoc, diff) => {
-        if (Object.hasOwn(diff, "hidden") && diff.hidden === false) scanVisibleTokens();
+    // Couvre tout le reste : nouveau token, démasquage, mouvement, lumière
+    // (sightRefresh tire toujours après createToken/updateToken, donc ceux-ci sont redondants)
+    Hooks.on("sightRefresh", () => {
+        clearTimeout(_sightTimer);
+        _sightTimer = setTimeout(() => scanVisibleTokens(), 500);
     });
 }

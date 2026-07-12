@@ -1,7 +1,7 @@
 ================================================================================
                        ASHARA - BESTIAIRE — MODULE FOUNDRY VTT
                                Auteur : Soruta (Discord: s0ruta)
-                                       Version : 1.0.8
+                                       Version : 1.1.1
                               Compatibilité : Foundry VTT v13
 ================================================================================
 
@@ -179,6 +179,30 @@ NOTES TECHNIQUES
 ================================================================================
                        ASHARA - BESTIAIRE — MISES À JOUR
 ================================================================================
+
+v1.1.1 | 2026-07-12
+   bestiary.js   — Clic sur une ligne ouvre le portrait de la créature via
+                  ImagePopout. Les boutons (hostilité, notes, supprimer) sont
+                  exclus du déclenchement.
+   bestiary.css  — cursor: pointer sur .bst-row-header.
+   module.json   — Version 1.1.0 → 1.1.1
+
+v1.1.0 | 2026-07-12
+   bestiary.js   — Suppression hooks createToken et updateToken : sightRefresh
+                  tire toujours après eux et travaille sur un t.visible déjà à
+                  jour. Seuls canvasReady + sightRefresh (debounce 500ms) sont
+                  conservés, ce qui évite les fausses détections dues aux timings.
+   module.json   — Version 1.0.9 → 1.1.0
+
+v1.0.9 | 2026-07-12
+   bestiary.js   — Refonte de la détection automatique : scan désormais côté
+                  joueur (plus côté GM). Utilise t.visible qui reflète la vision
+                  réelle du client (LOS, fog of war, portée). Un joueur ne détecte
+                  que les créatures qu'il voit réellement sur son écran.
+                  Ajout hook sightRefresh (debounce 500ms) pour détecter les
+                  créatures qui entrent dans le champ de vision suite à un
+                  mouvement ou changement de lumière.
+   module.json   — Version 1.0.8 → 1.0.9
 
 v1.0.8 | 2026-07-11
    bestiary.js   — Fix détection tokens cachés : t.hidden est undefined sur les

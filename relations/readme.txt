@@ -1,7 +1,7 @@
 ================================================================================
                         ASHARA - RELATIONS — MODULE FOUNDRY VTT
                                Auteur : Soruta (Discord: s0ruta)
-                                       Version : 1.4.2
+                                       Version : 1.4.7
                               Compatibilité : Foundry VTT v13
 ================================================================================
 
@@ -202,6 +202,46 @@ NOTES TECHNIQUES
 ================================================================================
                         ASHARA - RELATIONS — MISES À JOUR
 ================================================================================
+
+v1.4.7 | 2026-07-12
+   relations.js  — Clic sur une ligne ouvre le portrait de l'acteur via
+                  ImagePopout. Les boutons (niveau, toggle notes, supprimer)
+                  et les inputs sont exclus du déclenchement.
+   relations.css — cursor: pointer sur .rel-header.
+   module.json   — Version 1.4.6 → 1.4.7
+
+v1.4.6 | 2026-07-12
+   relations.js  — Suppression hooks createToken et updateToken : sightRefresh
+                  tire toujours après eux et travaille sur un t.visible déjà à
+                  jour. Seuls canvasReady + sightRefresh (debounce 500ms) sont
+                  conservés, ce qui évite les fausses détections dues aux timings.
+   module.json   — Version 1.4.5 → 1.4.6
+
+v1.4.5 | 2026-07-12
+   relations.js  — Refonte de la détection automatique : scan désormais côté
+                  joueur (plus côté GM). Utilise t.visible qui reflète la vision
+                  réelle du client (LOS, fog of war, portée). Un joueur ne détecte
+                  que les tokens qu'il voit réellement sur son écran (dossiers
+                  "PJ" et "PNJ"). Ajout hook sightRefresh (debounce 500ms).
+   module.json   — Version 1.4.4 → 1.4.5
+
+v1.4.4 | 2026-07-11
+   relations.js  — Section PNJ et picker recentrés sur le dossier "PNJ" (existant).
+                  availableActors filtre désormais par dossier "PJ" ou "PNJ" (plus
+                  par type d'acteur). Auto-détection : tokens du dossier "PNJ"
+                  visibles sur la scène (remplace l'ancienne logique "hors PJ/Creatures").
+                  Ajout helper isInPNJFolder.
+   module.json   — Version 1.4.3 → 1.4.4
+
+v1.4.3 | 2026-07-11
+   relations.css — Refonte complète du CSS pour correspondre visuellement au
+                  bestiaire : lignes border-bottom uniquement (suppression des
+                  cartes arrondies), avatar carré (border-radius 4px), boutons
+                  toujours visibles, notes avec indent 50px, textarea identique,
+                  suppression de tous les !important sur .rel-add-btn (les styles
+                  inline de buildTabHtml prennent le dessus). Sélection picker
+                  en rose (#e91e8c) pour cohérence avec l'icône Relations.
+   module.json   — Version 1.4.2 → 1.4.3
 
 v1.4.2 | 2026-07-11
    relations.js  — Fix détection tokens cachés : t.hidden est undefined sur les

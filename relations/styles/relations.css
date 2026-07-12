@@ -1,109 +1,23 @@
 /* ============================================================
-   relations.css — Ashara Relations
+   relations.css — Styles onglet Relations (ashara-relations)
+   Layout critique en inline JS (buildTabHtml) pour contourner
+   le cache CSS Foundry. Ce fichier gère couleurs et cosmétique.
    ============================================================ */
 
-/* ---- Conteneur principal ----------------------------------- */
+/* ---- Conteneur principal ---------------------------------- */
 
 .rel-tab {
     display: flex;
     flex-direction: column;
-    flex: 1;        /* grandit dans le conteneur flex du .tab dnd5e */
-    min-height: 0;  /* nécessaire pour que overflow: hidden fonctionne en flex */
+    height: 100%;
     overflow: hidden;
-    box-sizing: border-box;
-    padding: 0;
+    font-family: inherit;
 }
-
-/* ---- Barre de titre --------------------------------------- */
-
-.rel-title-bar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 8px 10px 6px;
-    flex-shrink: 0;
-}
-
-.rel-title {
-    font-size: 12px;
-    font-weight: 700;
-    color: #bbb;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-
-/* ---- En-têtes de section (Joueurs / PNJ) — style dnd5e ---- */
-
-.rel-section-hdr {
-    padding: 4px 10px;
-    font-size: 10px;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: #999;
-    background: rgba(0,0,0,0.25);
-    border-top: 1px solid #2a2a2a;
-    border-bottom: 1px solid #2a2a2a;
-    flex-shrink: 0;
-}
-
-.rel-section-count {
-    opacity: 0.5;
-    font-weight: 400;
-}
-
-/* ---- Barre de recherche ------------------------------------ */
-/* Le visuel est géré en inline dans buildTabHtml (même style que bestiary).
-   On garde uniquement le reset navigateur et le hover du bouton clear. */
-
-.rel-tab .rel-search-input,
-.rel-tab .rel-search-input:focus,
-.rel-tab .rel-search-input:hover {
-    -webkit-appearance: none !important;
-    appearance: none !important;
-}
-.rel-tab .rel-search-input::-webkit-search-cancel-button,
-.rel-tab .rel-search-input::-webkit-search-decoration { display: none !important; }
-
-.rel-tab .rel-search-clear:hover { color: #ccc; }
-
-/* Bouton Ajouter — style texte plat, aucune boîte */
-.rel-tab .rel-add-btn,
-.rel-tab .rel-add-btn:hover,
-.rel-tab .rel-add-btn:focus {
-    display: flex !important;
-    align-items: center !important;
-    gap: 4px !important;
-    padding: 2px 6px !important;
-    background: none !important;
-    border: none !important;
-    box-shadow: none !important;
-    border-radius: 3px !important;
-    color: var(--color-text-dark-secondary, #aaa) !important;
-    font-size: 11px !important;
-    cursor: pointer !important;
-    white-space: nowrap;
-    flex-shrink: 0;
-    outline: none !important;
-    transition: color 0.1s, background 0.1s;
-}
-.rel-tab .rel-add-btn:hover {
-    color: var(--color-text-dark-primary, #ddd) !important;
-    background: rgba(255,255,255,0.07) !important;
-}
-
-/* ---- Zone de liste scrollable ----------------------------- */
 
 .rel-list {
     flex: 1;
     overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    padding: 8px;
+    overflow-x: hidden;
 }
 
 /* ---- État vide -------------------------------------------- */
@@ -113,100 +27,107 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 8px;
-    padding: 32px 16px;
-    color: #555;
-    font-style: italic;
+    gap: 10px;
+    padding: 40px 20px;
+    color: #444;
     font-size: 12px;
     text-align: center;
-    flex: 1;
 }
-.rel-empty i { font-size: 24px; color: #333; }
 
-/* ---- Ligne de relation ------------------------------------- */
+.rel-empty i {
+    font-size: 28px;
+    color: #333;
+}
+
+/* ---- Ligne de relation ------------------------------------ */
 
 .rel-row {
-    border: 1px solid #2a2a2a;
-    border-radius: 5px;
-    overflow: hidden;
-    background: rgba(255,255,255,0.02);
-    transition: border-color 0.15s;
-    flex-shrink: 0;
+    border-bottom: 1px solid rgba(255,255,255,0.04);
+    transition: background 0.15s;
 }
-.rel-row:hover { border-color: #3d3d3d; }
+
+.rel-row:hover {
+    background: rgba(255,255,255,0.02);
+}
 
 .rel-header {
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 7px 10px;
-    min-height: 40px;
+    padding: 6px 10px;
+    cursor: pointer;
 }
+
+/* Avatar */
 
 .rel-avatar {
     width: 32px;
     height: 32px;
-    border-radius: 50%;
     object-fit: cover;
-    border: 1px solid #3a3a3a;
+    border-radius: 4px;
+    border: 1px solid rgba(255,255,255,0.1);
     flex-shrink: 0;
 }
+
+/* Nom */
 
 .rel-name {
-    font-size: 13px;
-    font-weight: 600;
     flex: 1;
-    min-width: 0;
+    font-size: 12px;
+    font-weight: 600;
+    color: #ccc;
+    white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    white-space: nowrap;
 }
 
-.rel-type {
-    font-size: 11px;
-    color: #aaa;
-    background: #1e1e1e;
-    border: 1px solid #333;
-    border-radius: 10px;
-    padding: 2px 9px;
-    flex-shrink: 0;
-    max-width: 100px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
+/* ---- Sélecteur de niveau ---------------------------------- */
 
 .rel-level { flex-shrink: 0; }
-.rel-level-icon { font-size: 15px; }
-
-/* ---- Sélecteur de niveau inline --------------------------- */
+.rel-level-icon { font-size: 13px; }
 
 .rel-level-selector {
     display: flex;
     align-items: center;
-    gap: 5px;
+    gap: 4px;
     flex-shrink: 0;
 }
 
-.rel-level-btn {
-    cursor: pointer;
-    font-size: 13px;
-    opacity: 0.22;
-    color: #999;
-    transition: opacity 0.12s, transform 0.12s;
-    line-height: 1;
-}
-.rel-level-btn:hover  { opacity: 0.65; transform: scale(1.2); }
-.rel-level-btn.active { opacity: 1; }
-
 .rel-level-label {
-    font-size: 11px;
-    font-weight: 600;
-    white-space: nowrap;
-    margin-right: 4px;
-    min-width: 70px;
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    font-weight: 700;
+    opacity: 0.8;
+    margin-right: 2px;
+    min-width: 58px;
     text-align: right;
+    white-space: nowrap;
 }
+
+.rel-level-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 3px;
+    color: #444;
+    font-size: 10px;
+    cursor: pointer;
+    transition: background 0.12s, color 0.12s;
+}
+
+.rel-level-btn:hover {
+    background: rgba(255,255,255,0.07);
+    color: #888 !important;
+}
+
+.rel-level-btn.active {
+    background: rgba(255,255,255,0.06);
+}
+
+/* Secret */
 
 .rel-secret {
     color: #555;
@@ -214,48 +135,74 @@
     flex-shrink: 0;
 }
 
+/* ---- Boutons d'action (toggle notes, supprimer) ----------- */
+
 .rel-btns {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 2px;
     flex-shrink: 0;
-    opacity: 0;
-    transition: opacity 0.15s;
 }
-.rel-row:hover .rel-btns { opacity: 1; }
 
 .rel-btns a {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    border-radius: 3px;
+    color: #444;
+    font-size: 10px;
     cursor: pointer;
-    color: #666;
-    font-size: 12px;
-    transition: color 0.1s;
+    transition: background 0.12s, color 0.12s;
 }
-.rel-btns a:hover           { color: #ccc; }
-.rel-btns .rel-delete:hover { color: #e74c3c; }
-.rel-btns .rel-edit:hover   { color: #80b3ff; }
-.rel-toggle                 { color: #555 !important; }
-.rel-toggle:hover           { color: #999 !important; }
 
-/* ---- Section notes dépliable ------------------------------ */
+.rel-btns a:hover {
+    background: rgba(255,255,255,0.06);
+    color: #888;
+}
+
+.rel-delete:hover { color: #c0392b !important; }
+.rel-toggle       { color: #555 !important; }
+.rel-toggle:hover { color: #999 !important; }
+
+/* ---- Barre de recherche ----------------------------------- */
+
+.rel-tab .rel-search-input,
+.rel-tab .rel-search-input:focus,
+.rel-tab .rel-search-input:hover {
+    -webkit-appearance: none !important;
+    appearance: none !important;
+}
+
+.rel-tab .rel-search-input::-webkit-search-cancel-button,
+.rel-tab .rel-search-input::-webkit-search-decoration { display: none !important; }
+
+.rel-search-clear:hover { color: #ccc; }
+
+/* ---- Zone de notes --------------------------------------- */
 
 .rel-notes {
-    padding: 8px 12px 10px;
-    background: rgba(0,0,0,0.18);
-    border-top: 1px solid #252525;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
+    padding: 6px 10px 10px 50px;
+    background: rgba(0,0,0,0.15);
+    border-top: 1px solid rgba(255,255,255,0.04);
 }
+
+/* Dernière position */
 
 .rel-lastpos-row {
     display: flex;
     align-items: center;
-    gap: 8px;
+    gap: 5px;
+    margin-bottom: 6px;
 }
 
 .rel-field-label {
-    font-size: 11px;
-    color: #666;
+    color: #555;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    font-size: 9px;
     flex-shrink: 0;
     white-space: nowrap;
 }
@@ -264,54 +211,68 @@
     flex: 1;
     background: transparent;
     border: none;
-    border-bottom: 1px solid #2a2a2a;
-    color: #aaa;
-    font-size: 12px;
-    padding: 2px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    border-radius: 0;
+    color: #777;
+    font-size: 10px;
+    padding: 0 2px;
+    box-shadow: none;
     font-family: inherit;
 }
+
 .rel-lastpos-input:focus {
     outline: none;
-    border-bottom-color: #555;
-    color: #ddd;
+    border-bottom-color: rgba(255,255,255,0.2);
+    color: #aaa;
 }
-.rel-lastpos-input::placeholder { color: #3a3a3a; }
 
 .rel-lastpos-row.rel-readonly {
-    font-size: 12px;
-    color: #666;
-    gap: 6px;
+    font-size: 10px;
+    color: #555;
+    gap: 5px;
 }
+
+/* Textarea notes */
 
 .rel-note-input {
     width: 100%;
-    min-height: 56px;
-    background: transparent;
-    border: none;
-    border-top: 1px solid #222;
-    color: #aaa;
-    font-size: 12px;
-    line-height: 1.6;
+    min-height: 52px;
     resize: vertical;
-    box-sizing: border-box;
-    padding: 6px 0 2px;
+    background: rgba(0,0,0,0.2);
+    border: 1px solid rgba(255,255,255,0.07);
+    border-radius: 4px;
+    color: #aaa;
+    font-size: 11px;
+    padding: 5px 7px;
     font-family: inherit;
+    line-height: 1.5;
+    box-shadow: none;
+    box-sizing: border-box;
 }
+
 .rel-note-input:focus {
     outline: none;
-    color: #ccc;
+    border-color: rgba(255,255,255,0.15);
+    background: rgba(0,0,0,0.3);
 }
-.rel-note-input::placeholder { color: #3a3a3a; }
+
+/* Notes lecture seule */
 
 .rel-note-ro {
-    color: #666;
-    font-size: 12px;
-    line-height: 1.6;
     margin: 0;
-    white-space: pre-wrap;
+    font-size: 11px;
+    color: #666;
+    line-height: 1.5;
+    font-style: italic;
 }
 
-/* ---- Picker acteur (dialog) -------------------------------- */
+/* ---- Aucun résultat (recherche) --------------------------- */
+
+.rel-no-results {
+    padding: 24px 20px;
+}
+
+/* ---- Picker acteur (dialog ajout) ------------------------- */
 
 .rel-picker-list {
     max-height: 190px;
@@ -335,32 +296,38 @@
     letter-spacing: 0.06em;
     user-select: none;
 }
+
 .rel-picker-section-hdr:hover { background: #1c1c1c; color: #aaa; }
 .rel-picker-section-hdr small { color: #555; margin-left: auto; font-size: 10px; }
-.rel-picker-section-hdr i { font-size: 9px; color: #555; }
+.rel-picker-section-hdr i     { font-size: 9px; color: #555; }
 
 .rel-picker-actor {
     display: flex;
     align-items: center;
-    gap: 9px;
-    padding: 6px 10px;
+    gap: 8px;
+    padding: 5px 8px;
+    border-radius: 4px;
     cursor: pointer;
-    border-bottom: 1px solid #181818;
-    transition: background 0.1s;
+    transition: background 0.12s;
 }
-.rel-picker-actor:last-child { border-bottom: none; }
-.rel-picker-actor:hover    { background: rgba(255,255,255,0.04); }
+
+.rel-picker-actor:hover { background: rgba(255,255,255,0.06); }
+
 .rel-picker-actor.selected {
-    background: rgba(76,175,80,0.12);
-    box-shadow: inset 2px 0 0 #4caf50;
+    background: rgba(233,30,140,0.12);
+    outline: 1px solid rgba(233,30,140,0.4);
 }
 
 .rel-picker-actor img {
-    width: 26px;
-    height: 26px;
-    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    border-radius: 3px;
     object-fit: cover;
-    border: 1px solid #333;
+    border: 1px solid rgba(255,255,255,0.1);
     flex-shrink: 0;
 }
-.rel-picker-actor span { font-size: 12px; color: #ccc; }
+
+.rel-picker-actor span {
+    font-size: 12px;
+    color: #ccc;
+}

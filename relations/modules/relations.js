@@ -17,6 +17,7 @@ const _expanded   = new Set();  // IDs de relations dont les notes sont ouvertes
 const _activeActs = new Set();  // IDs d'acteurs avec le tab Relations actif
 let   _noteTimer  = null;       // Debounce auto-save notes
 let   _scanning   = false;      // Guard anti-doublon scan
+let   _sightTimer = null;       // Debounce sightRefresh
 
 // ---- Icônes de niveau (-3 → +3) ----------------------------
 
@@ -101,14 +102,15 @@ function isInFolder(actor, folderName) {
 }
 
 function isInPJFolder(actor)        { return isInFolder(actor, "PJ"); }
+function isInPNJFolder(actor)       { return isInFolder(actor, "PNJ"); }
 function isInCreaturesFolder(actor) { return isInFolder(actor, "Creatures"); }
 
 // Acteurs disponibles pour une nouvelle relation
-// (character + npc, excluant soi-même et les déjà-liés)
+// (dossiers "PJ" et "PNJ", excluant soi-même et les déjà-liés)
 function availableActors(actor) {
     const existing = new Set(relList(actor).map(r => r.targetId));
     return game.actors
-        .filter(a => (a.type === "character" || a.type === "npc")
+        .filter(a => (isInPJFolder(a) || isInPNJFolder(a))
                   && a.id !== actor.id
                   && !existing.has(a.id))
         .sort((a, b) => a.name.localeCompare(b.name));
@@ -167,13 +169,9 @@ export function buildTabHtml(actor) {
     const canEdit = isGM || actor.isOwner;
     const rels    = relList(actor);
 
-    // Grouper : Joueurs (dossier PJ), PNJ (ni PJ ni Creatures)
+    // Grouper : Joueurs (dossier "PJ"), PNJ (dossier "PNJ")
     const pjRels  = rels.filter(r => { const a = game.actors.get(r.targetId); return a && isInPJFolder(a); });
-    const pnjRels = rels.filter(r => {
-        if (pjRels.some(p => p.id === r.id)) return false;
-        const a = game.actors.get(r.targetId);
-        return !(a && isInCreaturesFolder(a));
-    });
+    const pnjRels = rels.filter(r => { const a = game.actors.get(r.targetId); return a && isInPNJFolder(a); });
 
     // ---- Styles inline (contournement cache CSS Foundry) ----
     const S = {
@@ -259,8 +257,8 @@ export function buildTabHtml(actor) {
 
 function buildPickerHtml(pj, uid) {
     const actors = availableActors(pj);
-    const joueurs = actors.filter(a => a.type === "character" && isInPJFolder(a));
-    const pnjs    = actors.filter(a => !isInPJFolder(a) && !isInCreaturesFolder(a));
+    const joueurs = actors.filter(a => isInPJFolder(a));
+    const pnjs    = actors.filter(a => isInPNJFolder(a));
 
     function actorRow(a) {
         return `<div class="rel-picker-actor" data-actor-id="${a.id}" data-name="${a.name.toLowerCase()}">
@@ -473,6 +471,18 @@ export function wireTab(actor, $html) {
 
     const canEdit = game.user.isGM || actor.isOwner;
 
+    // Clic sur la ligne → ouvrir le portrait
+    $tab.on("click", ".rel-header", function (e) {
+        if ($(e.target).closest("a, input, .rel-level-btn, .rel-btns").length) return;
+        const relId  = String($(this).closest(".rel-row").data("rel-id"));
+        const rel    = relList(actor).find(r => r.id === relId);
+        if (!rel) return;
+        const target = game.actors.get(rel.targetId);
+        const img    = target?.img  ?? rel.targetImg  ?? "icons/svg/mystery-man.svg";
+        const name   = target?.name ?? rel.targetName ?? "Inconnu";
+        new ImagePopout(img, { title: name }).render(true);
+    });
+
     // Ajouter — DOM uniquement, pas de re-render
     $tab.on("click", ".rel-add-btn", async () => {
         const data = await openAddDialog(actor);
@@ -586,52 +596,49 @@ export function wireTab(actor, $html) {
 // ---- Détection automatique (GM only) -----------------------
 
 async function scanVisibleTokens() {
-    if (!game.user.isGM) return;
     if (!game.settings.get(MODULE, "enabled")) return;
+    if (game.user.isGM) return;  // scan côté joueur uniquement
     if (_scanning) return;
     _scanning = true;
 
     try {
-        const tokens = canvas.tokens?.placeables ?? [];
-
-        // PJ visibles sur la scène
-        const visibleChars = tokens
-            .filter(t => !t.document?.hidden && t.actor?.type === "character" && t.actor.id)
-            .map(t => t.actor)
-            .filter((a, i, arr) => arr.findIndex(b => b.id === a.id) === i); // dédupe
-
-        // NPC visibles hors dossiers "PJ" et "Creatures"
-        const visibleNpcs = tokens
-            .filter(t => !t.document?.hidden && t.actor?.type === "npc" && t.actor.id
-                      && !isInPJFolder(t.actor) && !isInCreaturesFolder(t.actor))
-            .map(t => t.actor)
-            .filter((a, i, arr) => arr.findIndex(b => b.id === a.id) === i); // dédupe
-
+        const tokens    = canvas.tokens?.placeables ?? [];
         const sceneName = game.scenes.current?.name ?? "";
 
-        for (const actor of visibleChars) {
-            const existing  = new Set(relList(actor).map(r => r.targetId));
-            const toAdd     = [
-                ...visibleChars.filter(other => other.id !== actor.id && !existing.has(other.id)),
-                ...visibleNpcs.filter(npc => !existing.has(npc.id)),
-            ];
-            if (!toAdd.length) continue;
+        // Acteur joué par l'utilisateur courant
+        const myActor = game.actors.find(a => a.type === "character" && a.isOwner);
+        if (!myActor) return;
 
-            const newRels = toAdd.map(other => ({
-                id:           foundry.utils.randomID(12),
-                targetId:     other.id,
-                targetName:   other.name,
-                targetImg:    other.img ?? "",
-                type:         "",
-                level:        0,
-                note:         "",
-                lastPosition: sceneName,
-                secret:       false,
-            }));
+        // Son token doit être présent sur la scène
+        const myToken = tokens.find(t => t.actor?.id === myActor.id);
+        if (!myToken) return;
 
-            const list = relList(actor);
-            await actor.setFlag(MODULE, "list", [...list, ...newRels]);
-        }
+        const existing = new Set(relList(myActor).map(r => r.targetId));
+
+        // Tokens visibles sur l'écran du joueur (dossiers "PJ" et "PNJ")
+        const toAdd = tokens.filter(t =>
+            t.visible &&
+            t.actor?.id &&
+            t.actor.id !== myActor.id &&
+            (isInPJFolder(t.actor) || isInPNJFolder(t.actor)) &&
+            !existing.has(t.actor.id)
+        );
+
+        if (!toAdd.length) return;
+
+        const newRels = toAdd.map(t => ({
+            id:           foundry.utils.randomID(12),
+            targetId:     t.actor.id,
+            targetName:   t.actor.name,
+            targetImg:    t.actor.img ?? "",
+            type:         "",
+            level:        0,
+            note:         "",
+            lastPosition: sceneName,
+            secret:       false,
+        }));
+
+        await myActor.setFlag(MODULE, "list", [...relList(myActor), ...newRels]);
     } finally {
         _scanning = false;
     }
@@ -640,18 +647,12 @@ async function scanVisibleTokens() {
 // ---- Export ------------------------------------------------
 
 export function RelationsHooks() {
-    // Détection automatique — chargement de scène
+    // Scan initial — sight déjà calculé au moment de canvasReady
     Hooks.on("canvasReady", () => scanVisibleTokens());
-
-    // Détection — nouveau token posé (non caché)
-    Hooks.on("createToken", (tokenDoc) => {
-        if (!tokenDoc.hidden) scanVisibleTokens();
-    });
-
-    // Détection — token devient visible (hidden false → true inversé)
-    Hooks.on("updateToken", (tokenDoc, diff) => {
-        if (Object.hasOwn(diff, "hidden") && diff.hidden === false) {
-            scanVisibleTokens();
-        }
+    // Couvre tout le reste : nouveau token, démasquage, mouvement, lumière
+    // (sightRefresh tire toujours après createToken/updateToken, donc ceux-ci sont redondants)
+    Hooks.on("sightRefresh", () => {
+        clearTimeout(_sightTimer);
+        _sightTimer = setTimeout(() => scanVisibleTokens(), 500);
     });
 }

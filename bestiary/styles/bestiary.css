@@ -55,7 +55,7 @@
     align-items: center;
     gap: 8px;
     padding: 6px 10px;
-    cursor: default;
+    cursor: pointer;
 }
 
 /* Avatar */
