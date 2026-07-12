@@ -1,7 +1,7 @@
 ================================================================================
                         ASHARA - RELATIONS — MODULE FOUNDRY VTT
                                Auteur : Soruta (Discord: s0ruta)
-                                       Version : 1.5.1
+                                       Version : 1.5.3
                               Compatibilité : Foundry VTT v13
 ================================================================================
 
@@ -213,6 +213,22 @@ NOTES TECHNIQUES
 ================================================================================
                         ASHARA - RELATIONS — MISES À JOUR
 ================================================================================
+
+v1.5.3 | 2026-07-12
+   relations.js  — revealed conditionnel : les nouvelles entrées démarrent
+                  revealed:true si le setting "anonymization" est désactivé,
+                  revealed:false uniquement si le GM a activé l'anonymisation.
+                  Les boutons Révéler/Masquer restent fonctionnels dans les
+                  deux cas.
+   module.json   — Version 1.5.2 → 1.5.3
+
+v1.5.2 | 2026-07-12
+   relations.js  — Fix détection automatique : suppression du filtre t.visible.
+                  Tous les tokens des dossiers "PJ" et "PNJ" présents sur la
+                  scène sont désormais détectés, indépendamment de la ligne de
+                  vue ou du brouillard de guerre. Les GMs ne déclenchent
+                  toujours pas le scan (guard inchangé).
+   module.json   — Version 1.5.1 → 1.5.2
 
 v1.5.1 | 2026-07-12
    relations.js  — Anonymat partiel : le portrait reste toujours visible sur

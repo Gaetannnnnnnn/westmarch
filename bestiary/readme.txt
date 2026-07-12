@@ -1,7 +1,7 @@
 ================================================================================
                        ASHARA - BESTIAIRE — MODULE FOUNDRY VTT
                                Auteur : Soruta (Discord: s0ruta)
-                                       Version : 1.1.5
+                                       Version : 1.1.7
                               Compatibilité : Foundry VTT v13
 ================================================================================
 
@@ -187,6 +187,19 @@ NOTES TECHNIQUES
 ================================================================================
                        ASHARA - BESTIAIRE — MISES À JOUR
 ================================================================================
+
+v1.1.7 | 2026-07-12
+   bestiary.js   — revealed conditionnel : les nouvelles entrées démarrent
+                  revealed:true si le setting "anonymization" est désactivé,
+                  revealed:false uniquement si le GM a activé l'anonymisation.
+   module.json   — Version 1.1.6 → 1.1.7
+
+v1.1.6 | 2026-07-12
+   bestiary.js   — Fix détection automatique : suppression du filtre t.visible.
+                  Toutes les créatures du dossier "Creatures" présentes sur la
+                  scène sont désormais détectées, sans condition de ligne de vue
+                  ou brouillard de guerre. Guard GM inchangé.
+   module.json   — Version 1.1.5 → 1.1.6
 
 v1.1.5 | 2026-07-12
    bestiary.js   — Anonymat partiel : portrait toujours visible, seul le nom

@@ -71,7 +71,7 @@ async function relAdd(actor, data) {
     if (list.some(r => r.targetId === data.targetId)) return null;
     const rel = {
         id: foundry.utils.randomID(12),
-        revealed: false,
+        revealed: !game.settings.get(MODULE, "anonymization"),
         note: "", lastPosition: game.scenes.current?.name ?? "",
         secret: false, ...data
     };
@@ -617,9 +617,8 @@ async function scanVisibleTokens() {
 
         const existing = new Set(relList(myActor).map(r => r.targetId));
 
-        // Tokens visibles sur l'écran du joueur (dossiers "PJ" et "PNJ")
+        // Tokens présents sur la scène (dossiers "PJ" et "PNJ")
         const toAdd = tokens.filter(t =>
-            t.visible &&
             t.actor?.id &&
             t.actor.id !== myActor.id &&
             (isInPJFolder(t.actor) || isInPNJFolder(t.actor)) &&
@@ -638,7 +637,7 @@ async function scanVisibleTokens() {
             note:         "",
             lastPosition: sceneName,
             secret:       false,
-            revealed:     false,
+            revealed:     !game.settings.get(MODULE, "anonymization"),
         }));
 
         await myActor.setFlag(MODULE, "list", [...relList(myActor), ...newRels]);

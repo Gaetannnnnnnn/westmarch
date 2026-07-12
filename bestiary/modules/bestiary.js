@@ -260,7 +260,7 @@ async function openAddDialog(actor) {
                         hostility:  0,
                         note:       "",
                         firstScene: game.scenes.current?.name ?? "",
-                        revealed:   false,
+                        revealed:   !game.settings.get(MODULE, "anonymization"),
                     };
                 }
             },
@@ -417,9 +417,8 @@ async function scanVisibleTokens() {
 
         const existing = new Set(beastList(myActor).map(e => e.targetId));
 
-        // Créatures visibles sur l'écran du joueur (t.visible = vision réelle du client)
+        // Créatures présentes sur la scène (dossier "Creatures")
         const toAdd = tokens.filter(t =>
-            t.visible &&
             t.actor?.id &&
             t.actor.id !== myActor.id &&
             isInFolder(t.actor, "Creatures") &&
@@ -436,7 +435,7 @@ async function scanVisibleTokens() {
             hostility:  0,
             note:       "",
             firstScene: sceneName,
-            revealed:   false,
+            revealed:   !game.settings.get(MODULE, "anonymization"),
         }));
 
         await myActor.update(
