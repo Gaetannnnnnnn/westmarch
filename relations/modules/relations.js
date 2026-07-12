@@ -122,7 +122,7 @@ function availableActors(actor) {
 export function buildRowHtml(r, actor, canEdit) {
     const target   = game.actors.get(r.targetId);
     const revealed = r.revealed ?? true;
-    const img      = revealed ? (target?.img  ?? r.targetImg  ?? "icons/svg/mystery-man.svg") : "icons/svg/mystery-man.svg";
+    const img      = target?.img  ?? r.targetImg  ?? "icons/svg/mystery-man.svg";
     const name     = revealed ? (target?.name ?? r.targetName ?? "Inconnu") : "Inconnu";
     const open   = _expanded.has(r.id);
     return `
@@ -478,7 +478,7 @@ export function wireTab(actor, $html) {
         if ($(e.target).closest("a, input, .rel-level-btn, .rel-btns").length) return;
         const relId  = String($(this).closest(".rel-row").data("rel-id"));
         const rel    = relList(actor).find(r => r.id === relId);
-        if (!rel || !(rel.revealed ?? true)) return;
+        if (!rel) return;
         const target = game.actors.get(rel.targetId);
         const img    = target?.img  ?? rel.targetImg  ?? "icons/svg/mystery-man.svg";
         const name   = target?.name ?? rel.targetName ?? "Inconnu";
@@ -694,18 +694,18 @@ export function RelationsHooks() {
     });
 
     // Boutons Révéler / Masquer injectés dans l'en-tête des fiches acteurs (GM uniquement)
-    Hooks.on("renderActorSheet", (app, html) => {
+    Hooks.on("renderActorSheetV2", (app, html) => {
         if (!game.user.isGM) return;
         if (!game.settings.get(MODULE, "anonymization")) return;
-        const actor = app.actor ?? app.object;
+        const actor = app.document ?? app.actor ?? app.object;
         if (!actor) return;
         const $header = $(html).find(".window-header");
         if (!$header.length || $header.find(".ashara-reveal-btn").length) return;
         const id = actor.id;
-        const $reveal = $(`<a class="header-button control ashara-reveal-btn" title="Révéler à la party"><i class="fas fa-eye"></i> Révéler</a>`);
-        const $anon   = $(`<a class="header-button control ashara-anon-btn" title="Masquer à la party"><i class="fas fa-eye-slash"></i> Masquer</a>`);
-        $reveal.on("click", e => { e.preventDefault(); Hooks.callAll("ashara:revealToParty", id); });
-        $anon.on("click",   e => { e.preventDefault(); Hooks.callAll("ashara:anonymize",     id); });
+        const $reveal = $(`<button type="button" class="header-control ashara-reveal-btn" title="Révéler à la party"><i class="fas fa-eye"></i> Révéler</button>`);
+        const $anon   = $(`<button type="button" class="header-control ashara-anon-btn" title="Masquer à la party"><i class="fas fa-eye-slash"></i> Masquer</button>`);
+        $reveal.on("click", () => Hooks.callAll("ashara:revealToParty", id));
+        $anon.on("click",   () => Hooks.callAll("ashara:anonymize",     id));
         const $close = $header.find(".close");
         $anon.insertBefore($close);
         $reveal.insertBefore($anon);

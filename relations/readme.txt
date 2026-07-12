@@ -1,7 +1,7 @@
 ================================================================================
                         ASHARA - RELATIONS — MODULE FOUNDRY VTT
                                Auteur : Soruta (Discord: s0ruta)
-                                       Version : 1.4.9
+                                       Version : 1.5.1
                               Compatibilité : Foundry VTT v13
 ================================================================================
 
@@ -213,6 +213,22 @@ NOTES TECHNIQUES
 ================================================================================
                         ASHARA - RELATIONS — MISES À JOUR
 ================================================================================
+
+v1.5.1 | 2026-07-12
+   relations.js  — Anonymat partiel : le portrait reste toujours visible sur
+                  la ligne (pour différencier visuellement les inconnus), seul
+                  le nom passe en "Inconnu". Clic portrait réactivé même pour
+                  les entrées non révélées.
+   module.json   — Version 1.5.0 → 1.5.1
+
+v1.5.0 | 2026-07-12
+   relations.js  — Fix hook injection boutons : renderActorSheet ne fire pas
+                  sur les sheets ApplicationV2 de Foundry v13. Remplacement
+                  par renderActorSheetV2 (commun à NPCActorSheet et
+                  CharacterActorSheet). Fix app.actor → app.document (API
+                  ApplicationV2). Boutons passés de <a> à <button type=button>
+                  pour conformité ApplicationV2.
+   module.json   — Version 1.4.9 → 1.5.0
 
 v1.4.9 | 2026-07-12
    settings.js   — Nouveau paramètre "Activer l'anonymisation" (world, GM only) :

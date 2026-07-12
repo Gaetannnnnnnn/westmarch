@@ -1,7 +1,7 @@
 ================================================================================
                        ASHARA - BESTIAIRE — MODULE FOUNDRY VTT
                                Auteur : Soruta (Discord: s0ruta)
-                                       Version : 1.1.3
+                                       Version : 1.1.5
                               Compatibilité : Foundry VTT v13
 ================================================================================
 
@@ -187,6 +187,17 @@ NOTES TECHNIQUES
 ================================================================================
                        ASHARA - BESTIAIRE — MISES À JOUR
 ================================================================================
+
+v1.1.5 | 2026-07-12
+   bestiary.js   — Anonymat partiel : portrait toujours visible, seul le nom
+                  passe en "Inconnue". Clic portrait réactivé même pour les
+                  entrées non révélées.
+   module.json   — Version 1.1.4 → 1.1.5
+
+v1.1.4 | 2026-07-12
+   bestiary.js   — Fix hook injection boutons : renderActorSheet → renderActorSheetV2,
+                  app.actor → app.document, <a> → <button type=button>.
+   module.json   — Version 1.1.3 → 1.1.4
 
 v1.1.3 | 2026-07-12
    settings.js   — Nouveau paramètre "Activer l'anonymisation" (world, GM only) :
