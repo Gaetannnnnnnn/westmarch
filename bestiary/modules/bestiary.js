@@ -407,13 +407,15 @@ async function scanVisibleTokens() {
         const tokens    = canvas.tokens?.placeables ?? [];
         const sceneName = game.scenes.current?.name ?? "";
 
-        // Acteur joué par l'utilisateur courant
-        const myActor = game.actors.find(a => a.type === "character" && a.isOwner);
-        if (!myActor) return;
-
-        // Son token doit être présent sur la scène
-        const myToken = tokens.find(t => t.actor?.id === myActor.id);
+        // Token du joueur présent sur la scène (cherche parmi ses acteurs PJ)
+        // Logique inversée : token d'abord → acteur ensuite, pour gérer les WM multi-persos
+        const myToken = tokens.find(t =>
+            t.actor?.type === "character" &&
+            t.actor?.isOwner &&
+            isInPJFolder(t.actor)
+        );
         if (!myToken) return;
+        const myActor = myToken.actor;
 
         const existing = new Set(beastList(myActor).map(e => e.targetId));
 
@@ -492,22 +494,33 @@ export function BestiaryHooks() {
         _sightTimer = setTimeout(() => scanVisibleTokens(), 300);
     });
 
-    // Boutons Révéler / Masquer (injectés uniquement si Relations n'est pas actif — vérif. dup.)
-    Hooks.on("renderActorSheetV2", (app, html) => {
+    // Boutons Révéler / Masquer — même pattern que le sablier TM
+    Hooks.on("renderApplicationV2", (app, element) => {
         if (!game.user.isGM) return;
         if (!game.settings.get(MODULE, "anonymization")) return;
-        const actor = app.document ?? app.actor ?? app.object;
-        if (!actor) return;
-        const $header = $(app.element).find(".window-header");
-        if (!$header.length || $header.find(".ashara-reveal-btn").length) return;
+        if (!app.document || !(app.document instanceof Actor)) return;
+        const actor = app.document;
+        const header = element.querySelector(".window-header");
+        if (!header || header.querySelector(".ashara-reveal-btn")) return;
         const id = actor.id;
-        const $reveal = $(`<button type="button" class="header-control ashara-reveal-btn" title="Révéler à la party"><i class="fas fa-eye"></i> Révéler</button>`);
-        const $anon   = $(`<button type="button" class="header-control ashara-anon-btn" title="Masquer à la party"><i class="fas fa-eye-slash"></i> Masquer</button>`);
-        $reveal.on("click", () => Hooks.callAll("ashara:revealToParty", id));
-        $anon.on("click",   () => Hooks.callAll("ashara:anonymize",     id));
-        const $close = $header.find(".close");
-        $anon.insertBefore($close);
-        $reveal.insertBefore($anon);
+
+        const btnReveal = document.createElement("button");
+        btnReveal.type = "button";
+        btnReveal.classList.add("header-control", "icon", "fa-solid", "fa-eye", "ashara-reveal-btn");
+        btnReveal.setAttribute("aria-label", "Révéler à la party");
+        btnReveal.dataset.tooltip = "Révéler à la party";
+        btnReveal.addEventListener("click", () => Hooks.callAll("ashara:revealToParty", id));
+
+        const btnAnon = document.createElement("button");
+        btnAnon.type = "button";
+        btnAnon.classList.add("header-control", "icon", "fa-solid", "fa-eye-slash", "ashara-anon-btn");
+        btnAnon.setAttribute("aria-label", "Masquer à la party");
+        btnAnon.dataset.tooltip = "Masquer à la party";
+        btnAnon.addEventListener("click", () => Hooks.callAll("ashara:anonymize", id));
+
+        const close = header.querySelector(".close");
+        header.insertBefore(btnAnon,   close);
+        header.insertBefore(btnReveal, btnAnon);
     });
 
     // Répondre aux hooks (appels depuis les boutons, quel que soit le module émetteur)

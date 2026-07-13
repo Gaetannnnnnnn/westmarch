@@ -1,7 +1,7 @@
 ================================================================================
                        ASHARA - BESTIAIRE — MODULE FOUNDRY VTT
                                Auteur : Soruta (Discord: s0ruta)
-                                       Version : 1.1.8
+                                       Version : 1.2.0
                               Compatibilité : Foundry VTT v13
 ================================================================================
 
@@ -188,10 +188,21 @@ NOTES TECHNIQUES
                        ASHARA - BESTIAIRE — MISES À JOUR
 ================================================================================
 
-v1.1.8 | 2026-07-12
-   bestiary.js   — Fix boutons Révéler/Masquer : $(html) → $(app.element).
-                  renderActorSheetV2 passe le contenu dans html, pas le
-                  window frame. Le header était introuvable → boutons absents.
+v1.2.0 | 2026-07-13
+   bestiary.js   — Fix détection WestMarch multi-persos : logique inversée,
+                  on cherche le token du joueur présent sur la scène en
+                  premier (isOwner + isInPJFolder), puis on en déduit
+                  l'acteur. Même fix que relations v1.5.6.
+   module.json   — Version 1.1.9 → 1.2.0
+
+v1.1.9 | 2026-07-13
+   bestiary.js   — Boutons Révéler/Masquer réécrits en DOM pur, même pattern
+                  que le sablier TM. renderApplicationV2 + querySelector
+                  remplace renderActorSheetV2 + jQuery (plus fiable en v13).
+                  Icônes fa-eye / fa-eye-slash en header-control natif Foundry.
+   module.json   — Version 1.1.8 → 1.1.9
+
+v1.1.8 | 2026-07-13
    bestiary.js   — Hook createToken ajouté (debounce 300ms) : sightRefresh
                   ne tire pas sur les scènes sans vision active. createToken
                   garantit la détection même sans vision.

@@ -1,7 +1,7 @@
 ================================================================================
                         ASHARA - RELATIONS — MODULE FOUNDRY VTT
                                Auteur : Soruta (Discord: s0ruta)
-                                       Version : 1.5.4
+                                       Version : 1.5.6
                               Compatibilité : Foundry VTT v13
 ================================================================================
 
@@ -214,10 +214,22 @@ NOTES TECHNIQUES
                         ASHARA - RELATIONS — MISES À JOUR
 ================================================================================
 
-v1.5.4 | 2026-07-12
-   relations.js  — Fix boutons Révéler/Masquer : $(html) → $(app.element).
-                  renderActorSheetV2 passe le contenu dans html, pas le
-                  window frame. Le header était introuvable → boutons absents.
+v1.5.6 | 2026-07-13
+   relations.js  — Fix détection WestMarch multi-persos : logique inversée,
+                  on cherche le token du joueur présent sur la scène en
+                  premier (isOwner + isInPJFolder), puis on en déduit
+                  l'acteur. Évite le faux-positif de game.actors.find()
+                  qui retournait un perso arbitraire sans token sur scène.
+   module.json   — Version 1.5.5 → 1.5.6
+
+v1.5.5 | 2026-07-13
+   relations.js  — Boutons Révéler/Masquer réécrits en DOM pur, même pattern
+                  que le sablier TM. renderApplicationV2 + querySelector
+                  remplace renderActorSheetV2 + jQuery (plus fiable en v13).
+                  Icônes fa-eye / fa-eye-slash en header-control natif Foundry.
+   module.json   — Version 1.5.4 → 1.5.5
+
+v1.5.4 | 2026-07-13
    relations.js  — Hook createToken ajouté (debounce 300ms) : sightRefresh
                   ne tire pas sur les scènes sans vision active. createToken
                   garantit la détection même sans vision.
