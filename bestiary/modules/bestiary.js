@@ -82,6 +82,7 @@ function isInFolder(actor, folderName) {
     }
     return false;
 }
+function isInPJFolder(actor) { return isInFolder(actor, "PJ"); }
 
 // Créatures disponibles pour ajout manuel (dossier Creatures, pas déjà dans le bestiaire)
 function availableCreatures(actor) {

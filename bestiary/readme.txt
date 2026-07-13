@@ -1,7 +1,7 @@
 ================================================================================
                        ASHARA - BESTIAIRE — MODULE FOUNDRY VTT
                                Auteur : Soruta (Discord: s0ruta)
-                                       Version : 1.2.1
+                                       Version : 1.2.2
                               Compatibilité : Foundry VTT v13
 ================================================================================
 
@@ -187,6 +187,13 @@ NOTES TECHNIQUES
 ================================================================================
                        ASHARA - BESTIAIRE — MISES À JOUR
 ================================================================================
+
+v1.2.2 | 2026-07-13
+   bestiary.js   — Fix ReferenceError : isInPJFolder() utilisée dans
+                  scanVisibleTokens mais non définie dans bestiary.js.
+                  Ajout de la fonction (wrapper isInFolder("PJ")).
+                  Causait l'échec silencieux de toute détection automatique.
+   module.json   — Version 1.2.1 → 1.2.2
 
 v1.2.1 | 2026-07-13
    bestiary.js   — Refonte anonymisation : lit le flag ashara-relations.
