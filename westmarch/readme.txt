@@ -1,7 +1,7 @@
 ================================================================================
                         WESTMARCH SYSTÈME — MODULE FOUNDRY VTT
                                Auteur : Soruta (Discord: s0ruta)
-                                       Version : 2.0.3
+                                       Version : 2.0.4
                               Compatibilité : Foundry VTT v13
 ================================================================================
 
@@ -642,6 +642,12 @@ NOTES TECHNIQUES
 ================================================================================
                         WESTMARCH SYSTÈME — MISES À JOUR
 ================================================================================
+
+v2.0.4 | 2026-07-13
+   tm.js         — Vue GM : affichage "pas de jet" quand doRoll est false
+                  sur les activités de gain, pour distinguer au premier coup
+                  d'œil les TM avec et sans jet d20 demandé.
+   module.json   — Version 2.0.3 → 2.0.4
 
 v2.0.3 | 2026-07-10
    tm.js         — Fix lisibilité du panier TM : le conteneur à fond clair

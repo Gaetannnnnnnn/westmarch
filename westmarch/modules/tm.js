@@ -858,7 +858,7 @@ function buildActorRow(actor, startUnchecked = false) {
             const est     = rate * (item.days ?? 0);
             return `<div style="font-size:0.9em; padding:4px 0 4px 4px; border-top:1px solid #eee;">
                 <div><strong>${item.choiceLabel ?? item.skillId}</strong>${profStr} — ${item.dateRangeLabel ?? ""} (${item.days ?? "?"} j)</div>
-                <div style="color:#888;">≈ ${rate} po/j → ~${est} po${item.doRoll ? " · test d20 demandé" : ""}</div>
+                <div style="color:#888;">≈ ${rate} po/j → ~${est} po${item.doRoll ? " · test d20 demandé" : " · pas de jet"}</div>
             </div>`;
         }
     }).join("") || `<div style="color:#888; font-size:0.9em; font-style:italic; padding-top:4px;">Aucune activité déclarée.</div>`;
