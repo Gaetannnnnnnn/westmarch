@@ -661,40 +661,86 @@ async function openDeclarationDialog(actor) {
 
     await (foundry.applications.api.DialogV2 ?? DialogV2).wait({
         window: { title: `Temps mort — ${actor.name}`, resizable: true },
-        position: { width: 520 },
+        position: { width: 720 },
         content: `
-<div style="display:flex; flex-direction:column; gap:8px; padding:4px 0;">
-    <!-- PANIER -->
-    <div style="background:#f5f5f5; border:1px solid #ddd; border-radius:4px; padding:8px; color:#222;">
-        <div style="font-weight:bold; margin-bottom:4px; font-size:0.95em;">
-            🛒 TM — <span id="tm-cart-count">${cartItems.length} activité${cartItems.length !== 1 ? "s" : ""}</span>
+<div style="display:flex; gap:0; align-items:stretch; min-height:380px;">
+
+    <!-- GUIDE GAUCHE -->
+    <div style="width:175px; flex-shrink:0; background:#1e2235; color:#d0d4e8; border-radius:4px 0 0 4px;
+                padding:14px 12px; display:flex; flex-direction:column; gap:10px; font-size:0.88em; line-height:1.45;">
+        <div style="font-weight:bold; font-size:1em; color:#fff; letter-spacing:0.03em; margin-bottom:2px;">
+            📋 Déclarer un TM
         </div>
-        <div id="tm-cart-display">${cartHtml(cartItems)}</div>
+        <div style="border-top:1px solid #3a4060; padding-top:8px; display:flex; flex-direction:column; gap:8px;">
+
+            <div>
+                <div style="color:#7eb8f7; font-weight:bold; margin-bottom:2px;">① Type d'activité</div>
+                <div style="color:#b0b8d0;">Choisis <em>Gain de compétence</em> ou <em>🔨 Craft</em>.</div>
+            </div>
+
+            <div>
+                <div style="color:#7eb8f7; font-weight:bold; margin-bottom:2px;">② Remplis les détails</div>
+                <div style="color:#b0b8d0;">Compétence, maîtrise / expertise, dates de début et de fin.</div>
+            </div>
+
+            <div>
+                <div style="color:#7eb8f7; font-weight:bold; margin-bottom:2px;">③ Ajouter l'activité</div>
+                <div style="color:#b0b8d0;">Clique sur le bouton :</div>
+                <div style="margin-top:4px; background:#2980b9; color:#fff; border-radius:3px;
+                            padding:3px 7px; font-weight:bold; font-size:0.93em; display:inline-block;">
+                    + Ajouter au TM
+                </div>
+                <div style="color:#9098b0; margin-top:4px; font-size:0.9em;">Répète les étapes ①②③ pour chaque activité.</div>
+            </div>
+
+            <div style="border-top:1px solid #3a4060; padding-top:8px;">
+                <div style="color:#7eb8f7; font-weight:bold; margin-bottom:2px;">④ Finaliser</div>
+                <div style="color:#b0b8d0;">Quand ton TM est complet, clique sur :</div>
+                <div style="margin-top:4px; background:#27ae60; color:#fff; border-radius:3px;
+                            padding:3px 7px; font-weight:bold; font-size:0.93em; display:inline-block;">
+                    ✔ Déclarer le TM
+                </div>
+                <div style="color:#9098b0; margin-top:4px; font-size:0.9em;">Le GM recevra ta déclaration.</div>
+            </div>
+
+        </div>
     </div>
-    <hr style="margin:2px 0;">
-    <!-- FORMULAIRE D'AJOUT -->
-    <div style="font-size:0.8em; font-weight:bold; color:#666; text-transform:uppercase; letter-spacing:0.04em;">Ajouter une activité</div>
-    <div style="display:flex; gap:20px; padding:4px 0 6px; border-bottom:1px solid #ddd;">
-        <label style="cursor:pointer; display:flex; align-items:center; gap:6px; font-weight:bold;">
-            <input type="radio" name="tm-type-decl" value="gain" checked> Gain de compétence
-        </label>
-        <label style="cursor:pointer; display:flex; align-items:center; gap:6px; font-weight:bold;">
-            <input type="radio" name="tm-type-decl" value="craft"> 🔨 Craft
-        </label>
+
+    <!-- FORMULAIRE DROITE -->
+    <div style="flex:1; display:flex; flex-direction:column; gap:8px; padding:4px 0 4px 14px; min-width:0;">
+        <!-- PANIER -->
+        <div style="background:#f5f5f5; border:1px solid #ddd; border-radius:4px; padding:8px; color:#222;">
+            <div style="font-weight:bold; margin-bottom:4px; font-size:0.95em;">
+                🛒 TM — <span id="tm-cart-count">${cartItems.length} activité${cartItems.length !== 1 ? "s" : ""}</span>
+            </div>
+            <div id="tm-cart-display">${cartHtml(cartItems)}</div>
+        </div>
+        <hr style="margin:2px 0;">
+        <!-- FORMULAIRE D'AJOUT -->
+        <div style="font-size:0.8em; font-weight:bold; color:#666; text-transform:uppercase; letter-spacing:0.04em;">Ajouter une activité</div>
+        <div style="display:flex; gap:20px; padding:4px 0 6px; border-bottom:1px solid #ddd;">
+            <label style="cursor:pointer; display:flex; align-items:center; gap:6px; font-weight:bold;">
+                <input type="radio" name="tm-type-decl" value="gain" checked> Gain de compétence
+            </label>
+            <label style="cursor:pointer; display:flex; align-items:center; gap:6px; font-weight:bold;">
+                <input type="radio" name="tm-type-decl" value="craft"> 🔨 Craft
+            </label>
+        </div>
+        <div class="tm-section-gain-decl" style="display:flex; flex-direction:column; gap:8px;">
+            ${skillRowHtml("decl", firstSkill)}
+            ${profRowHtml("decl", false, false, false)}
+            ${dateAndRollHtml("decl", today.day, today.month, today.year, today.day, today.month, today.year, false)}
+            ${previewHtml("decl")}
+        </div>
+        <div class="tm-section-craft-decl" style="display:none; flex-direction:column; gap:8px;">
+            ${craftDeclFormHtml("decl", "nonmagique", ongoingCraft?.craftName ?? "", ongoingCraft?.craftPrice ?? 50, ongoingCraft?.craftScrollLevel ?? 0, ongoingCraft?.craftRarity ?? "courant", ongoingCraft?.craftSingleUse ?? false, ongoingCraft?.craftDaysAlready ?? 0, today.day, today.month, today.year, today.day, today.month, today.year)}
+        </div>
+        <button type="button" id="tm-add-to-cart"
+                style="padding:6px 12px; background:#2980b9; color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold; font-size:0.95em;">
+            + Ajouter au TM
+        </button>
     </div>
-    <div class="tm-section-gain-decl" style="display:flex; flex-direction:column; gap:8px;">
-        ${skillRowHtml("decl", firstSkill)}
-        ${profRowHtml("decl", false, false, false)}
-        ${dateAndRollHtml("decl", today.day, today.month, today.year, today.day, today.month, today.year, false)}
-        ${previewHtml("decl")}
-    </div>
-    <div class="tm-section-craft-decl" style="display:none; flex-direction:column; gap:8px;">
-        ${craftDeclFormHtml("decl", "nonmagique", ongoingCraft?.craftName ?? "", ongoingCraft?.craftPrice ?? 50, ongoingCraft?.craftScrollLevel ?? 0, ongoingCraft?.craftRarity ?? "courant", ongoingCraft?.craftSingleUse ?? false, ongoingCraft?.craftDaysAlready ?? 0, today.day, today.month, today.year, today.day, today.month, today.year)}
-    </div>
-    <button type="button" id="tm-add-to-cart"
-            style="padding:6px 12px; background:#2980b9; color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold; font-size:0.95em;">
-        + Ajouter au TM
-    </button>
+
 </div>`,
         rejectClose: false,
         render: () => {

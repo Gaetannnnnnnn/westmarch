@@ -1,7 +1,7 @@
 ================================================================================
                         WESTMARCH SYSTÈME — MODULE FOUNDRY VTT
                                Auteur : Soruta (Discord: s0ruta)
-                                       Version : 2.0.4
+                                       Version : 2.0.5
                               Compatibilité : Foundry VTT v13
 ================================================================================
 
@@ -642,6 +642,14 @@ NOTES TECHNIQUES
 ================================================================================
                         WESTMARCH SYSTÈME — MISES À JOUR
 ================================================================================
+
+v2.0.5 | 2026-07-13
+   tm.js         — Guide latéral dans la fenêtre de déclaration joueur :
+                  panneau sombre à gauche (175px) expliquant les 4 étapes
+                  (type → détails → Ajouter au TM → Déclarer le TM).
+                  Actions clés mises en évidence avec leur couleur de bouton.
+                  Largeur dialog 520 → 720px.
+   module.json   — Version 2.0.4 → 2.0.5
 
 v2.0.4 | 2026-07-13
    tm.js         — Vue GM : affichage "pas de jet" quand doRoll est false
