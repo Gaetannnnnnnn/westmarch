@@ -1,7 +1,7 @@
 ================================================================================
                         ASHARA - RELATIONS — MODULE FOUNDRY VTT
                                Auteur : Soruta (Discord: s0ruta)
-                                       Version : 1.5.6
+                                       Version : 1.5.7
                               Compatibilité : Foundry VTT v13
 ================================================================================
 
@@ -213,6 +213,14 @@ NOTES TECHNIQUES
 ================================================================================
                         ASHARA - RELATIONS — MISES À JOUR
 ================================================================================
+
+v1.5.7 | 2026-07-13
+   relations.js  — Refonte anonymisation : flag par acteur (ashara-relations.
+                  anonymous) remplace le setting global. Bouton toggle Anonyme
+                  (rouge si actif) + bouton Révéler, positionnés à gauche du
+                  header (après le titre). Tous acteurs concernés (PJ/PNJ/
+                  créatures). scanVisibleTokens et relAdd lisent le flag.
+   module.json   — Version 1.5.6 → 1.5.7
 
 v1.5.6 | 2026-07-13
    relations.js  — Fix détection WestMarch multi-persos : logique inversée,

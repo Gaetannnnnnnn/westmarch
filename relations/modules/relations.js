@@ -69,9 +69,10 @@ async function relSave(actor, list) {
 async function relAdd(actor, data) {
     const list = relList(actor);
     if (list.some(r => r.targetId === data.targetId)) return null;
+    const targetActor = game.actors.get(data.targetId);
     const rel = {
         id: foundry.utils.randomID(12),
-        revealed: !game.settings.get(MODULE, "anonymization"),
+        revealed: !(targetActor?.getFlag("ashara-relations", "anonymous") ?? false),
         note: "", lastPosition: game.scenes.current?.name ?? "",
         secret: false, ...data
     };
@@ -639,7 +640,7 @@ async function scanVisibleTokens() {
             note:         "",
             lastPosition: sceneName,
             secret:       false,
-            revealed:     !game.settings.get(MODULE, "anonymization"),
+            revealed:     !(t.actor.getFlag("ashara-relations", "anonymous") ?? false),
         }));
 
         await myActor.setFlag(MODULE, "list", [...relList(myActor), ...newRels]);
@@ -698,33 +699,47 @@ export function RelationsHooks() {
         _sightTimer = setTimeout(() => scanVisibleTokens(), 300);
     });
 
-    // Boutons Révéler / Masquer — même pattern que le sablier TM
+    // Boutons Anonyme (toggle) + Révéler — pattern sablier TM, position gauche
     Hooks.on("renderApplicationV2", (app, element) => {
         if (!game.user.isGM) return;
-        if (!game.settings.get(MODULE, "anonymization")) return;
         if (!app.document || !(app.document instanceof Actor)) return;
         const actor = app.document;
         const header = element.querySelector(".window-header");
         if (!header || header.querySelector(".ashara-reveal-btn")) return;
         const id = actor.id;
 
-        const btnReveal = document.createElement("button");
-        btnReveal.type = "button";
-        btnReveal.classList.add("header-control", "icon", "fa-solid", "fa-eye", "ashara-reveal-btn");
-        btnReveal.setAttribute("aria-label", "Révéler à la party");
-        btnReveal.dataset.tooltip = "Révéler à la party";
-        btnReveal.addEventListener("click", () => Hooks.callAll("ashara:revealToParty", id));
-
+        // Toggle "Anonyme" — rouge si actif (flag par acteur)
+        const isAnon = () => !!(actor.getFlag("ashara-relations", "anonymous") ?? false);
         const btnAnon = document.createElement("button");
         btnAnon.type = "button";
         btnAnon.classList.add("header-control", "icon", "fa-solid", "fa-eye-slash", "ashara-anon-btn");
-        btnAnon.setAttribute("aria-label", "Masquer à la party");
-        btnAnon.dataset.tooltip = "Masquer à la party";
-        btnAnon.addEventListener("click", () => Hooks.callAll("ashara:anonymize", id));
+        const refreshAnon = () => {
+            btnAnon.style.color   = isAnon() ? "#e74c3c" : "";
+            btnAnon.dataset.tooltip = isAnon() ? "Anonyme — cliquer pour désactiver" : "Rendre anonyme";
+        };
+        refreshAnon();
+        btnAnon.addEventListener("click", async () => {
+            await actor.setFlag("ashara-relations", "anonymous", !isAnon());
+            refreshAnon();
+        });
 
-        const close = header.querySelector(".close");
-        header.insertBefore(btnAnon,   close);
-        header.insertBefore(btnReveal, btnAnon);
+        // Bouton "Révéler" — révèle aux membres de la party qui ont cet acteur en anonyme
+        const btnReveal = document.createElement("button");
+        btnReveal.type = "button";
+        btnReveal.classList.add("header-control", "icon", "fa-solid", "fa-eye", "ashara-reveal-btn");
+        btnReveal.dataset.tooltip = "Révéler à la party";
+        btnReveal.addEventListener("click", () => Hooks.callAll("ashara:revealToParty", id));
+
+        // Position : gauche (après le titre)
+        const title = header.querySelector(".window-title");
+        if (title) {
+            title.insertAdjacentElement("afterend", btnAnon);
+            title.insertAdjacentElement("afterend", btnReveal);
+        } else {
+            const close = header.querySelector(".close");
+            header.insertBefore(btnAnon,   close);
+            header.insertBefore(btnReveal, btnAnon);
+        }
     });
 
     // Répondre aux hooks inter-modules (Bestiary peut aussi écouter ces hooks)

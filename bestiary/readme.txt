@@ -1,7 +1,7 @@
 ================================================================================
                        ASHARA - BESTIAIRE — MODULE FOUNDRY VTT
                                Auteur : Soruta (Discord: s0ruta)
-                                       Version : 1.2.0
+                                       Version : 1.2.1
                               Compatibilité : Foundry VTT v13
 ================================================================================
 
@@ -187,6 +187,13 @@ NOTES TECHNIQUES
 ================================================================================
                        ASHARA - BESTIAIRE — MISES À JOUR
 ================================================================================
+
+v1.2.1 | 2026-07-13
+   bestiary.js   — Refonte anonymisation : lit le flag ashara-relations.
+                  anonymous sur l'acteur cible (partagé avec relations).
+                  Bouton toggle Anonyme + Révéler positionnés à gauche.
+                  openAddDialog et scanVisibleTokens lisent le flag.
+   module.json   — Version 1.2.0 → 1.2.1
 
 v1.2.0 | 2026-07-13
    bestiary.js   — Fix détection WestMarch multi-persos : logique inversée,

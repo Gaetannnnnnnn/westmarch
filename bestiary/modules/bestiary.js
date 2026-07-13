@@ -260,7 +260,7 @@ async function openAddDialog(actor) {
                         hostility:  0,
                         note:       "",
                         firstScene: game.scenes.current?.name ?? "",
-                        revealed:   !game.settings.get(MODULE, "anonymization"),
+                        revealed:   !(target?.getFlag("ashara-relations", "anonymous") ?? false),
                     };
                 }
             },
@@ -437,7 +437,7 @@ async function scanVisibleTokens() {
             hostility:  0,
             note:       "",
             firstScene: sceneName,
-            revealed:   !game.settings.get(MODULE, "anonymization"),
+            revealed:   !(t.actor.getFlag("ashara-relations", "anonymous") ?? false),
         }));
 
         await myActor.update(
@@ -494,33 +494,44 @@ export function BestiaryHooks() {
         _sightTimer = setTimeout(() => scanVisibleTokens(), 300);
     });
 
-    // Boutons Révéler / Masquer — même pattern que le sablier TM
+    // Boutons Anonyme (toggle) + Révéler — fallback si Relations n'est pas actif
     Hooks.on("renderApplicationV2", (app, element) => {
         if (!game.user.isGM) return;
-        if (!game.settings.get(MODULE, "anonymization")) return;
         if (!app.document || !(app.document instanceof Actor)) return;
         const actor = app.document;
         const header = element.querySelector(".window-header");
         if (!header || header.querySelector(".ashara-reveal-btn")) return;
         const id = actor.id;
 
-        const btnReveal = document.createElement("button");
-        btnReveal.type = "button";
-        btnReveal.classList.add("header-control", "icon", "fa-solid", "fa-eye", "ashara-reveal-btn");
-        btnReveal.setAttribute("aria-label", "Révéler à la party");
-        btnReveal.dataset.tooltip = "Révéler à la party";
-        btnReveal.addEventListener("click", () => Hooks.callAll("ashara:revealToParty", id));
-
+        const isAnon = () => !!(actor.getFlag("ashara-relations", "anonymous") ?? false);
         const btnAnon = document.createElement("button");
         btnAnon.type = "button";
         btnAnon.classList.add("header-control", "icon", "fa-solid", "fa-eye-slash", "ashara-anon-btn");
-        btnAnon.setAttribute("aria-label", "Masquer à la party");
-        btnAnon.dataset.tooltip = "Masquer à la party";
-        btnAnon.addEventListener("click", () => Hooks.callAll("ashara:anonymize", id));
+        const refreshAnon = () => {
+            btnAnon.style.color    = isAnon() ? "#e74c3c" : "";
+            btnAnon.dataset.tooltip = isAnon() ? "Anonyme — cliquer pour désactiver" : "Rendre anonyme";
+        };
+        refreshAnon();
+        btnAnon.addEventListener("click", async () => {
+            await actor.setFlag("ashara-relations", "anonymous", !isAnon());
+            refreshAnon();
+        });
 
-        const close = header.querySelector(".close");
-        header.insertBefore(btnAnon,   close);
-        header.insertBefore(btnReveal, btnAnon);
+        const btnReveal = document.createElement("button");
+        btnReveal.type = "button";
+        btnReveal.classList.add("header-control", "icon", "fa-solid", "fa-eye", "ashara-reveal-btn");
+        btnReveal.dataset.tooltip = "Révéler à la party";
+        btnReveal.addEventListener("click", () => Hooks.callAll("ashara:revealToParty", id));
+
+        const title = header.querySelector(".window-title");
+        if (title) {
+            title.insertAdjacentElement("afterend", btnAnon);
+            title.insertAdjacentElement("afterend", btnReveal);
+        } else {
+            const close = header.querySelector(".close");
+            header.insertBefore(btnAnon,   close);
+            header.insertBefore(btnReveal, btnAnon);
+        }
     });
 
     // Répondre aux hooks (appels depuis les boutons, quel que soit le module émetteur)
