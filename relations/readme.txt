@@ -1,7 +1,7 @@
 ================================================================================
                         ASHARA - RELATIONS — MODULE FOUNDRY VTT
                                Auteur : Soruta (Discord: s0ruta)
-                                       Version : 1.5.7
+                                       Version : 1.5.8
                               Compatibilité : Foundry VTT v13
 ================================================================================
 
@@ -213,6 +213,13 @@ NOTES TECHNIQUES
 ================================================================================
                         ASHARA - RELATIONS — MISES À JOUR
 ================================================================================
+
+v1.5.8 | 2026-07-13
+   relations.js  — Section PJ filtrée sur type="character" uniquement : les NPC
+                  stockés dans le dossier PJ ne sont plus comptabilisés comme
+                  joueurs (pjRels, picker joueurs, scanVisibleTokens, picker
+                  availableActors).
+   module.json   — Version 1.5.7 → 1.5.8
 
 v1.5.7 | 2026-07-13
    relations.js  — Refonte anonymisation : flag par acteur (ashara-relations.

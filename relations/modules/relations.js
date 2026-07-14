@@ -112,7 +112,7 @@ function isInCreaturesFolder(actor) { return isInFolder(actor, "Creatures"); }
 function availableActors(actor) {
     const existing = new Set(relList(actor).map(r => r.targetId));
     return game.actors
-        .filter(a => (isInPJFolder(a) || isInPNJFolder(a))
+        .filter(a => ((isInPJFolder(a) && a.type === "character") || isInPNJFolder(a))
                   && a.id !== actor.id
                   && !existing.has(a.id))
         .sort((a, b) => a.name.localeCompare(b.name));
@@ -173,7 +173,7 @@ export function buildTabHtml(actor) {
     const rels    = relList(actor);
 
     // Grouper : Joueurs (dossier "PJ"), PNJ (dossier "PNJ")
-    const pjRels  = rels.filter(r => { const a = game.actors.get(r.targetId); return a && isInPJFolder(a); });
+    const pjRels  = rels.filter(r => { const a = game.actors.get(r.targetId); return a && isInPJFolder(a) && a.type === "character"; });
     const pnjRels = rels.filter(r => { const a = game.actors.get(r.targetId); return a && isInPNJFolder(a); });
 
     // ---- Styles inline (contournement cache CSS Foundry) ----
@@ -260,7 +260,7 @@ export function buildTabHtml(actor) {
 
 function buildPickerHtml(pj, uid) {
     const actors = availableActors(pj);
-    const joueurs = actors.filter(a => isInPJFolder(a));
+    const joueurs = actors.filter(a => isInPJFolder(a) && a.type === "character");
     const pnjs    = actors.filter(a => isInPNJFolder(a));
 
     function actorRow(a) {
@@ -620,11 +620,11 @@ async function scanVisibleTokens() {
 
         const existing = new Set(relList(myActor).map(r => r.targetId));
 
-        // Tokens présents sur la scène (dossiers "PJ" et "PNJ")
+        // Tokens présents sur la scène (PJ = character dans dossier PJ, PNJ = dossier PNJ)
         const toAdd = tokens.filter(t =>
             t.actor?.id &&
             t.actor.id !== myActor.id &&
-            (isInPJFolder(t.actor) || isInPNJFolder(t.actor)) &&
+            ((isInPJFolder(t.actor) && t.actor.type === "character") || isInPNJFolder(t.actor)) &&
             !existing.has(t.actor.id)
         );
 
