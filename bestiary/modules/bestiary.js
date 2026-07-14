@@ -421,12 +421,17 @@ async function scanVisibleTokens() {
         const existing = new Set(beastList(myActor).map(e => e.targetId));
 
         // Créatures présentes sur la scène (dossier "Creatures")
-        const toAdd = tokens.filter(t =>
-            t.actor?.id &&
-            t.actor.id !== myActor.id &&
-            isInFolder(t.actor, "Creatures") &&
-            !existing.has(t.actor.id)
-        );
+        // seenIds déduplique les tokens qui partagent le même acteur de base (ex: 5 Knights)
+        const seenIds = new Set();
+        const toAdd = tokens.filter(t => {
+            if (!t.actor?.id) return false;
+            if (t.actor.id === myActor.id) return false;
+            if (!isInFolder(t.actor, "Creatures")) return false;
+            if (existing.has(t.actor.id)) return false;
+            if (seenIds.has(t.actor.id)) return false;
+            seenIds.add(t.actor.id);
+            return true;
+        });
 
         if (!toAdd.length) return;
 
