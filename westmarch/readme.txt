@@ -1,7 +1,7 @@
 ================================================================================
                         WESTMARCH SYSTÈME — MODULE FOUNDRY VTT
                                Auteur : Soruta (Discord: s0ruta)
-                                       Version : 2.0.5
+                                       Version : 2.0.6
                               Compatibilité : Foundry VTT v13
 ================================================================================
 
@@ -642,6 +642,12 @@ NOTES TECHNIQUES
 ================================================================================
                         WESTMARCH SYSTÈME — MISES À JOUR
 ================================================================================
+
+v2.0.6 | 2026-07-14
+   tm.js         — Lien en bas de la fenêtre de déclaration joueur : message
+                  discret renvoyant vers Journal → Temps Morts pour consulter
+                  les règles.
+   module.json   — Version 2.0.5 → 2.0.6
 
 v2.0.5 | 2026-07-13
    tm.js         — Guide latéral dans la fenêtre de déclaration joueur :

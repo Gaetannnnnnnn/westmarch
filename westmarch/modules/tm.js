@@ -739,6 +739,9 @@ async function openDeclarationDialog(actor) {
                 style="padding:6px 12px; background:#2980b9; color:white; border:none; border-radius:4px; cursor:pointer; font-weight:bold; font-size:0.95em;">
             + Ajouter au TM
         </button>
+        <div style="margin-top:8px; font-size:0.8em; color:#888; font-style:italic; border-top:1px solid #e0e0e0; padding-top:6px;">
+            📖 Pour en savoir plus sur les règles de temps morts, rendez-vous dans l'onglet <strong>Journal → Temps Morts</strong>.
+        </div>
     </div>
 
 </div>`,
