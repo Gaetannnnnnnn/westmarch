@@ -23,44 +23,14 @@ export function partyFeatureEnabled(key) {
 export function registerSettings() {
 
     // ============================================================
-    // SECTION : Enregistrement des paramètres du module
+    // SECTION : Enregistrement des paramètres du module westmarch (core)
     // Accessibles via : Paramètres du jeu → Configuration des modules → WestMarch Système
     // Tous les paramètres sont GM uniquement (scope: "world")
     // ============================================================
 
     game.settings.register("westmarch", "enableParty", {
         name: "Système de Party",
-        hint: "Active le système de party (Create/Join/Leave/Kick/Invite Party). Si désactivé, le GM ne peut plus créer ou gérer de party, et toutes les options qui en dépendent (Join Scene, Show Party, Filtrage du chat, Regroupement visuel, Go With Party scènes/journaux, Journal de session) sont automatiquement désactivées même si elles sont cochées.",
-        scope: "world",
-        config: true,
-        type: Boolean,
-        default: true,
-        requiresReload: false
-    });
-
-    game.settings.register("westmarch", "enableXpBlock", {
-        name: "Blocage de l'XP et du Level Up",
-        hint: "Empêche les joueurs de modifier manuellement leur XP et masque le bouton Level Up sur leur fiche personnage. Les GM ne sont pas affectés.",
-        scope: "world",
-        config: true,
-        type: Boolean,
-        default: true,
-        requiresReload: false
-    });
-
-    game.settings.register("westmarch", "enableTokenAppearance", {
-        name: "Changement d'apparence des tokens",
-        hint: "Permet aux GM de configurer plusieurs images sur un token. Les joueurs peuvent cycler entre les images via un bouton dans le HUD du token.",
-        scope: "world",
-        config: true,
-        type: Boolean,
-        default: true,
-        requiresReload: false
-    });
-
-    game.settings.register("westmarch", "enableTokenPortraitButton", {
-        name: "Bouton 'Voir le portrait' (HUD du token)",
-        hint: "Ajoute un bouton dans le HUD du token (clic droit sur un token) qui affiche en grand l'image liée à la fiche du personnage (son portrait).",
+        hint: "Active le système de party (Create/Join/Leave/Kick/Invite Party). Si désactivé, le GM ne peut plus créer ou gérer de party, et toutes les options qui en dépendent sont automatiquement désactivées.",
         scope: "world",
         config: true,
         type: Boolean,
@@ -70,7 +40,7 @@ export function registerSettings() {
 
     game.settings.register("westmarch", "enableJoinScene", {
         name: "Join Scene",
-        hint: "Ajoute une option 'Join Scene' dans le menu contextuel de la liste des joueurs. Permet à n'importe quel membre d'une party de se téléporter vers la scène d'un autre membre. Les GM peuvent rejoindre la scène de n'importe quel autre GM, sans condition de party.",
+        hint: "Ajoute une option 'Join Scene' dans le menu contextuel de la liste des joueurs. Permet à n'importe quel membre d'une party de se téléporter vers la scène d'un autre membre.",
         scope: "world",
         config: true,
         type: Boolean,
@@ -150,97 +120,7 @@ export function registerSettings() {
 
     game.settings.register("westmarch", "enableCombatParty", {
         name: "Combat lié à la party (plutôt qu'à la scène)",
-        hint: "Les combats créés par un GM sont automatiquement détachés de leur scène (la party continue de les voir même en changeant de scène) et marqués comme appartenant à sa party. Si plusieurs parties jouent en parallèle, chaque joueur ne voit dans le tracker de combat que celui de sa propre party (le GM voit toujours tout).",
-        scope: "world",
-        config: true,
-        type: Boolean,
-        default: true,
-        requiresReload: false
-    });
-
-    game.settings.register("westmarch", "shopRestockDays", {
-        name: "Réapprovisionnement boutiques — Délai par défaut (jours)",
-        hint: "Nombre de jours de calendrier par défaut avant qu'un article à 0 soit remis à 1. Utilisé si aucune valeur par rareté n'est définie. Mettre 0 pour désactiver la fonctionnalité.",
-        scope: "world",
-        config: true,
-        type: Number,
-        default: 7,
-        requiresReload: false
-    });
-
-    game.settings.register("westmarch", "shopRestockDaysCommon", {
-        name: "Réapprovisionnement boutiques — Commun (jours)",
-        hint: "Délai pour les articles de rareté Commun. 0 = utilise le délai par défaut.",
-        scope: "world",
-        config: true,
-        type: Number,
-        default: 0,
-        requiresReload: false
-    });
-
-    game.settings.register("westmarch", "shopRestockDaysUncommon", {
-        name: "Réapprovisionnement boutiques — Peu commun (jours)",
-        hint: "Délai pour les articles de rareté Peu commun. 0 = utilise le délai par défaut.",
-        scope: "world",
-        config: true,
-        type: Number,
-        default: 0,
-        requiresReload: false
-    });
-
-    game.settings.register("westmarch", "shopRestockDaysRare", {
-        name: "Réapprovisionnement boutiques — Rare (jours)",
-        hint: "Délai pour les articles de rareté Rare. 0 = utilise le délai par défaut.",
-        scope: "world",
-        config: true,
-        type: Number,
-        default: 0,
-        requiresReload: false
-    });
-
-    game.settings.register("westmarch", "shopRestockDaysVeryRare", {
-        name: "Réapprovisionnement boutiques — Très rare (jours)",
-        hint: "Délai pour les articles de rareté Très rare. 0 = utilise le délai par défaut.",
-        scope: "world",
-        config: true,
-        type: Number,
-        default: 0,
-        requiresReload: false
-    });
-
-    game.settings.register("westmarch", "shopRestockDaysLegendary", {
-        name: "Réapprovisionnement boutiques — Légendaire (jours)",
-        hint: "Délai pour les articles de rareté Légendaire. 0 = utilise le délai par défaut.",
-        scope: "world",
-        config: true,
-        type: Number,
-        default: 0,
-        requiresReload: false
-    });
-
-    game.settings.register("westmarch", "downtimeWebhookUrl", {
-        name: "URL du Webhook Discord (changement de date)",
-        hint: "Quand le GM avance la date dans Simple Calendar, envoie automatiquement un message sur ce webhook Discord avec la nouvelle date (salon joueurs). Laisser vide pour désactiver.",
-        scope: "world",
-        config: true,
-        type: String,
-        default: "",
-        requiresReload: false
-    });
-
-    game.settings.register("westmarch", "tmWebhookUrl", {
-        name: "URL du Webhook Discord (temps morts)",
-        hint: "Envoie une notification immédiate sur ce webhook Discord à chaque nouvelle déclaration de temps mort par un joueur : nombre total de TM en attente + liste des noms. Laisser vide pour désactiver.",
-        scope: "world",
-        config: true,
-        type: String,
-        default: "",
-        requiresReload: false
-    });
-
-    game.settings.register("westmarch", "enableMejShopFix", {
-        name: "Correctifs boutiques Monk's Enhanced Journal",
-        hint: "Ajoute un bouton 'Groupe uniquement' dans la fenêtre 'Show to Players' de Monk's Enhanced Journal (sélection rapide de sa party, sans devoir décocher joueur par joueur), et corrige côté affichage joueur un bug de MEJ qui montrait quand même les objets de boutique marqués 'cachés'.",
+        hint: "Les combats créés par un GM sont automatiquement détachés de leur scène et marqués comme appartenant à sa party. Chaque joueur ne voit que le combat de sa propre party.",
         scope: "world",
         config: true,
         type: Boolean,
@@ -258,76 +138,6 @@ export function registerSettings() {
         requiresReload: false
     });
 
-    game.settings.register("westmarch", "enableToolAbilityFix", {
-        name: "Correction de la stat des outils (tools)",
-        hint: "À la création d'un item 'outil' (tool) sans stat définie (ou avec 'Intelligence' par défaut), corrige automatiquement vers la stat canonique de cet outil selon le système dnd5e (ex: Outils de voleur -> Dextérité). Utile notamment pour les outils importés via Plutonium, qui ne renseignent pas toujours la bonne stat.",
-        scope: "world",
-        config: true,
-        type: Boolean,
-        default: true,
-        requiresReload: false
-    });
-
-    game.settings.register("westmarch", "enableFolderMove", {
-        name: "Déplacement/duplication multiple de documents",
-        hint: "Ajoute un bouton ☑ dans les onglets Scènes, Acteurs, Objets et Journaux (GM uniquement). En mode sélection, cliquer sur plusieurs documents les coche, puis une barre en bas permet de les déplacer ou dupliquer en lot vers un dossier au choix.",
-        scope: "world",
-        config: true,
-        type: Boolean,
-        default: true,
-        requiresReload: false
-    });
-
-    game.settings.register("westmarch", "enablePolymorph", {
-        name: "Transformation polymorphe (Wild Shape / Polymorph)",
-        hint: "Permet au GM de configurer des 'formes polymorphes' (acteurs existants) sur un acteur. Ajoute une barre en bas du HUD du token avec un bouton pour transformer le token vers la forme sélectionnée et un bouton pour revenir à la forme originale. Propriétaire du token et GM uniquement.",
-        scope: "world",
-        config: true,
-        type: Boolean,
-        default: true,
-        requiresReload: false
-    });
-
-    game.settings.register("westmarch", "enableRageSize", {
-        name: "Taille Large pendant la Rage (Voie du Géant)",
-        hint: "Pour les barbares possédant la feature 'Giant's Havoc' (Voie du Géant, palier 3) : dès qu'ils reçoivent l'effet actif 'Rage', leurs tokens passent automatiquement en taille 2x2 (Large) s'ils sont plus petits, et reviennent à leur taille d'origine dès que la rage se termine. N'a aucun effet sur les barbares d'une autre sous-classe.",
-        scope: "world",
-        config: true,
-        type: Boolean,
-        default: true,
-        requiresReload: false
-    });
-
-    game.settings.register("westmarch", "enableLargeForm", {
-        name: "Taille Large — Goliath (Large Form)",
-        hint: "Quand un Goliath utilise sa feature 'Large Form', son token passe en 2x2 (Large). Réutiliser la feature revient à la taille d'origine (toggle). Prérequis : la feature 'Large Form' doit avoir une activité configurée dans dnd5e (ex: type 'Utility', activation 'Bonus Action').",
-        scope: "world",
-        config: true,
-        type: Boolean,
-        default: true,
-        requiresReload: false
-    });
-
-    game.settings.register("westmarch", "enableDiscordLog", {
-        name: "Log Discord (modifications)",
-        hint: "Envoie un message dans un salon Discord (via webhook, différent du webhook IC par scène) à chaque ajout/suppression d'objet, changement de quantité, gain d'XP/niveau, et création/suppression de personnage.",
-        scope: "world",
-        config: true,
-        type: Boolean,
-        default: false,
-        requiresReload: false
-    });
-
-    game.settings.register("westmarch", "discordLogWebhookUrl", {
-        name: "URL du Webhook Discord (log)",
-        hint: "URL du webhook Discord vers lequel envoyer les logs de modifications. À créer dans Discord : Paramètres du salon → Intégrations → Webhooks → Nouveau webhook → Copier l'URL.",
-        scope: "world",
-        config: true,
-        type: String,
-        default: "",
-        requiresReload: false
-    });
-
     // ============================================================
     // SECTION : Mise en forme visuelle — regroupe les options
     // dépendantes du système de Party sous "Système de Party" avec
@@ -338,21 +148,19 @@ export function registerSettings() {
         const partyGroup = root.find('[name="westmarch.enableParty"]').closest('.form-group');
         if (!partyGroup.length) return;
 
-        // ---- Bandeau d'info en haut de la section WestMarch : version,
-        // description et auteur (lus depuis module.json via game.modules,
-        // jamais modifié directement — voir consigne readme/module.json) ----
+        // ---- Bandeau d'info en haut de la section WestMarch ----
         const moduleData = game.modules.get("westmarch");
         const version = moduleData?.version ?? "?";
         const description = moduleData?.description
-            ?? "Module de gestion de campagnes West March : parties, téléportation de groupe, journal de session, logs Discord, anti-cheat et plus.";
+            ?? "Module de gestion de campagnes West March : parties, téléportation de groupe, journal de session, filtrage du chat et plus.";
         const author = moduleData?.authors?.[0]?.name ?? "Soruta";
 
         const banner = $(`
             <div class="westmarch-settings-banner" style="margin-bottom: 12px; padding: 10px 14px; border: 1px solid #e67e22; border-radius: 4px; background: rgba(230,126,34,0.08);">
-                <p style="margin:0 0 4px 0;"><strong>WestMarch Système</strong> — v${version}</p>
+                <p style="margin:0 0 4px 0;"><strong>Soruta — WestMarch Système</strong> — v${version}</p>
                 <p style="margin:0 0 4px 0; font-size: 0.9em;">${description}</p>
-                <p style="margin:0; font-size: 0.9em;">Auteur : ${author}</p>
-                <p style="margin:6px 0 0 0; font-size: 0.85em; font-style: italic; color: #e67e22;">⚠️ Module propriétaire Ashara — ne pas redistribuer.</p>
+                <p style="margin:0 0 4px 0; font-size: 0.9em;">Auteur : ${author}</p>
+                <p style="margin:0; font-size: 0.85em; font-style: italic; color: #aaa;">© 2026 Soruta — Logiciel open source. Redistribution et modification autorisées avec attribution.</p>
             </div>
         `);
         partyGroup.before(banner);
@@ -384,9 +192,6 @@ export function registerSettings() {
             if (checkbox.length) subCheckboxes.push(checkbox);
         });
 
-        // ---- Cascade visuelle : décoche/grise les sous-options quand le
-        // master est désactivé, sans toucher à leur valeur sauvegardée
-        // (les champs disabled ne sont pas inclus dans la soumission du formulaire) ----
         const masterCheckbox = partyGroup.find('[name="westmarch.enableParty"]');
         const savedStates = subCheckboxes.map(cb => cb.prop('checked'));
 
@@ -407,5 +212,4 @@ export function registerSettings() {
         masterCheckbox.on('change', applyMasterState);
         applyMasterState();
     });
-
 }

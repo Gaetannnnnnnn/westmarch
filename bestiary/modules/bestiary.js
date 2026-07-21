@@ -7,7 +7,7 @@
 // Interface : onglet "Bestiaire" sur la fiche personnage (PJ uniquement)
 // Auto-det. : canvasReady / createToken / updateToken (GM only)
 //             → acteurs du dossier "Creatures" (et sous-dossiers)
-// © Soruta — module propriétaire Ashara, ne pas redistribuer.
+// © 2026 Soruta — Tous droits réservés. Usage personnel autorisé. Redistribution et modification interdites.
 // ============================================================
 
 export const MODULE = "ashara-bestiary";
@@ -82,13 +82,13 @@ function isInFolder(actor, folderName) {
     }
     return false;
 }
-function isInPJFolder(actor) { return isInFolder(actor, "PJ"); }
+function isInPJFolder(actor) { return isInFolder(actor, game.settings.get(MODULE, "folderPJ")); }
 
 // Créatures disponibles pour ajout manuel (dossier Creatures, pas déjà dans le bestiaire)
 function availableCreatures(actor) {
     const existing = new Set(beastList(actor).map(e => e.targetId));
     return game.actors
-        .filter(a => isInFolder(a, "Creatures") && !existing.has(a.id))
+        .filter(a => isInFolder(a, game.settings.get(MODULE, "folderCreatures")) && !existing.has(a.id))
         .sort((a, b) => a.name.localeCompare(b.name));
 }
 
@@ -426,7 +426,7 @@ async function scanVisibleTokens() {
         const toAdd = tokens.filter(t => {
             if (!t.actor?.id) return false;
             if (t.actor.id === myActor.id) return false;
-            if (!isInFolder(t.actor, "Creatures")) return false;
+            if (!isInFolder(t.actor, game.settings.get(MODULE, "folderCreatures"))) return false;
             if (existing.has(t.actor.id)) return false;
             if (seenIds.has(t.actor.id)) return false;
             seenIds.add(t.actor.id);

@@ -5,7 +5,7 @@
                               Compatibilité : Foundry VTT v13
 ================================================================================
 
-⚠️ Module propriétaire Ashara — ne pas redistribuer.
+⚠️ © 2026 Soruta — Tous droits réservés. Usage personnel autorisé. Redistribution et modification interdites.
 
 Module autonome, totalement indépendant du module westmarch (id différent,
 namespace de settings/flags différent : "carte-expeditions") : il n'est PAS
@@ -59,7 +59,7 @@ map.js
 
 map-settings.js
    Enregistre les paramètres configurables du module (Paramètres du jeu →
-   Configuration des modules → Ashara - Map Ouvert Systèmes) et affiche le
+   Configuration des modules → Soruta — Map Ouvert Systèmes) et affiche le
    bandeau d'info (version, description, auteur, mention "Module propriétaire
    Ashara") en haut de la page de paramètres, sur le même principe que le
    bandeau de westmarch.
@@ -136,9 +136,9 @@ INSTALLATION & CONFIGURATION
    cp -r carte-expeditions/modules /chemin/vers/Data/modules/carte-expeditions
 
 2. Redémarrer le serveur Foundry, puis activer le module depuis la liste des
-   modules ("Ashara - Map Ouvert Systèmes").
+   modules ("Soruta — Map Ouvert Systèmes").
 
-3. Dans Paramètres du jeu → Configuration des modules → Ashara - Map Ouvert
+3. Dans Paramètres du jeu → Configuration des modules → Soruta — Map Ouvert
    Systèmes, choisir la scène concernée dans "Scène : carte des expéditions".
 
 4. Placer un token de l'acteur Groupe de chaque expédition sur cette scène,

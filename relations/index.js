@@ -10,7 +10,7 @@ Hooks.on("init", () => {
     Actors.registerSheet("dnd5e", AshCharacterSheet, {
         types:       ["character"],
         makeDefault: true,
-        label:       "Ashara — Fiche personnage"
+        label:       "Soruta — Fiche personnage"
     });
 
     // Expose la classe pour les modules dépendants (ex: ashara-bestiary)

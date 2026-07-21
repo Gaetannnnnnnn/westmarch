@@ -1,0 +1,23 @@
+{
+  "id": "westmarch-ashara",
+  "title": "Soruta — WestMarch Ashara",
+  "version": "1.0.0",
+  "changelog": "2026-07-20",
+  "authors": [
+    {
+      "name": "Soruta",
+      "discord": "s0ruta"
+    }
+  ],
+  "compatibility": {
+    "minimum": "13",
+    "verified": "13"
+  },
+  "description": "Personnalisations spécifiques au serveur Ashara : temps morts, blocage XP, logs Discord, notification de date, faux message de maintenance.",
+  "esmodules": [
+    "./index.js"
+  ],
+  "url": "https://github.com/Gaetannnnnnnn/westmarch-ashara.git",
+  "manifest": "https://raw.githubusercontent.com/Gaetannnnnnnn/westmarch-ashara/main/westmarch-ashara/module.json",
+  "download": "https://github.com/Gaetannnnnnnn/westmarch-ashara/raw/main/westmarch-ashara.zip"
+}

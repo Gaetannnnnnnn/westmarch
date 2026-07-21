@@ -62,10 +62,10 @@ export function registerMapSettings() {
 
         const banner = $(`
             <div class="carte-expeditions-settings-banner" style="margin-bottom: 12px; padding: 10px 14px; border: 1px solid #e67e22; border-radius: 4px; background: rgba(230,126,34,0.08);">
-                <p style="margin:0 0 4px 0;"><strong>${moduleData?.title ?? "Ashara - Map Ouvert Systèmes"}</strong> — v${version}</p>
+                <p style="margin:0 0 4px 0;"><strong>${moduleData?.title ?? "Soruta — Map Ouvert Systèmes"}</strong> — v${version}</p>
                 <p style="margin:0 0 4px 0; font-size: 0.9em;">${description}</p>
                 <p style="margin:0; font-size: 0.9em;">Auteur : ${author}</p>
-                <p style="margin:6px 0 0 0; font-size: 0.85em; font-style: italic; color: #e67e22;">⚠️ Module propriétaire Ashara — ne pas redistribuer.</p>
+                <p style="margin:6px 0 0 0; font-size: 0.85em; font-style: italic; color: #e67e22;">© 2026 Soruta — Tous droits réservés. Usage personnel autorisé. Toute redistribution, modification ou usage commercial est strictement interdit sans autorisation écrite.</p>
             </div>
         `);
         firstGroup.before(banner);

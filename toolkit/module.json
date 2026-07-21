@@ -1,0 +1,26 @@
+{
+  "id": "toolkit",
+  "title": "Soruta — Toolkit",
+  "version": "1.0.0",
+  "changelog": "2026-07-20",
+  "authors": [
+    {
+      "name": "Soruta",
+      "discord": "s0ruta"
+    }
+  ],
+  "compatibility": {
+    "minimum": "13",
+    "verified": "13"
+  },
+  "description": "Features génériques pour Foundry VTT : gestion des tokens, transformations, sous-classes, outils MEJ et utilitaires GM.",
+  "esmodules": [
+    "./index.js"
+  ],
+  "styles": [
+    "./styles/character.css"
+  ],
+  "url": "https://github.com/Gaetannnnnnnn/toolkit.git",
+  "manifest": "https://raw.githubusercontent.com/Gaetannnnnnnn/toolkit/main/toolkit/module.json",
+  "download": "https://github.com/Gaetannnnnnnn/toolkit/raw/main/toolkit.zip"
+}

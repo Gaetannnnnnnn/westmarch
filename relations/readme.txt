@@ -7,7 +7,7 @@
 
 DESCRIPTION
 -----------
-Ashara - Relations est un module Foundry VTT dédié à la gestion des relations
+Soruta — Relations est un module Foundry VTT dédié à la gestion des relations
 entre personnages (PJ↔PJ, PJ↔PNJ). Il détecte automatiquement les rencontres
 entre personnages sur les scènes et crée les liens correspondants sans jamais
 modifier les fiches des acteurs (aucune feature, aucun item créé).
@@ -42,7 +42,7 @@ DÉTAIL DES FICHIERS
 settings.js
    Enregistre le paramètre "enabled" (Boolean, default: true) dans la
    configuration du module Foundry. Accessible via :
-   Paramètres du jeu → Configuration des modules → Ashara - Relations.
+   Paramètres du jeu → Configuration des modules → Soruta — Relations.
 
 relations.js
    Fichier principal. Contient :
@@ -177,10 +177,10 @@ INSTALLATION & CONFIGURATION
    sudo systemctl restart foundryvtt
 
 3. Activer le module dans Foundry :
-   Setup → Gérer les modules → Activer "Ashara - Relations"
+   Setup → Gérer les modules → Activer "Soruta — Relations"
 
 4. Configuration :
-   Paramètres du jeu → Configuration des modules → Ashara - Relations
+   Paramètres du jeu → Configuration des modules → Soruta — Relations
    → "Activer le système de relations" (activé par défaut)
 
 5. Structure attendue dans le répertoire des acteurs :

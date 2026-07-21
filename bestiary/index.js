@@ -18,6 +18,6 @@ Hooks.on("setup", () => {
     Actors.registerSheet("dnd5e", AshBestiarySheet, {
         types:       ["character"],
         makeDefault: true,
-        label:       "Ashara — Fiche personnage"
+        label:       "Soruta — Fiche personnage"
     });
 });

@@ -7,7 +7,7 @@
 
 DESCRIPTION
 -----------
-Ashara - Bestiaire est un module Foundry VTT qui ajoute un onglet "Bestiaire"
+Soruta — Bestiaire est un module Foundry VTT qui ajoute un onglet "Bestiaire"
 sur les fiches de personnage (PJ uniquement). Il répertorie automatiquement les
 créatures rencontrées sur les scènes, limitées à 1 exemplaire par créature et
 par personnage.
@@ -155,10 +155,10 @@ INSTALLATION & CONFIGURATION
    sudo systemctl restart foundryvtt
 
 3. Activer le module dans Foundry :
-   Setup → Gérer les modules → Activer "Ashara - Bestiaire"
+   Setup → Gérer les modules → Activer "Soruta — Bestiaire"
 
 4. Configuration :
-   Paramètres du jeu → Configuration des modules → Ashara - Bestiaire
+   Paramètres du jeu → Configuration des modules → Soruta — Bestiaire
    → "Activer le bestiaire" (activé par défaut)
 
 5. Structure attendue dans le répertoire des acteurs :

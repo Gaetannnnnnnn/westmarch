@@ -6,7 +6,7 @@
 //                 type, level(-3→+3), note, lastPosition, secret } ]
 // Interface : onglet "Relations" injecté dans la fiche acteur
 // Auto-det. : canvasReady / createToken / updateToken (GM only)
-// © Soruta — module propriétaire Ashara, ne pas redistribuer.
+// © 2026 Soruta — Tous droits réservés. Usage personnel autorisé. Redistribution et modification interdites.
 // ============================================================
 
 export const MODULE = "ashara-relations";
@@ -103,9 +103,9 @@ function isInFolder(actor, folderName) {
     return false;
 }
 
-function isInPJFolder(actor)        { return isInFolder(actor, "PJ"); }
-function isInPNJFolder(actor)       { return isInFolder(actor, "PNJ"); }
-function isInCreaturesFolder(actor) { return isInFolder(actor, "Creatures"); }
+function isInPJFolder(actor)        { return isInFolder(actor, game.settings.get(MODULE, "folderPJ")); }
+function isInPNJFolder(actor)       { return isInFolder(actor, game.settings.get(MODULE, "folderPNJ")); }
+function isInCreaturesFolder(actor) { return isInFolder(actor, game.settings.get(MODULE, "folderCreatures")); }
 
 // Acteurs disponibles pour une nouvelle relation
 // (dossiers "PJ" et "PNJ", excluant soi-même et les déjà-liés)

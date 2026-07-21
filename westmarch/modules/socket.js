@@ -1,6 +1,6 @@
 // ============================================================
 // socket.js — Communication ciblée entre clients pour déplacer un
-// utilisateur précis vers une scène, ou lui afficher un faux message.
+// utilisateur précis vers une scène.
 //
 // Historique : ancienne version basée sur le socket CORE "pullToScene"
 // (game.socket.emit("pullToScene", ...)) — cassé en Foundry v13 (le
@@ -26,10 +26,6 @@ export function SocketHooks() {
         return true;
     };
 
-    CONFIG.queries["westmarch.fakeWarning"] = async (queryData) => {
-        ui.notifications.warn(queryData.message);
-        return true;
-    };
 }
 
 // Déplace l'utilisateur "userId" vers la scène "sceneId". Si c'est
@@ -47,12 +43,3 @@ export function pullUserToScene(sceneId, userId) {
     );
 }
 
-// Affiche un faux message d'avertissement (notification jaune) chez
-// l'utilisateur "userId" — utilisé par le bouton "farce" (fake-warning.js).
-export function sendFakeWarning(userId, message) {
-    const targetUser = game.users.get(userId);
-    if (!targetUser) return;
-    targetUser.query("westmarch.fakeWarning", { message }).catch(err =>
-        console.error("[WestMarch] Erreur lors de l'envoi du faux message à", targetUser.name, ":", err)
-    );
-}

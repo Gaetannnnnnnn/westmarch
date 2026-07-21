@@ -5,25 +5,11 @@ import { PlayerHooks } from './modules/player.js';
 import { ScenesHooks } from './modules/scenes.js';
 import { DocumentHooks } from './modules/document.js';
 import { JournalHooks } from './modules/journal.js';
-import { XpHooks } from './modules/xp.js';
-import { TokenHooks } from './modules/token.js';
 import { SessionHooks } from './modules/session.js';
 import { AntiCheatHooks } from './modules/anticheat.js';
-import { DiscordLogHooks } from './modules/discordlog.js';
 import { SocketHooks } from './modules/socket.js';
-import { FakeWarningHooks } from './modules/fake-warning.js';
 import { CombatHooks } from './modules/combat.js';
-import { ItemHooks } from './modules/items.js';
 import { AudioHooks } from './modules/audio.js';
-import { RageHooks } from './modules/rage.js';
-import { GoliathHooks } from './modules/goliath.js';
-import { TgcmHooks } from './modules/tgcm.js';
-import { MejShopHooks } from './modules/mejshop.js';
-import { MejRestockHooks } from './modules/mejrestock.js';
-import { CalDateHooks } from './modules/caldate.js';
-import { TmHooks } from './modules/tm.js';
-import { PolymorphHooks } from './modules/polymorph.js';
-import { FolderMoveHooks } from './modules/foldermove.js';
 
 Hooks.on("init", async () => {
     Handlebars.registerHelper('for', function(from, to, incr, block) {
@@ -35,7 +21,7 @@ Hooks.on("init", async () => {
 
     Handlebars.registerHelper("lte", function(a, b) {
         return a <= b;
-      });
+    });
 
     registerSettings();
     ChatHooks();
@@ -44,23 +30,9 @@ Hooks.on("init", async () => {
     ScenesHooks();
     DocumentHooks();
     JournalHooks();
-    XpHooks();
-    TokenHooks();
     SessionHooks();
     AntiCheatHooks();
-    DiscordLogHooks();
     SocketHooks();
-    FakeWarningHooks();
     CombatHooks();
-    ItemHooks();
     AudioHooks();
-    RageHooks();
-    GoliathHooks();
-    TgcmHooks();
-    MejShopHooks();
-    MejRestockHooks();
-    CalDateHooks();
-    TmHooks();
-    PolymorphHooks();
-    FolderMoveHooks();
 });

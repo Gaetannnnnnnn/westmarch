@@ -1,7 +1,7 @@
 // ============================================================
 // character-sheet.js — Sous-classe de CharacterActorSheet dnd5e v3
 // Ajoute l'onglet Relations nativement via PARTS / TABS.
-// © Soruta — module propriétaire Ashara, ne pas redistribuer.
+// © 2026 Soruta — Tous droits réservés. Usage personnel autorisé. Redistribution et modification interdites.
 // ============================================================
 
 import { MODULE, buildTabHtml, wireTab } from './relations.js';
