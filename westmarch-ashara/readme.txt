@@ -100,10 +100,12 @@ Accessibles via : Paramètres du jeu → Configuration des modules → Soruta �
 INSTALLATION
 --------------------------------------------------------------------------------
 
-1. Copier le dossier "westmarch-ashara" dans /foundrydata/Data/modules/
-2. Redémarrer Foundry : sudo systemctl restart foundryvtt
-3. Activer le module : Setup → Gérer les modules → Ashara — WestMarch Serveur
-4. Configurer les URLs de webhooks Discord dans les paramètres du module
+1. Dans Foundry : Setup → Add-on Modules → Install Module
+2. Coller l'URL du manifest dans le champ "Manifest URL" :
+   https://raw.githubusercontent.com/Gaetannnnnnnn/westmarch-ashara/main/westmarch-ashara/module.json
+3. Cliquer "Install"
+4. Activer le module dans le monde : Setup → Gérer les modules
+5. Configurer les URLs de webhooks Discord dans les paramètres du module
 
 
 ================================================================================
