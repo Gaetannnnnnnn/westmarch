@@ -6,7 +6,9 @@
 Version : 1.0.0
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
-Accès   : Serveur Ashara uniquement — ne pas redistribuer
+Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
+          Toute redistribution, modification ou usage commercial est
+          strictement interdit sans autorisation écrite.
 
 --------------------------------------------------------------------------------
 DESCRIPTION
