@@ -8,6 +8,7 @@ import { TgcmHooks } from './modules/tgcm.js';
 import { FolderMoveHooks } from './modules/foldermove.js';
 import { MejShopHooks } from './modules/mejshop.js';
 import { MejRestockHooks } from './modules/mejrestock.js';
+import { ExportDialogHooks } from './modules/export-dialog.js';
 
 Hooks.on("init", async () => {
     registerSettings();
@@ -20,4 +21,5 @@ Hooks.on("init", async () => {
     FolderMoveHooks();
     MejShopHooks();
     MejRestockHooks();
+    ExportDialogHooks();
 });

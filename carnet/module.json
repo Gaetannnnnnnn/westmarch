@@ -1,0 +1,26 @@
+{
+  "id": "carnet",
+  "title": "Soruta — Carnet d'Expéditions",
+  "version": "1.0.2",
+  "changelog": "2026-07-22",
+  "authors": [
+    {
+      "name": "Soruta",
+      "discord": "s0ruta"
+    }
+  ],
+  "compatibility": {
+    "minimum": "13",
+    "verified": "13"
+  },
+  "description": "Ajoute un onglet Carnet (notes ProseMirror par expédition) et un onglet Temps morts (dates Simple Calendar) sur la fiche PJ. Bouton GM dans la barre WestMarch pour enregistrer automatiquement la date de début/fin d'expédition pour toute la party.",
+  "esmodules": [
+    "./index.js"
+  ],
+  "styles": [
+    "./styles/carnet.css"
+  ],
+  "url": "https://github.com/Gaetannnnnnnn/westmarch.git",
+  "manifest": "https://raw.githubusercontent.com/Gaetannnnnnnn/westmarch/main/carnet/module.json",
+  "download": "https://github.com/Gaetannnnnnnn/westmarch/raw/main/carnet.zip"
+}

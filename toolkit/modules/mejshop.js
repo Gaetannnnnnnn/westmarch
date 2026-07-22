@@ -1,5 +1,3 @@
-import { partyFeatureEnabled } from './settings.js';
-
 // ============================================================
 // Correctifs pour les boutiques de Monk's Enhanced Journal (MEJ),
 // module tiers — on ne touche jamais à ses fichiers, tout passe

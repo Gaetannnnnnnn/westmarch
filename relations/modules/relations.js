@@ -91,13 +91,12 @@ async function relDelete(actor, id) {
 
 // ---- Helpers acteurs ---------------------------------------
 
-// Remonte l'arbre de dossiers pour savoir si actor est sous folderName
-function isInFolder(actor, folderName) {
-    const root = game.folders.find(f => f.type === "Actor" && f.name === folderName);
-    if (!root) return false;
+// Remonte l'arbre de dossiers pour savoir si actor est sous folderId
+function isInFolder(actor, folderId) {
+    if (!folderId) return false;
     let f = actor.folder;
     while (f) {
-        if (f.id === root.id) return true;
+        if (f.id === folderId) return true;
         f = f.folder;
     }
     return false;
@@ -466,11 +465,21 @@ async function openEditDialog(actor, rel) {
     return result;
 }
 
+// ---- Helpers -----------------------------------------------
+
+function _autoResize(el) {
+    el.style.height = "auto";
+    el.style.height = el.scrollHeight + "px";
+}
+
 // ---- Événements de l'onglet --------------------------------
 
 export function wireTab(actor, $html) {
     const $tab = $html.find(".rel-tab");
     if (!$tab.length) return;
+
+    // Resize textareas déjà visibles (sections ouvertes depuis _expanded)
+    $tab.find(".rel-note-input").each((_, el) => _autoResize(el));
 
     const canEdit = game.user.isGM || actor.isOwner;
 
@@ -508,7 +517,9 @@ export function wireTab(actor, $html) {
             $icon.removeClass("fa-chevron-up").addClass("fa-chevron-down");
         } else {
             _expanded.add(relId);
-            $notes.slideDown(150);
+            $notes.slideDown(150, function () {
+                $(this).find(".rel-note-input").each((_, el) => _autoResize(el));
+            });
             $icon.removeClass("fa-chevron-down").addClass("fa-chevron-up");
         }
     });
@@ -556,6 +567,7 @@ export function wireTab(actor, $html) {
 
     // Auto-save note (debounce + blur immédiat)
     $tab.on("input", ".rel-note-input", function () {
+        _autoResize(this);
         clearTimeout(_noteTimer);
         const relId = String($(this).data("rel-id"));
         const val   = this.value;

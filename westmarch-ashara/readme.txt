@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé Ashara
 ================================================================================
 
-Version : 1.0.2
+Version : 1.0.3
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -113,6 +113,13 @@ INSTALLATION
 ================================================================================
                     WESTMARCH-ASHARA — MISES À JOUR
 ================================================================================
+
+v1.0.3 | 2026-07-22
+   index.js — Enregistrement dans CONFIG.asharaSheetsModules au init pour que
+   toolkit puisse nettoyer les flags "westmarch-ashara" lors d'un export
+   "fiche originale". fake-warning.js — Fix groupe WestMarch non expansible en
+   Foundry v13 : ajout d'un outil dummy (visible: false) + activeTool: "dummy"
+   sur le groupe. Même fix sur le fallback dans tm.js.
 
 v1.0.2 | 2026-07-22
    fake-warning.js, tm.js — Fix boutons barre de gauche inactifs : onChange

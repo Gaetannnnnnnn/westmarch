@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.0.1
+Version : 1.0.4
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -115,6 +115,18 @@ INSTALLATION
                     TOOLKIT — MISES À JOUR
 ================================================================================
 
-v1.0.1 | 2026-07-22
-   Titre mis à jour : Soruta — Toolkit. Bandeau settings : copyright mis à jour.
-   foldermove.js, polymorph.js — copyright mis à jour.
+v1.0.4 | 2026-07-22
+   export-dialog.js — Liste des modules à nettoyer remplacée par un registre
+   dynamique CONFIG.asharaSheetsModules. Chaque module se déclare lui-même au
+   init ; toolkit n'a plus de liste hardcodée. toolkit se déclare dans
+   ExportDialogHooks(). tutoriel retiré (pas de flags acteur).
+
+v1.0.3 | 2026-07-22
+   export-dialog.js — Dialog de choix lors de l'export d'un acteur :
+   "Fiche actuelle" (export complet) ou "Fiche originale dnd5e" (flags modules
+   supprimés, sheetClass réinitialisée). S'affiche uniquement si l'acteur
+   contient des données propres aux modules Ashara.
+
+v1.0.2 | 2026-07-22
+   mejshop.js — Fix crash au chargement : import mort partyFeatureEnabled
+   supprimé (résidu de la migration depuis westmarch, jamais utilisé).

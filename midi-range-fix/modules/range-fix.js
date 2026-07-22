@@ -46,15 +46,21 @@ function _patchMeasurePath() {
 
         const [src, tgt] = waypoints;
 
-        // Identifier l'attaquant (centre ≈ src, tolérance 2px)
+        // Identifier l'attaquant : src est dans ses bounds.
+        //
+        // On utilise uniquement les bounds (pas token.center) car en Foundry v13
+        // token.center renvoie le centre de la première case du token, pas le centre
+        // géométrique du token entier — ce qui donne le mauvais point pour les
+        // tokens Large+. Les bounds sont toujours corrects.
         const attacker = canvas.tokens.placeables.find(t => {
             if (!t.actor) return false;
-            const c = t.center;
-            return Math.abs(c.x - src.x) < 2 && Math.abs(c.y - src.y) < 2;
+            const b = t.bounds;
+            return src.x >= b.x && src.x <= b.x + b.width
+                && src.y >= b.y && src.y <= b.y + b.height;
         });
         if (!attacker) return original(waypoints, options);
 
-        // Identifier la cible (tgt est dans ses bounds)
+        // Identifier la cible : tgt est dans ses bounds
         const target = canvas.tokens.placeables.find(t => {
             if (!t.actor || t === attacker) return false;
             const b = t.bounds;
@@ -68,15 +74,18 @@ function _patchMeasurePath() {
         const targetWidth   = target.document.width;
         if (attackerWidth <= 1 && targetWidth <= 1) return original(waypoints, options);
 
+        // Centre géométrique réel = milieu des bounds (pas token.center)
+        const attackerCenter = _boundsCenter(attacker);
+
         // 1. Point le plus proche sur la bordure réelle de la cible
-        const nearest = _nearestBorderPoint(src, target);
+        const nearest = _nearestBorderPoint(attackerCenter, target);
 
         // 2. Distance centre attaquant → bord cible
-        const result = original([src, nearest], options);
+        const result = original([attackerCenter, nearest], options);
 
-        // 3. Soustraire le bonus de taille de l'attaquant (en feet)
+        // 3. Soustraire le bonus de taille de l'attaquant
         //    Bonus = (nb cases - 1) × 2.5ft
-        const gridDist = canvas.grid.distance; // feet par case
+        const gridDist = canvas.grid.distance;
         const attackerBonus = Math.max(0, (attackerWidth - 1) * (gridDist / 2));
 
         if (attackerBonus === 0) return result;
@@ -87,18 +96,30 @@ function _patchMeasurePath() {
 }
 
 /**
+ * Centre géométrique d'un token basé sur ses bounds pixel.
+ * Contrairement à token.center qui renvoie le centre de la première case,
+ * cette fonction renvoie le vrai centre de l'ensemble du token.
+ */
+function _boundsCenter(token) {
+    const b = token.bounds;
+    return { x: b.x + b.width / 2, y: b.y + b.height / 2 };
+}
+
+/**
  * Retourne le point le plus proche sur la bordure du token depuis src.
  *
  * - Token carré (width = height) : cercle inscrit.
  * - Token non-carré : bounding box rectangulaire.
  */
 function _nearestBorderPoint(src, token) {
+    const b = token.bounds;
     const w = token.document.width;
     const h = token.document.height;
 
     if (w === h) {
-        const center = token.center;
-        const radius  = (w * canvas.grid.size) / 2;
+        // Token carré → cercle inscrit centré sur le vrai centre géométrique
+        const center = _boundsCenter(token);
+        const radius  = b.width / 2;   // = (w * gridSize) / 2
         const dx = src.x - center.x;
         const dy = src.y - center.y;
         const dist = Math.hypot(dx, dy);
@@ -109,7 +130,7 @@ function _nearestBorderPoint(src, token) {
         };
     }
 
-    const b = token.bounds;
+    // Token non carré → bounding box rectangulaire
     return {
         x: Math.max(b.x, Math.min(src.x, b.x + b.width)),
         y: Math.max(b.y, Math.min(src.y, b.y + b.height))

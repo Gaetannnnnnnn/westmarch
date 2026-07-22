@@ -1,3 +1,79 @@
 .checked {
     color: #e74c3c;
-  }
+}
+
+/* ============================================================
+   DIALOG — Export d'acteur (choix de fiche)
+   ============================================================ */
+
+.tko-export-form {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 4px 0 8px;
+}
+
+.tko-export-intro {
+    margin: 0 0 10px;
+    font-size: 12px;
+    color: #999;
+    line-height: 1.5;
+    display: flex;
+    gap: 7px;
+    align-items: flex-start;
+}
+
+.tko-export-intro i {
+    color: #9b59b6;
+    margin-top: 2px;
+    flex-shrink: 0;
+}
+
+.tko-export-opt {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    background: rgba(255, 255, 255, 0.03);
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+}
+
+.tko-export-opt:has(input:checked) {
+    border-color: rgba(155, 89, 182, 0.4);
+    background: rgba(155, 89, 182, 0.07);
+}
+
+.tko-export-opt input[type="radio"] {
+    margin-top: 3px;
+    flex-shrink: 0;
+    accent-color: #9b59b6;
+}
+
+.tko-export-opt-body {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.tko-export-opt-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: #ddd;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.tko-export-opt-title i {
+    color: #9b59b6;
+    font-size: 12px;
+}
+
+.tko-export-opt-desc {
+    font-size: 11px;
+    color: #888;
+    line-height: 1.55;
+}

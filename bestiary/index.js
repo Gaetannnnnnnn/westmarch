@@ -3,6 +3,10 @@ import { BestiaryHooks }             from './modules/bestiary.js';
 import { createBestiarySheet }       from './modules/character-sheet.js';
 
 Hooks.on("init", () => {
+    // Déclare ce module pour le nettoyage lors de l'export "fiche originale"
+    CONFIG.asharaSheetsModules ??= [];
+    CONFIG.asharaSheetsModules.push("bestiary");
+
     registerSettings();
     BestiaryHooks();
 });

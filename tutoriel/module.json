@@ -1,0 +1,26 @@
+{
+  "id": "tutoriel",
+  "title": "Soruta — Tutoriel",
+  "version": "1.0.1",
+  "changelog": "2026-07-22",
+  "authors": [
+    {
+      "name": "Soruta",
+      "discord": "s0ruta"
+    }
+  ],
+  "compatibility": {
+    "minimum": "13",
+    "verified": "13"
+  },
+  "description": "Fenêtre de bienvenue au login avec tutoriel interactif (bulles pointées). Configurable par module. Bouton dans la barre WestMarch accessible aux joueurs et aux GM.",
+  "esmodules": [
+    "./index.js"
+  ],
+  "styles": [
+    "./styles/tutoriel.css"
+  ],
+  "url": "https://github.com/Gaetannnnnnnn/westmarch.git",
+  "manifest": "https://raw.githubusercontent.com/Gaetannnnnnnn/westmarch/main/tutoriel/module.json",
+  "download": "https://github.com/Gaetannnnnnnn/westmarch/raw/main/tutoriel.zip"
+}

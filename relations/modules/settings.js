@@ -69,19 +69,28 @@ export function registerSettings() {
             </div>
         `));
 
-        // Remplacer les champs texte des dossiers par des <select> dynamiques
+        // Remplacer les champs texte des dossiers par des <select> en arbre
+        // Les valeurs stockées sont des folder.id (pas des noms) pour éviter
+        // les conflits quand plusieurs dossiers portent le même nom.
+        function buildFolderOptions(currentVal) {
+            const all = game.folders.filter(f => f.type === "Actor");
+            function walk(parentId, depth) {
+                return all
+                    .filter(f => (f.folder?.id ?? null) === parentId)
+                    .sort((a, b) => (a.sort ?? 0) - (b.sort ?? 0) || a.name.localeCompare(b.name))
+                    .flatMap(f => [
+                        `<option value="${f.id}" ${f.id === currentVal ? "selected" : ""}>${"  ".repeat(depth * 2)}${depth > 0 ? "└ " : ""}${f.name}</option>`,
+                        ...walk(f.id, depth + 1)
+                    ]);
+            }
+            return [`<option value="">— aucun —</option>`, ...walk(null, 0)].join("");
+        }
+
         for (const key of ["folderPJ", "folderPNJ", "folderCreatures"]) {
             const input = root.find(`[name="ashara-relations.${key}"]`);
             if (!input.length) continue;
             const currentVal = game.settings.get("ashara-relations", key);
-            const folders = game.folders
-                .filter(f => f.type === "Actor")
-                .sort((a, b) => a.name.localeCompare(b.name));
-            const options = [`<option value="">— aucun —</option>`]
-                .concat(folders.map(f =>
-                    `<option value="${f.name}" ${f.name === currentVal ? "selected" : ""}>${f.name}</option>`
-                )).join("");
-            input.replaceWith(`<select name="ashara-relations.${key}" style="width:100%">${options}</select>`);
+            input.replaceWith(`<select name="ashara-relations.${key}" style="width:100%">${buildFolderOptions(currentVal)}</select>`);
         }
     });
 }

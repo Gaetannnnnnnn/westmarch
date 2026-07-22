@@ -1,5 +1,5 @@
 ================================================================================
-                      SORUTA — MIDI RANGE FIX
+                 SORUTA — MIDI RANGE FIX (ELLIPSES)
                       Module Foundry VTT — Privé
 ================================================================================
 
@@ -43,8 +43,11 @@ modules/range-fix.js
 PARAMÈTRES CONFIGURABLES
 --------------------------------------------------------------------------------
 
-Aucun paramètre configurable. Le module s'active/désactive depuis la liste
-des modules Foundry.
+Accessibles via : Paramètres du jeu → Configuration des modules → Soruta — Midi Range Fix
+
+  Activer le fix de portée (rechargement requis)
+
+La page de paramètres affiche également un tableau explicatif du calcul.
 
 Dépendance : midi-qol doit être actif. Sans lui, le module ne fait rien.
 
@@ -61,6 +64,26 @@ INSTALLATION
 ================================================================================
                     MIDI-RANGE-FIX — MISES À JOUR
 ================================================================================
+
+v1.0.6 | 2026-07-22
+   range-fix.js — Fix centres de cases (Foundry v13) :
+   - token.center renvoie le centre de la 1ère case, pas le centre géométrique
+     du token. Remplacement par _boundsCenter() basé sur token.bounds, partout
+     (attaquant + calcul du cercle inscrit dans _nearestBorderPoint).
+   - Identification de l'attaquant maintenant uniquement par bounds (plus
+     robuste que la recherche par centre).
+
+v1.0.5 | 2026-07-22
+   range-fix.js — Fix asymétrie PJ / mob :
+   - Identification de l'attaquant en double passe : centre d'abord (tolérance
+     5px), puis fallback bounds si src = bord (cas Large mob avec midi-qol).
+   - Mesure toujours depuis attacker.center (pas src) → comportement identique
+     PJ et mob, plus de biais centre→bord vs bord→centre.
+
+v1.0.4 | 2026-07-22
+   settings.js — Toggle d'activation + bloc explicatif injecté dans la page
+   de config (formule + tableau des cas d'usage).
+   styles/midi-range-fix.css — Styles du bloc explicatif.
 
 v1.0.3 | 2026-07-22
    range-fix.js — Copyright ajouté. Titre mis à jour : Soruta — Midi Range Fix.

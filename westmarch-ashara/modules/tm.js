@@ -19,11 +19,12 @@ export function TmHooks() {
         // (sécurité contre les inversions d'ordre de hook)
         if (!controls.westmarch) {
             controls.westmarch = {
-                name: "westmarch-ashara",
-                title: "WestMarch",
-                icon: "fa-solid fa-hammer",
-                layer: "tokens",
-                tools: {}
+                name:        "westmarch-ashara",
+                title:       "WestMarch",
+                icon:        "fa-solid fa-hammer",
+                layer:       "tokens",
+                activeTool:  "dummy",
+                tools:       { dummy: { name: "dummy", title: "", icon: "fa-solid fa-hammer", visible: false } }
             };
         }
         controls.westmarch.tools.downtime = {

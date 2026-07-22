@@ -1,8 +1,8 @@
 {
   "id": "midi-range-fix",
-  "title": "Soruta — Midi Range Fix",
-  "version": "1.0.3",
-  "changelog": "2026-07-16",
+  "title": "Soruta — Midi Range Fix (Ellipses)",
+  "version": "1.0.6",
+  "changelog": "2026-07-22",
   "authors": [
     {
       "name": "Soruta",
@@ -16,6 +16,9 @@
   "description": "Corrige le calcul de portée de midi-qol pour les tokens Large/Huge : mesure du centre de l'attaquant au bord le plus proche de la cible, au lieu du coin le plus proche.",
   "esmodules": [
     "./index.js"
+  ],
+  "styles": [
+    "./styles/midi-range-fix.css"
   ],
   "url": "https://github.com/Gaetannnnnnnn/westmarch.git",
   "manifest": "https://raw.githubusercontent.com/Gaetannnnnnnn/westmarch/main/midi-range-fix/module.json",

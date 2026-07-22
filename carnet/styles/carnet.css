@@ -1,0 +1,491 @@
+/* ============================================================
+   carnet.css — Styles Soruta — Carnet d'Expéditions
+   ============================================================ */
+
+/* ---- Corps commun aux deux onglets ---- */
+
+.carnet-body {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    padding: 12px 14px;
+    min-height: 100%;
+}
+
+.carnet-add-bar {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 10px;
+}
+
+.carnet-add-bar button {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 12px;
+    background: rgba(155, 89, 182, 0.15);
+    border: 1px solid rgba(155, 89, 182, 0.4);
+    border-radius: 4px;
+    color: #c39bd3;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+
+.carnet-add-bar button:hover {
+    background: rgba(155, 89, 182, 0.3);
+    color: #d7bde2;
+}
+
+/* ---- État vide ---- */
+
+.carnet-empty-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 40px 20px;
+    color: #666;
+    text-align: center;
+}
+
+.carnet-empty-state i {
+    font-size: 2em;
+    color: #444;
+}
+
+.carnet-empty-state p {
+    margin: 0;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+/* ============================================================
+   ONGLET JOURNAL
+   ============================================================ */
+
+/* ---- Section par expédition ---- */
+
+.carnet-exp-section {
+    padding: 14px 0 10px;
+    transition: background 0.3s;
+}
+
+.carnet-separator {
+    border: none;
+    border-top: 1px solid rgba(255, 255, 255, 0.07);
+    margin: 0;
+}
+
+/* Expédition en cours : bord gauche coloré */
+.carnet-exp-section.is-open {
+    border-left: 3px solid #9b59b6;
+    padding-left: 10px;
+}
+
+/* Animation de surbrillance lors du scroll depuis l'onglet Temps morts */
+@keyframes carnet-flash {
+    0%   { background: rgba(155, 89, 182, 0.25); }
+    100% { background: transparent; }
+}
+
+.carnet-highlight {
+    animation: carnet-flash 2s ease-out forwards;
+    border-radius: 4px;
+}
+
+/* ---- En-tête de section ---- */
+
+.carnet-exp-header {
+    margin-bottom: 8px;
+}
+
+.carnet-exp-title-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.carnet-exp-title {
+    margin: 0;
+    font-size: 14px;
+    font-weight: 700;
+    color: #ddd;
+    letter-spacing: 0.02em;
+}
+
+/* ---- Badges de statut ---- */
+
+.carnet-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+}
+
+.carnet-badge.open {
+    background: rgba(155, 89, 182, 0.2);
+    border: 1px solid rgba(155, 89, 182, 0.5);
+    color: #c39bd3;
+}
+
+.carnet-badge.closed {
+    background: rgba(46, 204, 113, 0.12);
+    border: 1px solid rgba(46, 204, 113, 0.3);
+    color: #82e0aa;
+}
+
+.carnet-badge.pending {
+    background: rgba(149, 165, 166, 0.12);
+    border: 1px solid rgba(149, 165, 166, 0.3);
+    color: #aab7b8;
+}
+
+/* ---- Chips de dates ---- */
+
+.carnet-date-chips {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 5px;
+}
+
+.carnet-date-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 2px 9px;
+    border-radius: 4px;
+    font-size: 11px;
+    color: #bbb;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.carnet-date-chip.start i { color: #82e0aa; }
+.carnet-date-chip.end   i { color: #f0b27a; }
+
+/* ---- Zone de note ---- */
+
+.carnet-note-display {
+    padding: 6px 0 4px;
+    min-height: 40px;
+}
+
+.carnet-note-display.carnet-editing {
+    display: none;
+}
+
+.carnet-note-content {
+    font-size: 13px;
+    line-height: 1.65;
+    color: #ccc;
+}
+
+.carnet-note-content p { margin: 0 0 6px; }
+.carnet-note-content p:last-child { margin-bottom: 0; }
+
+.carnet-note-placeholder {
+    margin: 0;
+    font-size: 12px;
+    color: #555;
+}
+
+/* ---- Actions note ---- */
+
+.carnet-note-actions {
+    margin-top: 6px;
+}
+
+.carnet-edit-note {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 10px;
+    background: transparent;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+    color: #888;
+    font-size: 11px;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+}
+
+.carnet-edit-note:hover {
+    border-color: rgba(155, 89, 182, 0.5);
+    color: #c39bd3;
+}
+
+/* ---- Éditeur ProseMirror ---- */
+
+.carnet-editor-wrap {
+    border: 1px solid rgba(155, 89, 182, 0.4);
+    border-radius: 4px;
+    background: rgba(0, 0, 0, 0.2);
+    min-height: 120px;
+    padding: 4px;
+    margin-top: 4px;
+}
+
+.carnet-editor-wrap .editor-container {
+    min-height: 100px;
+}
+
+.carnet-editor-buttons {
+    display: flex;
+    gap: 6px;
+    margin-top: 6px;
+}
+
+.carnet-btn-save,
+.carnet-btn-cancel {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.carnet-btn-save {
+    background: rgba(155, 89, 182, 0.2);
+    border: 1px solid rgba(155, 89, 182, 0.5);
+    color: #c39bd3;
+}
+
+.carnet-btn-save:hover {
+    background: rgba(155, 89, 182, 0.35);
+}
+
+.carnet-btn-cancel {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: #888;
+}
+
+.carnet-btn-cancel:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #bbb;
+}
+
+/* ============================================================
+   ONGLET TEMPS MORTS — CARTES
+   ============================================================ */
+
+.carnet-tm-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* ---- Carte d'expédition ---- */
+
+.carnet-tm-card {
+    display: flex;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    overflow: hidden;
+    transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.carnet-tm-card:hover {
+    border-color: rgba(255, 255, 255, 0.12);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+.carnet-tm-card.open {
+    border-color: rgba(155, 89, 182, 0.3);
+    box-shadow: 0 0 0 1px rgba(155, 89, 182, 0.12) inset;
+}
+
+/* Bande colorée à gauche */
+
+.carnet-tm-stripe {
+    width: 4px;
+    flex-shrink: 0;
+    background: rgba(149, 165, 166, 0.3);
+}
+
+.carnet-tm-card.open    .carnet-tm-stripe { background: #9b59b6; }
+.carnet-tm-card.closed  .carnet-tm-stripe { background: #27ae60; }
+.carnet-tm-card.pending .carnet-tm-stripe { background: #7f8c8d; }
+
+/* Contenu de la carte */
+
+.carnet-tm-content {
+    flex: 1;
+    min-width: 0;
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+/* ---- En-tête de carte ---- */
+
+.carnet-tm-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.carnet-tm-name-wrap {
+    flex: 1;
+    min-width: 0;
+}
+
+.carnet-name-input {
+    width: 100%;
+    background: transparent;
+    border: 1px solid transparent;
+    border-radius: 3px;
+    color: #ddd;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 2px 5px;
+    min-width: 0;
+    transition: border-color 0.15s, background 0.15s;
+}
+
+.carnet-name-input:hover,
+.carnet-name-input:focus {
+    border-color: rgba(155, 89, 182, 0.4);
+    outline: none;
+    background: rgba(0, 0, 0, 0.2);
+}
+
+.carnet-name-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #ddd;
+}
+
+.carnet-tm-header-right {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+/* Lien → Carnet */
+
+.carnet-to-journal,
+.carnet-del-exp {
+    color: #555;
+    font-size: 13px;
+    transition: color 0.15s;
+    text-decoration: none;
+    line-height: 1;
+}
+
+.carnet-to-journal:hover { color: #c39bd3; }
+.carnet-del-exp:hover    { color: #e74c3c; }
+
+/* ---- Ligne de dates ---- */
+
+.carnet-tm-dates {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.carnet-date-block {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    min-width: 100px;
+}
+
+.carnet-date-block.duration {
+    min-width: 70px;
+}
+
+.carnet-date-label {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #666;
+    white-space: nowrap;
+}
+
+.carnet-date-label i {
+    font-size: 9px;
+    margin-right: 2px;
+}
+
+.carnet-date-value {
+    font-size: 12px;
+    color: #bbb;
+    white-space: nowrap;
+}
+
+.carnet-date-value.empty {
+    color: #555;
+    font-style: italic;
+}
+
+.carnet-duration-value {
+    font-size: 12px;
+    color: #9b59b6;
+    font-weight: 600;
+    white-space: nowrap;
+}
+
+/* Séparateur → entre dates */
+
+.carnet-dates-sep {
+    color: #444;
+    font-size: 14px;
+    flex-shrink: 0;
+    align-self: flex-end;
+    padding-bottom: 2px;
+}
+
+/* ---- Boutons d'édition de date (GM) ---- */
+
+.carnet-date-actions {
+    display: flex;
+    gap: 3px;
+    margin-top: 2px;
+}
+
+.carnet-date-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    border-radius: 3px;
+    border: 1px solid transparent;
+    background: transparent;
+    color: #555;
+    font-size: 10px;
+    cursor: pointer;
+    transition: background 0.12s, color 0.12s, border-color 0.12s;
+}
+
+.carnet-date-btn[data-action="set"]:hover {
+    background: rgba(155, 89, 182, 0.2);
+    border-color: rgba(155, 89, 182, 0.4);
+    color: #c39bd3;
+}
+
+.carnet-date-btn[data-action="clear"]:hover {
+    background: rgba(231, 76, 60, 0.15);
+    border-color: rgba(231, 76, 60, 0.35);
+    color: #e74c3c;
+}

@@ -7,6 +7,10 @@ import { FakeWarningHooks } from './modules/fake-warning.js';
 import { TmHooks } from './modules/tm.js';
 
 Hooks.on("init", async () => {
+    // Déclare ce module pour le nettoyage lors de l'export "fiche originale"
+    CONFIG.asharaSheetsModules ??= [];
+    CONFIG.asharaSheetsModules.push("westmarch-ashara");
+
     registerSettings();
     SocketHooks();
     XpHooks();

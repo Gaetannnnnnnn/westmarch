@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.2.4
+Version : 1.2.7
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -73,7 +73,15 @@ INSTALLATION
                     BESTIAIRE — MISES À JOUR
 ================================================================================
 
-v1.2.4 | 2026-07-22
-   settings.js, bestiary.js — Dossiers PJ et Créatures configurables via liste
-   déroulante dans les paramètres (remplace les noms en dur). Titre mis à jour :
-   Soruta — Bestiaire.
+v1.2.7 | 2026-07-22
+   bestiary.js — Textareas de notes auto-redimensionnées à la hauteur du contenu
+   (à l'ouverture des notes, à la saisie, et au rechargement si déjà ouvertes).
+   bestiary.css — resize: none; overflow: hidden; sur .bst-note-input.
+
+v1.2.6 | 2026-07-22
+   index.js — Enregistrement dans CONFIG.asharaSheetsModules au init pour que
+   toolkit puisse nettoyer les flags "bestiary" lors d'un export "fiche originale".
+
+v1.2.5 | 2026-07-22
+   settings.js — Dropdown dossiers affiché en arbre indenté (gère les dossiers
+   homonymes). bestiary.js — isInFolder utilise folder.id au lieu du nom.

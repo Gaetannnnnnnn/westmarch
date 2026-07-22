@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.5.9
+Version : 1.5.12
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -77,7 +77,15 @@ INSTALLATION
                     RELATIONS — MISES À JOUR
 ================================================================================
 
-v1.5.9 | 2026-07-22
-   settings.js, relations.js — Dossiers PJ, PNJ et Créatures configurables via
-   liste déroulante dans les paramètres (remplace les noms en dur). Titre mis à
-   jour : Soruta — Relations.
+v1.5.12 | 2026-07-22
+   relations.js — Textareas de notes auto-redimensionnées à la hauteur du contenu
+   (à l'ouverture des notes, à la saisie, et au rechargement si déjà ouvertes).
+   relations.css — resize: none; overflow: hidden; sur .rel-note-input.
+
+v1.5.11 | 2026-07-22
+   index.js — Enregistrement dans CONFIG.asharaSheetsModules au init pour que
+   toolkit puisse nettoyer les flags "relations" lors d'un export "fiche originale".
+
+v1.5.10 | 2026-07-22
+   settings.js — Dropdown dossiers affiché en arbre indenté (gère les dossiers
+   homonymes). relations.js — isInFolder utilise folder.id au lieu du nom.

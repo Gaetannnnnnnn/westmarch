@@ -72,12 +72,11 @@ async function beastDelete(actor, id) {
 
 // ---- Helpers dossiers --------------------------------------
 
-function isInFolder(actor, folderName) {
-    const root = game.folders.find(f => f.type === "Actor" && f.name === folderName);
-    if (!root) return false;
+function isInFolder(actor, folderId) {
+    if (!folderId) return false;
     let f = actor.folder;
     while (f) {
-        if (f.id === root.id) return true;
+        if (f.id === folderId) return true;
         f = f.folder;
     }
     return false;
@@ -274,9 +273,17 @@ async function openAddDialog(actor) {
 
 // ---- Événements de l'onglet --------------------------------
 
+function _autoResize(el) {
+    el.style.height = "auto";
+    el.style.height = el.scrollHeight + "px";
+}
+
 export function wireTab(actor, $html) {
     const $tab = $html.find(".bst-tab");
     if (!$tab.length) return;
+
+    // Resize textareas déjà visibles (sections ouvertes depuis _expanded)
+    $tab.find(".bst-note-input").each((_, el) => _autoResize(el));
 
     // Clic sur la ligne → ouvrir le portrait
     $tab.on("click", ".bst-row-header", function (e) {
@@ -314,7 +321,9 @@ export function wireTab(actor, $html) {
             $icon.removeClass("fa-chevron-up").addClass("fa-chevron-down");
         } else {
             _expanded.add(id);
-            $notes.slideDown(150);
+            $notes.slideDown(150, function () {
+                $(this).find(".bst-note-input").each((_, el) => _autoResize(el));
+            });
             $icon.removeClass("fa-chevron-down").addClass("fa-chevron-up");
         }
     });
@@ -359,6 +368,7 @@ export function wireTab(actor, $html) {
 
     // Auto-save note (debounce + blur immédiat)
     $tab.on("input", ".bst-note-input", function () {
+        _autoResize(this);
         clearTimeout(_noteTimer);
         const id  = String($(this).data("bst-id"));
         const val = this.value;

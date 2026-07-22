@@ -3,6 +3,10 @@ import { RelationsHooks }    from './modules/relations.js';
 import { AshCharacterSheet } from './modules/character-sheet.js';
 
 Hooks.on("init", () => {
+    // Déclare ce module pour le nettoyage lors de l'export "fiche originale"
+    CONFIG.asharaSheetsModules ??= [];
+    CONFIG.asharaSheetsModules.push("relations");
+
     registerSettings();
     RelationsHooks();
 

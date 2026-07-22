@@ -24,21 +24,27 @@ export function FakeWarningHooks() {
             title: "WestMarch",
             icon: "fa-solid fa-hammer",
             layer: "tokens",
+            // activeTool pointe sur "dummy" (outil invisible, pas button: true)
+            // pour que Foundry v13 traite ce groupe comme expansible et affiche
+            // le sous-menu au clic. Pointer sur un "button: true" déclenchait
+            // onClick à chaque re-render — d'où ce dummy non-button caché.
+            activeTool: "dummy",
             tools: {
+                dummy: {
+                    name:    "dummy",
+                    title:   "",
+                    icon:    "fa-solid fa-hammer",
+                    visible: false
+                },
                 fakeWarning: {
-                    name: "fakeWarning",
-                    title: "Faux message de maintenance",
-                    icon: "fa-solid fa-triangle-exclamation",
-                    button: true,
+                    name:    "fakeWarning",
+                    title:   "Faux message de maintenance",
+                    icon:    "fa-solid fa-triangle-exclamation",
+                    button:  true,
                     onClick: () => openFakeWarningDialog(),
                     visible: true
                 }
             }
-            // Pas d'"activeTool" ici : c'est un bouton ponctuel (button: true),
-            // pas un outil à bascule. En définir un poussait Foundry à
-            // "réactiver" cet outil (et donc rappeler onClick) chaque fois que
-            // les contrôles de scène se re-rendaient — ce qui rouvrait la
-            // fenêtre tout seul, sans clic, et empilait plusieurs dialogues.
         };
     });
 }
