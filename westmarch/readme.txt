@@ -3,7 +3,7 @@
                       Module Foundry VTT — Open Source
 ================================================================================
 
-Version : 1.5.0
+Version : 2.0.7
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : Open source — redistribution autorisée avec attribution
@@ -109,10 +109,7 @@ INSTALLATION
                     WESTMARCH — MISES À JOUR
 ================================================================================
 
-v1.5.0 | 2026-07-20
-   Séparation du module monolithique en 3 modules distincts : westmarch (core),
-   toolkit (features génériques), westmarch-ashara (personnalisations Ashara).
-   settings.js — suppression de tous les settings déplacés vers toolkit et
-   westmarch-ashara. index.js — suppression des imports déplacés.
-   ⚠️ Migration : reconfigurer les settings des nouveaux modules à la première
-   activation. Les flags westmarch.* des features déplacées ne seront plus lus.
+v2.0.7 | 2026-07-22
+   socket.js — suppression du code mort (sendFakeWarning, handler
+   westmarch.fakeWarning déplacé dans westmarch-ashara). Titre mis à jour :
+   Soruta — WestMarch Système. Bandeau settings : copyright open source ajouté.

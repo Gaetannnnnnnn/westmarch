@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.0.0
+Version : 1.0.1
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -70,6 +70,7 @@ INSTALLATION
                     CARTE-EXPEDITIONS — MISES À JOUR
 ================================================================================
 
-v1.0.0 | 2026-07-21
-   Initial release publique. index.js et map-settings.js déplacés dans modules/.
-   Titre mis à jour : Soruta — Map Ouvert Systèmes. Version normalisée à 1.0.0.
+v1.0.1 | 2026-07-22
+   index.js — Fix imports : map.js et map-settings.js référencés depuis modules/
+   (chemin corrigé après déplacement). Titre mis à jour : Soruta — Map Ouvert
+   Systèmes. Copyright readme mis à jour.

@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.5.8
+Version : 1.5.9
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -77,7 +77,7 @@ INSTALLATION
                     RELATIONS — MISES À JOUR
 ================================================================================
 
-v1.5.8 | 2026-07-13
-   relations.js — Section PJ filtrée sur type="character" uniquement : les NPC
-   stockés dans le dossier PJ ne sont plus comptabilisés comme joueurs dans
-   pjRels, le picker joueurs, scanVisibleTokens et le picker d'acteur.
+v1.5.9 | 2026-07-22
+   settings.js, relations.js — Dossiers PJ, PNJ et Créatures configurables via
+   liste déroulante dans les paramètres (remplace les noms en dur). Titre mis à
+   jour : Soruta — Relations.

@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé Ashara
 ================================================================================
 
-Version : 1.0.1
+Version : 1.0.2
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -114,6 +114,7 @@ INSTALLATION
                     WESTMARCH-ASHARA — MISES À JOUR
 ================================================================================
 
-v1.0.1 | 2026-07-22
+v1.0.2 | 2026-07-22
    fake-warning.js, tm.js — Fix boutons barre de gauche inactifs : onChange
    remplacé par onClick (API Foundry v13 pour les outils button: true).
+   Titre mis à jour : Soruta — WestMarch Ashara. Copyright readme mis à jour.

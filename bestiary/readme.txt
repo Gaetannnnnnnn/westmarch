@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.2.3
+Version : 1.2.4
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -73,8 +73,7 @@ INSTALLATION
                     BESTIAIRE — MISES À JOUR
 ================================================================================
 
-v1.2.3 | 2026-07-14
-   bestiary.js — Fix doublons : plusieurs tokens du même acteur de base (ex :
-   5 Knights non-liés) ne créaient qu'une seule entrée par type. Ajout d'un
-   Set seenIds dans scanVisibleTokens pour dédupliquer par token et non par
-   acteur.
+v1.2.4 | 2026-07-22
+   settings.js, bestiary.js — Dossiers PJ et Créatures configurables via liste
+   déroulante dans les paramètres (remplace les noms en dur). Titre mis à jour :
+   Soruta — Bestiaire.

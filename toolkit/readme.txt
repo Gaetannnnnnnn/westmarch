@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.0.0
+Version : 1.0.1
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -115,9 +115,6 @@ INSTALLATION
                     TOOLKIT — MISES À JOUR
 ================================================================================
 
-v1.0.0 | 2026-07-20
-   Initial release : séparation depuis westmarch (modules rage, goliath,
-   polymorph, token, items, tgcm, foldermove, artbook, mejshop, mejrestock).
-   Scope settings et flags migré de "westmarch" vers "toolkit".
-   Settings manquants ajoutés : enableLargeForm, enablePolymorph,
-   enableTgcm, enableFolderMove.
+v1.0.1 | 2026-07-22
+   Titre mis à jour : Soruta — Toolkit. Bandeau settings : copyright mis à jour.
+   foldermove.js, polymorph.js — copyright mis à jour.
