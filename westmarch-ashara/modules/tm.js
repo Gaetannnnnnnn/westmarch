@@ -31,7 +31,7 @@ export function TmHooks() {
             title: "Temps morts — Gains",
             icon: "fa-solid fa-hourglass-half",
             button: true,
-            onChange: () => openDowntimeDialog(),
+            onClick: () => openDowntimeDialog(),
             visible: true
         };
     });
