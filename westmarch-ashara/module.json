@@ -18,6 +18,6 @@
     "./index.js"
   ],
   "url": "https://github.com/Gaetannnnnnnn/westmarch-ashara.git",
-  "manifest": "https://raw.githubusercontent.com/Gaetannnnnnnn/westmarch-ashara/main/westmarch-ashara/module.json",
+  "manifest": "https://raw.githubusercontent.com/Gaetannnnnnnn/westmarch/main/westmarch-ashara/module.json",
   "download": "https://github.com/Gaetannnnnnnn/westmarch-ashara/raw/main/westmarch-ashara.zip"
 }
