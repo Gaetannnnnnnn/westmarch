@@ -20,7 +20,7 @@
   "styles": [
     "./styles/character.css"
   ],
-  "url": "https://github.com/Gaetannnnnnnn/toolkit.git",
+  "url": "https://github.com/Gaetannnnnnnn/westmarch.git",
   "manifest": "https://raw.githubusercontent.com/Gaetannnnnnnn/westmarch/main/toolkit/module.json",
   "download": "https://github.com/Gaetannnnnnnn/westmarch/raw/main/toolkit.zip"
 }
