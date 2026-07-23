@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.1.1
+Version : 1.1.3
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -64,6 +64,22 @@ INSTALLATION
 ================================================================================
                     MIDI-RANGE-FIX — MISES À JOUR
 ================================================================================
+
+v1.1.3 | 2026-07-23
+   range-fix.js — Patch rendu permanent via Object.defineProperty : au lieu de
+   remplacer canvas.grid.measurePath directement (ce que midi-qol écrasait à
+   chaque workflow d'attaque), on pose un getter/setter sur la propriété.
+   Le getter renvoie toujours notre fonction bord→bord, quelle que soit la scène.
+   Le setter intercepte les réécritures de midi-qol, met à jour le fallback
+   interne (_trueOriginal) pour qu'on appelle toujours la bonne version de
+   midi-qol en dernier recours, mais ne laisse jamais sa version exposée.
+   Résultat : le fix survit à tous les lancers sans re-ciblage requis.
+   Try-catch conservé pour sécurité. Hook targetToken retiré (inutile).
+
+v1.1.2 | 2026-07-23
+   range-fix.js — (intermédiaire, remplacé par 1.1.3) Guard ._mrf + hook
+   targetToken + try-catch. Le targetToken ne fonctionnait pas quand la cible
+   restait la même entre deux attaques.
 
 v1.1.1 | 2026-07-23
    index.js — RangeFixHooks() déplacé de "init" vers "ready". Le listener

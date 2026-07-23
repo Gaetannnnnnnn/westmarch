@@ -5,12 +5,14 @@
 const MODULE = "tutoriel";
 
 export const MODULE_TOGGLES = [
-    { key: "modWestmarch",       label: "WestMarch — Barre latérale, scènes, party" },
-    { key: "modBestiary",        label: "Bestiaire — Onglet Bestiaire sur la fiche PJ" },
-    { key: "modRelations",       label: "Relations — Onglet Relations sur la fiche PJ" },
-    { key: "modCarnet",          label: "Carnet d'Expéditions — Onglets Carnet + Expéditions" },
-    { key: "modToolkit",         label: "Toolkit — Boutiques MEJ, fonctions avancées" },
-    { key: "modWestmarchAshara", label: "WestMarch Ashara — Fonctions propres au serveur" },
+    { key: "barreWestmarch",    label: "Barre WestMarch (navigation & groupe)" },
+    { key: "bestiary",          label: "Bestiaire (onglet fiche)" },
+    { key: "relations",         label: "Relations (onglet fiche)" },
+    { key: "carnet",            label: "Carnet & Expéditions (onglet fiche)" },
+    { key: "boutiques",         label: "Boutiques Monk's Enhanced Journal" },
+    { key: "tempsMorts",        label: "Temps morts (déclaration & validation)" },
+    { key: "apparenceTokens",   label: "Apparence des tokens (portrait, polymorph, cycle)" },
+    { key: "outilsGm",          label: "Outils GM (TGCM, XP, Discord, Fake Warning)" },
 ];
 
 // Classe minimale pour déclencher showWelcome depuis le bouton registerMenu.
@@ -43,7 +45,7 @@ export function registerSettings() {
     for (const { key, label } of MODULE_TOGGLES) {
         game.settings.register(MODULE, key, {
             name:   label,
-            hint:   "Inclure les étapes de tutoriel liées à ce module.",
+            hint:   "Inclure les étapes de tutoriel pour cette fonctionnalité.",
             scope:  "world",
             config: true,
             type:   Boolean,

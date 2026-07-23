@@ -1,7 +1,7 @@
 // © 2026 Soruta — Tous droits réservés. Usage personnel autorisé. Redistribution et modification interdites.
 /**
  * midi-range-fix | range-fix.js
- * v1.1.1
+ * v1.1.3
  *
  * Corrige le calcul de portée midi-qol pour les tokens Large/Huge/Gargantuan.
  *
@@ -23,76 +23,108 @@
  * Pour Medium vs Medium, la mesure native midi-qol est conservée (elle est correcte
  * pour les tokens alignés sur la grille).
  *
- * Application : le patch est appliqué à chaque chargement de scène (canvasReady)
- * car canvas.grid est recréé à chaque changement de scène — un patch appliqué
- * dans "ready" ne survit pas au premier chargement de scène.
+ * Persistance du patch :
+ *   canvas.grid est recréé à chaque chargement de scène → on re-patche via
+ *   canvasReady. Sur la même scène, midi-qol réécrit canvas.grid.measurePath
+ *   pendant son workflow d'attaque. Pour contrer ça, on utilise
+ *   Object.defineProperty avec un getter/setter : le getter renvoie toujours
+ *   notre fonction ; le setter intercepte les réécritures de midi-qol et met
+ *   à jour notre fallback interne sans jamais exposer la version de midi-qol.
  */
+
+// Référence à la version "original" que notre patch doit appeler en fallback.
+// Mise à jour par le setter si midi-qol réécrit canvas.grid.measurePath.
+let _trueOriginal = null;
 
 export function RangeFixHooks() {
     // canvasReady est déclenché à chaque chargement de scène.
-    // canvas.grid est une nouvelle instance à chaque fois → pas de double-patch.
+    // canvas.grid est une nouvelle instance à chaque fois → on réinstalle le patch.
     Hooks.on("canvasReady", () => {
         if (!game.modules.get("midi-qol")?.active) return;
         if (!game.settings.get("midi-range-fix", "enabled")) return;
 
         // setTimeout(0) : repousse l'application du patch après tous les handlers
         // synchrones du même canvasReady (y compris le patch éventuel de midi-qol).
-        // Garantit que notre version est bien la dernière appliquée.
+        // Garantit que _trueOriginal capture bien la version finale de midi-qol.
         setTimeout(() => {
             _patchMeasurePath();
-            console.log("[midi-range-fix] Patch bord→bord actif.");
+            console.log("[midi-range-fix] Patch bord→bord actif (sticky).");
         }, 0);
     });
 }
 
 function _patchMeasurePath() {
-    const original = canvas.grid.measurePath.bind(canvas.grid);
+    // Si notre getter est déjà en place sur cette instance de canvas.grid, rien à faire.
+    // (Object.getOwnPropertyDescriptor renvoie un descripteur avec get si on a déjà patchéé.)
+    const existing = Object.getOwnPropertyDescriptor(canvas.grid, "measurePath");
+    if (existing?.get) return;
 
-    canvas.grid.measurePath = function(waypoints, options) {
-        if (!waypoints || waypoints.length !== 2) {
-            return original(waypoints, options);
+    // Capture la version actuelle comme fallback (celle de midi-qol après son propre patch).
+    _trueOriginal = canvas.grid.measurePath.bind(canvas.grid);
+
+    // Notre fonction de mesure bord→bord.
+    function _ourPatch(waypoints, options) {
+        try {
+            if (!waypoints || waypoints.length !== 2) {
+                return _trueOriginal(waypoints, options);
+            }
+
+            const [src, tgt] = waypoints;
+
+            // Identifier l'attaquant : src est dans ses bounds.
+            const attacker = canvas.tokens.placeables.find(t => {
+                if (!t.actor || !t.bounds) return false;
+                const b = t.bounds;
+                return src.x >= b.x && src.x <= b.x + b.width
+                    && src.y >= b.y && src.y <= b.y + b.height;
+            });
+            if (!attacker) return _trueOriginal(waypoints, options);
+
+            // Identifier la cible : tgt est dans ses bounds.
+            const target = canvas.tokens.placeables.find(t => {
+                if (!t.actor || t === attacker || !t.bounds) return false;
+                const b = t.bounds;
+                return tgt.x >= b.x && tgt.x <= b.x + b.width
+                    && tgt.y >= b.y && tgt.y <= b.y + b.height;
+            });
+            if (!target) return _trueOriginal(waypoints, options);
+
+            // Aucune correction pour Medium vs Medium : la mesure native midi-qol
+            // (centre vers coin) est correcte pour des tokens bien alignés sur la grille.
+            const attackerWidth = attacker.document?.width ?? 1;
+            const targetWidth   = target.document?.width ?? 1;
+            if (attackerWidth <= 1 && targetWidth <= 1) return _trueOriginal(waypoints, options);
+
+            // Mesure bord→bord.
+            const attackerCenter = _boundsCenter(attacker);
+            const targetCenter   = _boundsCenter(target);
+            const attackerBorder = _nearestBorderPoint(targetCenter,   attacker);
+            const targetBorder   = _nearestBorderPoint(attackerCenter, target);
+
+            return _trueOriginal([attackerBorder, targetBorder], options);
+
+        } catch(err) {
+            // Fallback silencieux : on ne laisse jamais l'erreur remonter vers midi-qol.
+            console.warn("[midi-range-fix] Erreur dans measurePath, fallback midi-qol :", err);
+            return _trueOriginal(waypoints, options);
         }
+    }
 
-        const [src, tgt] = waypoints;
-
-        // Identifier l'attaquant : src est dans ses bounds.
-        const attacker = canvas.tokens.placeables.find(t => {
-            if (!t.actor) return false;
-            const b = t.bounds;
-            return src.x >= b.x && src.x <= b.x + b.width
-                && src.y >= b.y && src.y <= b.y + b.height;
-        });
-        if (!attacker) return original(waypoints, options);
-
-        // Identifier la cible : tgt est dans ses bounds.
-        const target = canvas.tokens.placeables.find(t => {
-            if (!t.actor || t === attacker) return false;
-            const b = t.bounds;
-            return tgt.x >= b.x && tgt.x <= b.x + b.width
-                && tgt.y >= b.y && tgt.y <= b.y + b.height;
-        });
-        if (!target) return original(waypoints, options);
-
-        // Aucune correction pour Medium vs Medium : la mesure native midi-qol
-        // (centre vers coin) est correcte pour des tokens bien alignés sur la grille.
-        const attackerWidth = attacker.document.width;
-        const targetWidth   = target.document.width;
-        if (attackerWidth <= 1 && targetWidth <= 1) return original(waypoints, options);
-
-        // Mesure bord→bord :
-        //   1. Point le plus proche sur la bounding box de l'attaquant depuis
-        //      le centre de la cible → bord de l'attaquant tourné vers la cible
-        //   2. Point le plus proche sur la bounding box de la cible depuis
-        //      le centre de l'attaquant → bord de la cible tourné vers l'attaquant
-        // La distance entre ces deux points = portée effective D&D 5e.
-        const attackerCenter = _boundsCenter(attacker);
-        const targetCenter   = _boundsCenter(target);
-
-        const attackerBorder = _nearestBorderPoint(targetCenter,   attacker);
-        const targetBorder   = _nearestBorderPoint(attackerCenter, target);
-
-        return original([attackerBorder, targetBorder], options);
-    };
+    // Pose un getter/setter sur canvas.grid.measurePath.
+    // → getter  : renvoie toujours _ourPatch, peu importe ce que midi-qol a écrit.
+    // → setter  : intercepte les réécritures de midi-qol, met à jour _trueOriginal
+    //             (pour que notre fallback reste correct) sans exposer sa version.
+    Object.defineProperty(canvas.grid, "measurePath", {
+        get: () => _ourPatch,
+        set: (newFn) => {
+            if (typeof newFn === "function" && newFn !== _ourPatch) {
+                _trueOriginal = newFn.bind(canvas.grid);
+                console.log("[midi-range-fix] midi-qol a réécrit measurePath → fallback mis à jour, wrapper toujours actif.");
+            }
+        },
+        configurable: true,
+        enumerable:   true,
+    });
 }
 
 /**

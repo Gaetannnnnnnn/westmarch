@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.0.7
+Version : 1.0.8
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -27,9 +27,8 @@ Ajoute deux onglets sur la fiche de chaque personnage joueur :
   Les GM peuvent définir ou effacer les dates individuellement via les boutons
   intégrés (📅 = date actuelle, ✕ = effacer).
 
-Le bouton "Date du TM" dans la barre WestMarch (barre de gauche, GM uniquement)
-enregistre automatiquement la date Simple Calendar pour tous les membres de la
-party :
+Le bouton "Date Expédition" dans la barre WestMarch (barre de gauche, GM uniquement)
+enregistre automatiquement la date actuelle pour tous les membres de la party :
   - Si l'acteur n'a pas d'expédition en cours → crée une nouvelle avec la
     date actuelle comme début.
   - Si l'acteur a une expédition en cours (début sans fin) → enregistre la
@@ -51,9 +50,10 @@ modules/settings.js
 
 modules/carnet.js
    Logique principale : CRUD des expéditions (flags), formatage des dates
-   (Simple Calendar), récupération de la party (westmarch), génération HTML
-   des deux onglets, câblage des événements, éditeur ProseMirror inline,
-   bouton barre de gauche "Date du TM".
+   (game.time.calendar natif Foundry v13, Simple Calendar en fallback),
+   récupération de la party (westmarch), génération HTML des deux onglets,
+   câblage des événements, éditeur ProseMirror inline,
+   bouton barre de gauche "Date Expédition".
 
 modules/character-sheet.js
    Factory createCarnetSheet(BaseSheet) : crée la sous-classe de fiche PJ
@@ -77,10 +77,10 @@ Obligatoires :
   - dnd5e v3+ (système de jeu)
 
 Recommandées :
-  - Simple Calendar (dates en jeu — sans lui, le bouton "Date du TM" est
-    inactif et les dates s'affichent en format numérique brut)
-  - westmarch (pour le bouton "Date du TM" — lit le paramètre "partyMaster"
+  - westmarch (pour le bouton "Date Expédition" — lit le paramètre "partyMaster"
     pour identifier les membres de la party)
+  - Simple Calendar (optionnel — utilisé en fallback pour le formatage des dates
+    si game.time.calendar n'est pas suffisant)
 
 Compatibles :
   - ashara-relations (s'empile : Relations → Bestiary → Carnet)
@@ -107,6 +107,24 @@ INSTALLATION
 ================================================================================
                     CARNET D'EXPÉDITIONS — MISES À JOUR
 ================================================================================
+
+v1.0.8 | 2026-07-23
+   carnet.js — Fix bouton toolbar "Date Expédition" et boutons de date dans
+   l'onglet Expéditions (anciennement "Temps morts") : remplacement de
+   SimpleCalendar.api.currentDateTime() par game.time.calendar (API Foundry v13
+   native). L'ancienne API SimpleCalendar retournait null dans la version
+   installée → le bouton 📅 affichait "Calendrier requis" et ne faisait rien.
+   getCurrentDate() utilise maintenant game.time.calendar.timeToComponents()
+   en priorité (même source que tm.js dans westmarch-ashara), Simple Calendar
+   en fallback.
+   Refonte onClickDateTM() avec DialogV2 (foundry.applications.api.DialogV2) :
+   accès au DOM via document.querySelector('[name="carnet-tm-mode"]:checked')
+   et document.getElementById() au lieu de html.find() (Dialog v1). Fallback
+   Dialog v1 conservé pour compatibilité. Sélecteur de mois dynamique via
+   game.time.calendar.months.
+   Texte empty-state "Date du TM" → "Date Expédition" dans buildDowntimeHtml.
+   wireDowntimeTab : guard instanceof Element, try-catch sur handlers, message
+   d'avertissement mis à jour.
 
 v1.0.7 | 2026-07-23
    carnet.css — Fix positionnement des menus déroulants ProseMirror : ajout de

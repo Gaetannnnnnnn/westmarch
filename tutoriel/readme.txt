@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.0.6
+Version : 1.0.7
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -55,9 +55,13 @@ modules/welcome.js
 
 modules/tutorial.js
    Moteur du tutoriel :
-   - STEPS_BY_MODULE : définition des étapes par module
+   - STEPS_BY_FEATURE : définition des étapes par fonctionnalité (pas par module)
+   - Filtrage gmOnly / playerOnly : contenu différencié GM vs joueurs
+   - beforeShow() : navigation automatique (ouvre fiche + onglet) avant la bulle
+   - textGM : texte alternatif pour le GM sur certaines étapes
    - startTutorial() : filtre les étapes selon les settings, lance l'affichage
-   - closeTutorial() : nettoie le DOM
+   - closeTutorial() : nettoie le DOM + retire le listener Echap
+   - Fermeture via Echap (keydown listener)
    - Spotlight : 4 panneaux positionnés autour de la cible, plein écran si
      aucune cible
    - Anneau lumineux animé autour de la cible
@@ -75,32 +79,45 @@ styles/tutoriel.css
    et de la bulle (flèches directionnelles, points de progression, boutons).
 
 --------------------------------------------------------------------------------
-CONTENU DU TUTORIEL PAR MODULE
+CONTENU DU TUTORIEL PAR FONCTIONNALITÉ
 --------------------------------------------------------------------------------
 
-WestMarch (core)
+Barre WestMarch  (tous)
   → Barre de contrôles latérale
   → Groupe WestMarch et ses outils
-  → Bouton tutoriel
+  → Bouton tutoriel (rappel touche Echap)
 
-Bestiaire
+Bestiaire  (tous, contenu différencié GM)
   → Onglet Bestiaire sur la fiche PJ
-  → Consultation des entrées
+  → Consultation / modification des entrées
 
-Relations
+Relations  (tous, contenu différencié GM)
   → Onglet Relations sur la fiche PJ
-  → Ajout d'une relation
+  → Ajout et gestion des relations
 
-Carnet d'Expéditions
+Carnet & Expéditions  (tous, contenu différencié GM)
   → Onglet Carnet (éditeur ProseMirror)
   → Onglet Expéditions (dates + durée)
-  → Bouton Date du TM (GM uniquement)
+  → Bouton Date Expédition dans la barre (GM uniquement)
 
-Toolkit
+Boutiques  (GM uniquement)
   → Boutiques Monk's Enhanced Journal
+  → Réapprovisionnement automatique avec délais configurables
 
-WestMarch Ashara
-  → Fonctions propres au serveur
+Temps morts  (contenu différencié GM/joueur)
+  → Déclaration de temps mort depuis la fiche (joueurs)
+  → Validation des déclarations depuis la barre (GM)
+
+Apparence des tokens  (tous)
+  → Portrait grand format (HUD)
+  → Wild Shape / Polymorph
+  → Cycle d'apparences
+
+Outils GM  (GM uniquement)
+  → Faux message de maintenance
+  → Protection TGCM (mort)
+  → Blocage XP et Level Up
+  → Logs Discord (webhook)
 
 --------------------------------------------------------------------------------
 PARAMÈTRES CONFIGURABLES
@@ -109,12 +126,14 @@ PARAMÈTRES CONFIGURABLES
 Accessibles via : Paramètres du jeu → Configuration des modules → Soruta — Tutoriel
 
   Nom affiché dans le message de bienvenue  (texte libre)
-  WestMarch — Barre latérale, scènes, party  (booléen)
-  Bestiaire — Onglet Bestiaire               (booléen)
-  Relations — Onglet Relations               (booléen)
-  Carnet d'Expéditions — Onglets Carnet +    (booléen)
-  Toolkit — Boutiques MEJ                    (booléen)
-  WestMarch Ashara — Fonctions serveur       (booléen)
+  Barre WestMarch                            (booléen)
+  Bestiaire                                  (booléen)
+  Relations                                  (booléen)
+  Carnet & Expéditions                       (booléen)
+  Boutiques Monk's Enhanced Journal          (booléen)
+  Temps morts (déclaration & validation)     (booléen)
+  Apparence des tokens                       (booléen)
+  Outils GM (TGCM, XP, Discord, Fake...)    (booléen)
 
 Paramètre utilisateur (non visible dans la config) :
   hideWelcome — booléen client, mis à true par "Ne plus afficher".
@@ -134,6 +153,19 @@ INSTALLATION
 ================================================================================
                     TUTORIEL — MISES À JOUR
 ================================================================================
+
+v1.0.7 | 2026-07-23
+   tutorial.js — Refonte complète par fonctionnalité (remplace la structure par
+   module). Nouveau STEPS_BY_FEATURE avec 8 sections : barreWestmarch, bestiary,
+   relations, carnet, boutiques, tempsMorts, apparenceTokens, outilsGm.
+   Ajout gmOnly / playerOnly : contenu différencié GM vs joueurs. Ajout textGM
+   sur les étapes où le GM voit une version différente du texte. Ajout beforeShow :
+   ouverture automatique de la fiche PJ et navigation vers l'onglet ciblé avant
+   l'affichage de la bulle. Fermeture via Echap (keydown listener rattaché au
+   buildWrap et retiré par closeTutorial).
+   settings.js — MODULE_TOGGLES réécrits avec les nouvelles clés de fonctionnalités
+   (barreWestmarch, bestiary, relations, carnet, boutiques, tempsMorts,
+   apparenceTokens, outilsGm) en remplacement des anciennes clés par module.
 
 v1.0.6 | 2026-07-23
    settings.js — hideWelcome (config: false, default: true) remplacé par
