@@ -111,7 +111,7 @@ export function CarnetToolbarHooks() {
 
         controls.westmarch.tools.carnetDate = {
             name:     "carnetDate",
-            title:    "Date du TM — Début/Fin d'expédition (party)",
+            title:    "Date Expédition — Début/Fin d'expédition (party)",
             icon:     "fa-solid fa-calendar-plus",
             button:   true,
             onChange: onClickDateTM,
@@ -178,7 +178,7 @@ async function onClickDateTM() {
 
     const date = await new Promise(resolve => {
         new Dialog({
-            title:   "Date du TM — Début / Fin d'expédition",
+            title:   "Date Expédition — Début / Fin d'expédition",
             content,
             buttons: {
                 confirm: {
@@ -232,7 +232,7 @@ async function onClickDateTM() {
     const parts = [];
     if (opened) parts.push(`${opened} expédition${opened > 1 ? "s" : ""} commencée${opened > 1 ? "s" : ""}`);
     if (closed) parts.push(`${closed} expédition${closed > 1 ? "s" : ""} clôturée${closed > 1 ? "s" : ""}`);
-    ui.notifications.info(`[Carnet] Date du TM — ${parts.join(", ")}.`);
+    ui.notifications.info(`[Carnet] Date Expédition — ${parts.join(", ")}.`);
 }
 
 // ================================================================
@@ -257,7 +257,7 @@ export function buildJournalHtml(actor) {
             <div class="carnet-empty-state">
                 <i class="fas fa-book-open"></i>
                 <p>Aucune expédition enregistrée.<br>
-                Le GM peut créer une via le bouton <strong>Date du TM</strong>
+                Le GM peut créer une via le bouton <strong>Date Expédition</strong>
                 dans la barre de gauche, ou via le bouton ci-dessus.</p>
             </div>
         </div>`;

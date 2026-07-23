@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.0.8
+Version : 1.1.0
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -64,6 +64,25 @@ INSTALLATION
 ================================================================================
                     MIDI-RANGE-FIX — MISES À JOUR
 ================================================================================
+
+v1.1.0 | 2026-07-23
+   range-fix.js — Refonte complète de la mesure de portée.
+   Ancienne approche : centre attaquant → bord cible − bonus taille. Incorrecte
+   pour Medium attaquant vs Large cible (le demi-espace du PJ n'était pas
+   soustrait → 6.9ft au lieu de 1.6ft pour un PJ adjacent à un Brown Bear).
+   Nouvelle approche : bord→bord. On calcule le point le plus proche sur la
+   bounding box de l'attaquant depuis le centre de la cible, et vice-versa ;
+   la distance entre ces deux points est la portée D&D 5e exacte.
+   Hook "ready" → "canvasReady" : canvas.grid est recréé à chaque chargement
+   de scène, le patch ne survivait pas. canvasReady re-patche à chaque scène.
+   Ajout de la vérification du setting "enabled" dans le hook canvasReady.
+
+v1.0.9 | 2026-07-23
+   settings.js — Fix hook renderSettingsConfig pour Foundry v13 : html passé en
+   HTMLElement natif (pas jQuery). Ajout de $(html) pour normaliser. Sélecteur
+   remplacé par [data-setting-id^="midi-range-fix."] (robuste v12/v13, sans
+   dépendance sur .tab[data-tab="system"] qui n'existe plus en v13). Description
+   du tableau mise à jour (bounding box, plus cercle inscrit).
 
 v1.0.8 | 2026-07-23
    Synchronisation module.json / readme.txt sur la même version.

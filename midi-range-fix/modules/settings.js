@@ -18,11 +18,11 @@ export function registerSettings() {
 
     // Bloc d'explication injecté dans la page de config
     Hooks.on("renderSettingsConfig", (_app, html) => {
-        const section = html.find(`.tab[data-tab="system"] h2.module-header:contains("${MODULE}")`).parent();
-        if (!section.length) return;
+        // Foundry v13 passe un HTMLElement natif (pas jQuery) — on normalise.
+        const $html = $(html);
 
-        // Chercher après le dernier setting du module
-        const lastSetting = section.find(`.form-group[data-setting-id^="${MODULE}."]`).last();
+        // Chercher après le dernier setting du module (sélecteur robuste v12/v13)
+        const lastSetting = $html.find(`[data-setting-id^="${MODULE}."]`).last().closest(".form-group");
         if (!lastSetting.length) return;
 
         lastSetting.after(`
@@ -41,7 +41,7 @@ export function registerSettings() {
                 <p class="mrf-formula-sub">
                     bonus taille = (cases − 1) × 2,5 ft
                     &nbsp;—&nbsp;
-                    bord cible = cercle inscrit si carré, bounding box sinon
+                    bord cible = bounding box rectangulaire (nearest cell edge)
                 </p>
 
                 <div class="mrf-table-wrap">

@@ -23,21 +23,25 @@ export function FakeWarningHooks() {
         // l'objet controls. onChange (et non onClick) est le bon callback pour
         // les outils button:true — onClick n'existe pas en v13 et est ignoré.
         // Pas besoin d'activeTool : sans lui le groupe s'ouvre normalement.
-        controls.westmarch = {
-            name:  "westmarch",
-            title: "WestMarch",
-            icon:  "fa-solid fa-hammer",
-            layer: "tokens",
-            tools: {
-                fakeWarning: {
-                    name:     "fakeWarning",
-                    title:    "Faux message de maintenance",
-                    icon:     "fa-solid fa-triangle-exclamation",
-                    button:   true,
-                    onChange: () => openFakeWarningDialog(),
-                    visible:  true
-                }
-            }
+        // Guard pattern : ne pas écraser les outils déjà ajoutés par d'autres
+        // modules (ex. carnet ajoute carnetDate avant westmarch-ashara en
+        // raison de l'ordre alphabétique des IDs de module).
+        if (!controls.westmarch) {
+            controls.westmarch = {
+                name:  "westmarch",
+                title: "WestMarch",
+                icon:  "fa-solid fa-hammer",
+                layer: "tokens",
+                tools: {}
+            };
+        }
+        controls.westmarch.tools.fakeWarning = {
+            name:     "fakeWarning",
+            title:    "Faux message de maintenance",
+            icon:     "fa-solid fa-triangle-exclamation",
+            button:   true,
+            onChange: () => openFakeWarningDialog(),
+            visible:  true
         };
     });
 }

@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé Ashara
 ================================================================================
 
-Version : 1.0.6
+Version : 1.0.7
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -113,6 +113,13 @@ INSTALLATION
 ================================================================================
                     WESTMARCH-ASHARA — MISES À JOUR
 ================================================================================
+
+v1.0.7 | 2026-07-23
+   fake-warning.js — Remplacement de l'assignation complète de controls.westmarch
+   par le guard pattern (if !controls.westmarch → créer, puis ajouter l'outil).
+   Corrige la disparition du bouton "Date Expédition" (carnet) : carnet se charge
+   avant westmarch-ashara (ordre alphabétique) et l'ancien code écrasait l'objet
+   entier, supprimant les outils déjà ajoutés par d'autres modules.
 
 v1.0.6 | 2026-07-23
    Synchronisation module.json / readme.txt sur la même version.

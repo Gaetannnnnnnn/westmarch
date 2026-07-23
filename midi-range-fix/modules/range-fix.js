@@ -1,40 +1,42 @@
 // © 2026 Soruta — Tous droits réservés. Usage personnel autorisé. Redistribution et modification interdites.
 /**
  * midi-range-fix | range-fix.js
- * v1.0.7
+ * v1.1.0
  *
  * Corrige le calcul de portée midi-qol pour les tokens Large/Huge/Gargantuan.
  *
- * Règle : chaque token a un rayon naturel (2.5ft par case au-delà de Medium).
- * La portée effective d'une attaque est mesurée du CENTRE de l'attaquant
- * jusqu'au BORD de la cible (centre → bord).
+ * Problème : midi-qol mesure de plusieurs coins de l'attaquant vers plusieurs
+ * coins du token cible, puis prend la distance minimale. Cette approche donne
+ * des distances trop grandes pour les tokens Large+ positionnés hors-grille,
+ * ou pour des combinaisons Medium attaquant vs Large cible (le demi-espace de
+ * l'attaquant n'est pas pris en compte — ex. PJ Medium vs Brown Bear Large
+ * donnait 6.9ft au lieu de 1.6ft, bloquant l'attaque à tort).
  *
- * Portée effective = portée_arme + (taille_attaquant - 1) × 2.5ft
- *   - Attaquant Medium (1 case) : 5ft → 5ft
- *   - Attaquant Large  (2 cases) : 5ft → 7.5ft
- *   - Attaquant Huge   (3 cases) : 5ft → 10ft
+ * Correction : mesure bord→bord.
+ *   - On trouve le point le plus proche sur la bounding box de l'ATTAQUANT
+ *     depuis le centre de la CIBLE.
+ *   - On trouve le point le plus proche sur la bounding box de la CIBLE
+ *     depuis le centre de l'ATTAQUANT.
+ *   - La distance entre ces deux points de bord est la portée effective D&D 5e.
  *
- * Implémentation :
- *   1. On remplace le point cible par le bord le plus proche du token cible.
- *   2. On soustrait du résultat le bonus de taille de l'attaquant.
- *   3. midi-qol compare au weapon_range habituel → résultat correct.
+ * La correction n'est appliquée que si l'un des deux tokens est Large+ (≥ 2 cases).
+ * Pour Medium vs Medium, la mesure native midi-qol est conservée (elle est correcte
+ * pour les tokens alignés sur la grille).
  *
- * Forme du bord cible :
- *   Bounding box rectangulaire dans tous les cas.
- *   Le cercle inscrit donnait des distances légèrement supérieures en approche
- *   diagonale d'un coin (ex. 5.6ft au lieu de 3.5ft pour un Brown Bear adjacent
- *   en diagonale), ce qui faisait arrondir à 6ft et bloquer l'attaque à tort.
+ * Application : le patch est appliqué à chaque chargement de scène (canvasReady)
+ * car canvas.grid est recréé à chaque changement de scène — un patch appliqué
+ * dans "ready" ne survit pas au premier chargement de scène.
  */
 
 export function RangeFixHooks() {
-    Hooks.once("ready", () => {
-        if (!game.modules.get("midi-qol")?.active) {
-            console.log("[midi-range-fix] midi-qol non actif — module désactivé.");
-            return;
-        }
+    // canvasReady est déclenché à chaque chargement de scène.
+    // canvas.grid est une nouvelle instance à chaque fois → pas de double-patch.
+    Hooks.on("canvasReady", () => {
+        if (!game.modules.get("midi-qol")?.active) return;
+        if (!game.settings.get("midi-range-fix", "enabled")) return;
 
         _patchMeasurePath();
-        console.log("[midi-range-fix] Patch centre→bord actif.");
+        console.log("[midi-range-fix] Patch bord→bord actif.");
     });
 }
 
@@ -49,11 +51,6 @@ function _patchMeasurePath() {
         const [src, tgt] = waypoints;
 
         // Identifier l'attaquant : src est dans ses bounds.
-        //
-        // On utilise uniquement les bounds (pas token.center) car en Foundry v13
-        // token.center renvoie le centre de la première case du token, pas le centre
-        // géométrique du token entier — ce qui donne le mauvais point pour les
-        // tokens Large+. Les bounds sont toujours corrects.
         const attacker = canvas.tokens.placeables.find(t => {
             if (!t.actor) return false;
             const b = t.bounds;
@@ -62,7 +59,7 @@ function _patchMeasurePath() {
         });
         if (!attacker) return original(waypoints, options);
 
-        // Identifier la cible : tgt est dans ses bounds
+        // Identifier la cible : tgt est dans ses bounds.
         const target = canvas.tokens.placeables.find(t => {
             if (!t.actor || t === attacker) return false;
             const b = t.bounds;
@@ -71,29 +68,25 @@ function _patchMeasurePath() {
         });
         if (!target) return original(waypoints, options);
 
-        // Aucune correction nécessaire si les deux tokens sont Medium
+        // Aucune correction pour Medium vs Medium : la mesure native midi-qol
+        // (centre vers coin) est correcte pour des tokens bien alignés sur la grille.
         const attackerWidth = attacker.document.width;
         const targetWidth   = target.document.width;
         if (attackerWidth <= 1 && targetWidth <= 1) return original(waypoints, options);
 
-        // Centre géométrique réel = milieu des bounds (pas token.center)
+        // Mesure bord→bord :
+        //   1. Point le plus proche sur la bounding box de l'attaquant depuis
+        //      le centre de la cible → bord de l'attaquant tourné vers la cible
+        //   2. Point le plus proche sur la bounding box de la cible depuis
+        //      le centre de l'attaquant → bord de la cible tourné vers l'attaquant
+        // La distance entre ces deux points = portée effective D&D 5e.
         const attackerCenter = _boundsCenter(attacker);
+        const targetCenter   = _boundsCenter(target);
 
-        // 1. Point le plus proche sur la bordure réelle de la cible
-        const nearest = _nearestBorderPoint(attackerCenter, target);
+        const attackerBorder = _nearestBorderPoint(targetCenter,   attacker);
+        const targetBorder   = _nearestBorderPoint(attackerCenter, target);
 
-        // 2. Distance centre attaquant → bord cible
-        const result = original([attackerCenter, nearest], options);
-
-        // 3. Soustraire le bonus de taille de l'attaquant
-        //    Bonus = (nb cases - 1) × 2.5ft
-        const gridDist = canvas.grid.distance;
-        const attackerBonus = Math.max(0, (attackerWidth - 1) * (gridDist / 2));
-
-        if (attackerBonus === 0) return result;
-
-        const corrected = Math.max(0, (result.distance ?? 0) - attackerBonus);
-        return Object.assign(Object.create(Object.getPrototypeOf(result)), result, { distance: corrected });
+        return original([attackerBorder, targetBorder], options);
     };
 }
 
@@ -108,12 +101,8 @@ function _boundsCenter(token) {
 }
 
 /**
- * Retourne le point le plus proche sur la bordure du token depuis src.
- *
- * On utilise systématiquement la bounding box rectangulaire (coin le plus proche).
- * C'est équivalent au "nearest cell edge" de D&D 5e sur grille carrée, et évite
- * le sur-calcul du cercle inscrit qui renvoyait des distances trop grandes en
- * approche diagonale d'un coin (ex. Large token).
+ * Retourne le point le plus proche sur la bounding box du token depuis src.
+ * Équivalent au "nearest cell edge" de D&D 5e sur grille carrée.
  */
 function _nearestBorderPoint(src, token) {
     const b = token.bounds;

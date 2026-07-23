@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.0.4
+Version : 1.0.5
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -39,8 +39,9 @@ FICHIERS
 --------------------------------------------------------------------------------
 
 index.js
-   Point d'entrée. Enregistre les settings, le bouton toolbar, et déclenche
-   la fenêtre de bienvenue au hook "ready".
+   Point d'entrée. Enregistre les settings et le bouton toolbar dans le hook
+   "init" (avant la construction des contrôles). Déclenche la fenêtre de
+   bienvenue dans "ready" (setTimeout 1 s pour laisser l'UI se stabiliser).
 
 modules/settings.js
    Enregistre tous les paramètres : nom du serveur, toggles de modules,
@@ -133,6 +134,14 @@ INSTALLATION
 ================================================================================
                     TUTORIEL — MISES À JOUR
 ================================================================================
+
+v1.0.5 | 2026-07-23
+   index.js — registerTutorielButton() déplacé de "ready" vers "init" pour que
+   le hook getSceneControlButtons soit enregistré avant que Foundry construise
+   la barre des contrôles. Résout l'icône "?" manquante dans la toolbar.
+   settings.js — Tous les game.settings.register() appelés en premier ;
+   registerMenu() déplacé en dernier et enveloppé dans un try-catch. Résout
+   les settings de tutoriel invisibles en cas d'échec de registerMenu en v13.
 
 v1.0.4 | 2026-07-23
    Synchronisation module.json / readme.txt sur la même version.

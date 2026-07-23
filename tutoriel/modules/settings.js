@@ -28,18 +28,8 @@ const _WelcomeLauncher = class {
 };
 
 export function registerSettings() {
-    // ---- Bouton lancement manuel ----
-
-    game.settings.registerMenu(MODULE, "launchWelcome", {
-        name:       "Tutoriel de démarrage",
-        hint:       "Afficher à nouveau la fenêtre de bienvenue et de lancement du tutoriel.",
-        label:      "Lancer le tutoriel",
-        icon:       "fas fa-circle-question",
-        restricted: false,
-        type:       _WelcomeLauncher
-    });
-
-    // ---- Paramètres GM ----
+    // ---- Paramètres GM (enregistrés en premier — registerMenu en dernier
+    //      pour qu'une éventuelle erreur n'empêche pas les settings d'apparaître) ----
 
     game.settings.register(MODULE, "serverName", {
         name: "Nom affiché dans le message de bienvenue",
@@ -71,4 +61,19 @@ export function registerSettings() {
         type:   Boolean,
         default: true
     });
+
+    // ---- Bouton lancement manuel (en dernier : si registerMenu échoue en v13,
+    //      les settings ci-dessus sont déjà enregistrés et visibles) ----
+    try {
+        game.settings.registerMenu(MODULE, "launchWelcome", {
+            name:       "Tutoriel de démarrage",
+            hint:       "Afficher à nouveau la fenêtre de bienvenue et de lancement du tutoriel.",
+            label:      "Lancer le tutoriel",
+            icon:       "fas fa-circle-question",
+            restricted: false,
+            type:       _WelcomeLauncher
+        });
+    } catch(e) {
+        console.warn("[tutoriel] registerMenu non disponible :", e.message);
+    }
 }
