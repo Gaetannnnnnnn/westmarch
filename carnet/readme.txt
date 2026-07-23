@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.0.6
+Version : 1.0.7
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -107,6 +107,13 @@ INSTALLATION
 ================================================================================
                     CARNET D'EXPÉDITIONS — MISES À JOUR
 ================================================================================
+
+v1.0.7 | 2026-07-23
+   carnet.css — Fix positionnement des menus déroulants ProseMirror : ajout de
+   position:relative et overflow:visible sur .carnet-editor-wrap pour que les
+   dropdowns (police, titres, tableau) s'ancrent au conteneur de l'éditeur et
+   non à un ancêtre distant du dialog. Ajout z-index sur .editor-menu et les
+   classes .prosemirror-dropdown / .dropdown-menu / .pm-dropdown.
 
 v1.0.6 | 2026-07-23
    carnet.js — Renommage du bouton toolbar "Date du TM" → "Date Expédition"
