@@ -1,7 +1,7 @@
 // © 2026 Soruta — Tous droits réservés. Usage personnel autorisé. Redistribution et modification interdites.
 /**
  * midi-range-fix | range-fix.js
- * v1.1.0
+ * v1.1.1
  *
  * Corrige le calcul de portée midi-qol pour les tokens Large/Huge/Gargantuan.
  *
@@ -35,8 +35,13 @@ export function RangeFixHooks() {
         if (!game.modules.get("midi-qol")?.active) return;
         if (!game.settings.get("midi-range-fix", "enabled")) return;
 
-        _patchMeasurePath();
-        console.log("[midi-range-fix] Patch bord→bord actif.");
+        // setTimeout(0) : repousse l'application du patch après tous les handlers
+        // synchrones du même canvasReady (y compris le patch éventuel de midi-qol).
+        // Garantit que notre version est bien la dernière appliquée.
+        setTimeout(() => {
+            _patchMeasurePath();
+            console.log("[midi-range-fix] Patch bord→bord actif.");
+        }, 0);
     });
 }
 

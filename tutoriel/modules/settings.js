@@ -53,13 +53,14 @@ export function registerSettings() {
 
     // ---- Préférence utilisateur (par client) ----
 
-    // "Ne plus afficher la fenêtre de bienvenue au login"
-    // default: true → fenêtre désactivée par défaut, déclenchée manuellement via settings ou toolbar
-    game.settings.register(MODULE, "hideWelcome", {
+    // Afficher la fenêtre de bienvenue au login (par défaut : non)
+    game.settings.register(MODULE, "showWelcome", {
+        name:   "Afficher la fenêtre de bienvenue au login",
+        hint:   "Si activé, la fenêtre d'accueil s'affiche automatiquement à chaque connexion.",
         scope:  "client",
-        config: false,
+        config: true,
         type:   Boolean,
-        default: true
+        default: false
     });
 
     // ---- Bouton lancement manuel (en dernier : si registerMenu échoue en v13,

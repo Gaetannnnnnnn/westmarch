@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.1.0
+Version : 1.1.1
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -64,6 +64,18 @@ INSTALLATION
 ================================================================================
                     MIDI-RANGE-FIX — MISES À JOUR
 ================================================================================
+
+v1.1.1 | 2026-07-23
+   index.js — RangeFixHooks() déplacé de "init" vers "ready". Le listener
+   canvasReady était enregistré trop tôt (init) : midi-qol enregistre le sien
+   dans "ready", donc son handler s'exécutait après le nôtre et écrasait le patch.
+   En déplaçant dans "ready" et en profitant de l'ordre alphabétique (midi-qol <
+   midi-range-fix), notre canvasReady est enregistré en dernier et s'exécute après
+   celui de midi-qol.
+   range-fix.js — Ajout d'un setTimeout(0) dans le handler canvasReady pour
+   repousser l'application du patch après tous les handlers synchrones, garantissant
+   que notre version est bien la dernière active quelle que soit la version de
+   midi-qol.
 
 v1.1.0 | 2026-07-23
    range-fix.js — Refonte complète de la mesure de portée.

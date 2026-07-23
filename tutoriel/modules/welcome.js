@@ -11,8 +11,7 @@ const MODULE = "tutoriel";
  * n'a pas choisi "Ne plus afficher".
  */
 export function showWelcomeIfNeeded() {
-    const hide = game.settings.get(MODULE, "hideWelcome");
-    if (hide) return;
+    if (!game.settings.get(MODULE, "showWelcome")) return;
     showWelcome();
 }
 
@@ -102,7 +101,7 @@ export function showWelcome() {
                 icon:     '<i class="fas fa-eye-slash"></i>',
                 label:    "Ne plus afficher",
                 callback: () => {
-                    game.settings.set(MODULE, "hideWelcome", true);
+                    game.settings.set(MODULE, "showWelcome", false);
                     ui.notifications.info("[Tutoriel] La fenêtre d'accueil ne s'affichera plus au login. Vous pouvez la rouvrir via le bouton dans la barre WestMarch.");
                 }
             }

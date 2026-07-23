@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.0.5
+Version : 1.0.6
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -134,6 +134,14 @@ INSTALLATION
 ================================================================================
                     TUTORIEL — MISES À JOUR
 ================================================================================
+
+v1.0.6 | 2026-07-23
+   settings.js — hideWelcome (config: false, default: true) remplacé par
+   showWelcome (config: true, default: false) : le setting est maintenant visible
+   dans la configuration du module, décoché par défaut (fenêtre de bienvenue
+   désactivée au login). La logique est positive (cocher = activer la fenêtre).
+   welcome.js — showWelcomeIfNeeded() et le bouton "Ne plus afficher" mis à jour
+   pour utiliser showWelcome.
 
 v1.0.5 | 2026-07-23
    index.js — registerTutorielButton() déplacé de "ready" vers "init" pour que

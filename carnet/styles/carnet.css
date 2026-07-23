@@ -227,16 +227,34 @@
 /* ---- Éditeur ProseMirror ---- */
 
 .carnet-editor-wrap {
+    position: relative;
     border: 1px solid rgba(155, 89, 182, 0.4);
     border-radius: 4px;
     background: rgba(0, 0, 0, 0.2);
     min-height: 120px;
     padding: 4px;
     margin-top: 4px;
+    overflow: visible;
 }
 
 .carnet-editor-wrap .editor-container {
     min-height: 100px;
+}
+
+/* ---- Fix menus déroulants ProseMirror ---- */
+/* Les dropdowns s'ancrent au .carnet-editor-wrap (position:relative)
+   et non à un ancêtre lointain du dialog. */
+
+.carnet-editor-wrap .editor-menu {
+    position: relative;
+    z-index: 10;
+}
+
+.carnet-editor-wrap .prosemirror-dropdown,
+.carnet-editor-wrap .dropdown-menu,
+.carnet-editor-wrap .pm-dropdown {
+    z-index: 1000;
+    position: absolute;
 }
 
 .carnet-editor-buttons {
