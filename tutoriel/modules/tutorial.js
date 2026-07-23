@@ -51,19 +51,21 @@ const STEPS_BY_MODULE = {
     // ---- WestMarch ----
     westmarch: [
         {
-            target:   "#controls",
+            // Foundry v12 : #controls | v13 : #scene-controls ou .scene-controls
+            target:   "#controls, #scene-controls, nav.scene-controls",
             title:    "La barre de contrôles",
             text:     "Cette barre latérale gauche contient tous les outils de la table. Le groupe <strong>WestMarch</strong>, ajouté par le serveur, regroupe les fonctions spéciales.",
             position: "right"
         },
         {
-            target:   "[data-control='westmarch']",
+            // v12 : data-control | v13 : data-group
+            target:   "[data-control='westmarch'], [data-group='westmarch']",
             title:    "Groupe WestMarch",
             text:     "Cliquez ici pour déplier les outils WestMarch : <strong>rejoindre une scène active</strong>, voir les membres de la party, gérer les sessions et plus.",
             position: "right"
         },
         {
-            target:   "[data-control='westmarch'] [data-tool='tutoriel']",
+            target:   "[data-control='westmarch'] [data-tool='tutoriel'], [data-group='westmarch'] [data-tool='tutoriel']",
             title:    "Ce bouton",
             text:     "Le bouton <i class='fas fa-circle-question'></i> que vous avez peut-être utilisé pour lancer ce tutoriel est toujours disponible ici, <strong>même pour les joueurs</strong>.",
             position: "right"
@@ -117,7 +119,7 @@ const STEPS_BY_MODULE = {
             position: "center"
         },
         {
-            target:   "[data-control='westmarch'] [data-tool='carnetDate']",
+            target:   "[data-control='westmarch'] [data-tool='carnetDate'], [data-group='westmarch'] [data-tool='carnetDate']",
             title:    "Bouton Date du TM (GM)",
             text:     "Ce bouton permet au GM d'enregistrer la date actuelle (Simple Calendar) pour tous les membres de la party — début d'expédition si aucune n'est ouverte, fin sinon.",
             position: "right",
@@ -238,15 +240,14 @@ function _showStep(idx) {
             _wrapEl.appendChild(p);
         }
 
-        // Anneau lumineux autour de la cible
+        // Anneau lumineux autour de la cible (couleur/ombre gérées par CSS .tuto-ring)
         const ring = document.createElement("div");
         ring.className = "tuto-ring";
         ring.style.cssText = `
             position:fixed;pointer-events:none;z-index:9902;
             top:${T}px;left:${L}px;
             width:${R - L}px;height:${B - T}px;
-            border:2px solid #9b59b6;border-radius:5px;
-            box-shadow:0 0 0 4px rgba(155,89,182,.3),0 0 24px rgba(155,89,182,.5);
+            border-width:2px;border-style:solid;
         `;
         _wrapEl.appendChild(ring);
     } else {

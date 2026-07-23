@@ -19,30 +19,23 @@ export function FakeWarningHooks() {
     Hooks.on("getSceneControlButtons", (controls) => {
         if (!game.user.isGM) return;
 
+        // En Foundry v13, le name du groupe DOIT correspondre à la clé dans
+        // l'objet controls. onChange (et non onClick) est le bon callback pour
+        // les outils button:true — onClick n'existe pas en v13 et est ignoré.
+        // Pas besoin d'activeTool : sans lui le groupe s'ouvre normalement.
         controls.westmarch = {
-            name: "westmarch-ashara",
+            name:  "westmarch",
             title: "WestMarch",
-            icon: "fa-solid fa-hammer",
+            icon:  "fa-solid fa-hammer",
             layer: "tokens",
-            // activeTool pointe sur "dummy" (outil invisible, pas button: true)
-            // pour que Foundry v13 traite ce groupe comme expansible et affiche
-            // le sous-menu au clic. Pointer sur un "button: true" déclenchait
-            // onClick à chaque re-render — d'où ce dummy non-button caché.
-            activeTool: "dummy",
             tools: {
-                dummy: {
-                    name:    "dummy",
-                    title:   "",
-                    icon:    "fa-solid fa-hammer",
-                    visible: false
-                },
                 fakeWarning: {
-                    name:    "fakeWarning",
-                    title:   "Faux message de maintenance",
-                    icon:    "fa-solid fa-triangle-exclamation",
-                    button:  true,
-                    onClick: () => openFakeWarningDialog(),
-                    visible: true
+                    name:     "fakeWarning",
+                    title:    "Faux message de maintenance",
+                    icon:     "fa-solid fa-triangle-exclamation",
+                    button:   true,
+                    onChange: () => openFakeWarningDialog(),
+                    visible:  true
                 }
             }
         };

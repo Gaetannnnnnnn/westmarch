@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.5.12
+Version : 1.5.13
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -76,6 +76,13 @@ INSTALLATION
 ================================================================================
                     RELATIONS — MISES À JOUR
 ================================================================================
+
+v1.5.13 | 2026-07-23
+   index.js — Actors.registerSheet déplacé du hook "init" vers un hook "setup".
+   Guard : si ashara-bestiary ou carnet est actif, ces modules enregistrent une
+   fiche plus complète (qui étend déjà AshCharacterSheet) ; relations saute son
+   propre enregistrement pour éviter que tous les modules écrasent la même clé
+   "dnd5e.CharacterActorSheet" dans le registre Foundry.
 
 v1.5.12 | 2026-07-22
    relations.js — Textareas de notes auto-redimensionnées à la hauteur du contenu

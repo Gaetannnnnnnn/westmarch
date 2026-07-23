@@ -101,22 +101,21 @@ export function CarnetToolbarHooks() {
         // ou le créer si ce module n'est pas actif.
         if (!controls.westmarch) {
             controls.westmarch = {
-                name:       "westmarch-ashara",
-                title:      "WestMarch",
-                icon:       "fa-solid fa-hammer",
-                layer:      "tokens",
-                activeTool: "dummy",
-                tools:      { dummy: { name: "dummy", title: "", icon: "fa-solid fa-hammer", visible: false } }
+                name:  "westmarch",
+                title: "WestMarch",
+                icon:  "fa-solid fa-hammer",
+                layer: "tokens",
+                tools: {}
             };
         }
 
         controls.westmarch.tools.carnetDate = {
-            name:    "carnetDate",
-            title:   "Date du TM — Début/Fin d'expédition (party)",
-            icon:    "fa-solid fa-calendar-plus",
-            button:  true,
-            onClick: onClickDateTM,
-            visible: true
+            name:     "carnetDate",
+            title:    "Date du TM — Début/Fin d'expédition (party)",
+            icon:     "fa-solid fa-calendar-plus",
+            button:   true,
+            onChange: onClickDateTM,
+            visible:  true
         };
     });
 }

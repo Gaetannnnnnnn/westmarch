@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.0.0
+Version : 1.0.3
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -133,6 +133,20 @@ INSTALLATION
 ================================================================================
                     TUTORIEL — MISES À JOUR
 ================================================================================
+
+v1.0.3 | 2026-07-23
+   toolbar.js — onClick → onChange sur le bouton tutoriel (Foundry v13).
+
+v1.0.2 | 2026-07-23
+   settings.js — Bouton "Lancer le tutoriel" dans les paramètres du module
+   (game.settings.registerMenu). hideWelcome passe à default: true (fenêtre de
+   bienvenue désactivée au login par défaut ; déclenchement manuel uniquement).
+   tutorial.js — Sélecteurs CSS ciblant les éléments UI mis à jour pour
+   Foundry v13 (data-group en complément de data-control). Anneau de spotlight
+   décoloré inline : couleur/ombre déléguées à tutoriel.css (.tuto-ring).
+   tutoriel.css — Refonte visuelle médiéval-fantastique : cuir sombre, or
+   vieilli, parchemin. Suppression du violet. Flèches bordées double-couche.
+   Animation fade uniquement (résout le conflit transform/translate de centrage).
 
 v1.0.1 | 2026-07-22
    toolbar.js — Le bouton "?" ouvre maintenant un sélecteur de sections (cases

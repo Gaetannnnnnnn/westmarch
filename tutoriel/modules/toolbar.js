@@ -10,12 +10,12 @@ export function registerTutorielButton() {
         if (!controls.westmarch) return;
 
         controls.westmarch.tools.tutoriel = {
-            name:    "tutoriel",
-            title:   "Ouvrir le guide / tutoriel",
-            icon:    "fa-solid fa-circle-question",
-            button:  true,
-            onClick: () => showTutorialSelector(),
-            visible: true
+            name:     "tutoriel",
+            title:    "Ouvrir le guide / tutoriel",
+            icon:     "fa-solid fa-circle-question",
+            button:   true,
+            onChange: () => showTutorialSelector(),
+            visible:  true
         };
     });
 }

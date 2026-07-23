@@ -1,7 +1,7 @@
 // © 2026 Soruta — Tous droits réservés. Usage personnel autorisé. Redistribution et modification interdites.
 /**
  * midi-range-fix | range-fix.js
- * v1.0.2
+ * v1.0.7
  *
  * Corrige le calcul de portée midi-qol pour les tokens Large/Huge/Gargantuan.
  *
@@ -20,8 +20,10 @@
  *   3. midi-qol compare au weapon_range habituel → résultat correct.
  *
  * Forme du bord cible :
- *   - Token carré (width = height) → cercle inscrit (évite biais diagonal).
- *   - Token non-carré (width ≠ height) → bounding box rectangulaire.
+ *   Bounding box rectangulaire dans tous les cas.
+ *   Le cercle inscrit donnait des distances légèrement supérieures en approche
+ *   diagonale d'un coin (ex. 5.6ft au lieu de 3.5ft pour un Brown Bear adjacent
+ *   en diagonale), ce qui faisait arrondir à 6ft et bloquer l'attaque à tort.
  */
 
 export function RangeFixHooks() {
@@ -108,29 +110,13 @@ function _boundsCenter(token) {
 /**
  * Retourne le point le plus proche sur la bordure du token depuis src.
  *
- * - Token carré (width = height) : cercle inscrit.
- * - Token non-carré : bounding box rectangulaire.
+ * On utilise systématiquement la bounding box rectangulaire (coin le plus proche).
+ * C'est équivalent au "nearest cell edge" de D&D 5e sur grille carrée, et évite
+ * le sur-calcul du cercle inscrit qui renvoyait des distances trop grandes en
+ * approche diagonale d'un coin (ex. Large token).
  */
 function _nearestBorderPoint(src, token) {
     const b = token.bounds;
-    const w = token.document.width;
-    const h = token.document.height;
-
-    if (w === h) {
-        // Token carré → cercle inscrit centré sur le vrai centre géométrique
-        const center = _boundsCenter(token);
-        const radius  = b.width / 2;   // = (w * gridSize) / 2
-        const dx = src.x - center.x;
-        const dy = src.y - center.y;
-        const dist = Math.hypot(dx, dy);
-        if (dist === 0) return { x: center.x + radius, y: center.y };
-        return {
-            x: center.x + (dx / dist) * radius,
-            y: center.y + (dy / dist) * radius
-        };
-    }
-
-    // Token non carré → bounding box rectangulaire
     return {
         x: Math.max(b.x, Math.min(src.x, b.x + b.width)),
         y: Math.max(b.y, Math.min(src.y, b.y + b.height))

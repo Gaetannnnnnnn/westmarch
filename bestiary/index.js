@@ -19,6 +19,18 @@ Hooks.on("setup", () => {
 
     const AshBestiarySheet = createBestiarySheet(BaseSheet);
 
+    // Expose la fiche pour les modules dépendants (ex: carnet) — toujours fait,
+    // même si on ne l'enregistre pas comme fiche active.
+    CONFIG.asharaSheets        ??= {};
+    CONFIG.asharaSheets.bestiary = AshBestiarySheet;
+
+    // Si carnet est actif et activé, il enregistrera une fiche encore plus complète
+    // (CarnetSheet extends AshBestiarySheet). On évite ainsi que deux modules
+    // s'enregistrent sous la même clé "dnd5e.CharacterActorSheet" et s'écrasent.
+    const carnetActive = game.modules.get("carnet")?.active
+        && game.settings.get("carnet", "enabled");
+    if (carnetActive) return;
+
     Actors.registerSheet("dnd5e", AshBestiarySheet, {
         types:       ["character"],
         makeDefault: true,

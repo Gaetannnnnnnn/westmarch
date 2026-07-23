@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.0.2
+Version : 1.0.4
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -107,6 +107,14 @@ INSTALLATION
 ================================================================================
                     CARNET D'EXPÉDITIONS — MISES À JOUR
 ================================================================================
+
+v1.0.4 | 2026-07-23
+   carnet.js — Retrait dummy/activeTool, onClick → onChange, name "westmarch-ashara"
+   → "westmarch". index.js — retrait injection CSS dummy.
+
+v1.0.3 | 2026-07-23
+   carnet.js — dummy tool visible: false → true. index.js — injection CSS pour
+   masquer le dummy dans le DOM (même fix que westmarch-ashara).
 
 v1.0.2 | 2026-07-22
    index.js — Enregistrement dans CONFIG.asharaSheetsModules au init pour que

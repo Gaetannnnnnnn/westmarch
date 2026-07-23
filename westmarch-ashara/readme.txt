@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé Ashara
 ================================================================================
 
-Version : 1.0.3
+Version : 1.0.5
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -113,6 +113,17 @@ INSTALLATION
 ================================================================================
                     WESTMARCH-ASHARA — MISES À JOUR
 ================================================================================
+
+v1.0.5 | 2026-07-23
+   fake-warning.js, tm.js — Retrait du dummy tool et de l'activeTool (inutiles).
+   onClick → onChange sur tous les outils button:true (Foundry v13 utilise onChange,
+   pas onClick). name "westmarch-ashara" → "westmarch" (doit correspondre à la clé
+   dans l'objet controls). index.js — retrait de l'injection CSS dummy devenue inutile.
+
+v1.0.4 | 2026-07-23
+   fake-warning.js, tm.js — dummy tool visible: false → true. index.js — injection
+   CSS pour masquer le dummy dans le DOM (Foundry v13 n'expand pas les groupes
+   dont l'activeTool est invisible). Même fix propagé dans carnet.
 
 v1.0.3 | 2026-07-22
    index.js — Enregistrement dans CONFIG.asharaSheetsModules au init pour que

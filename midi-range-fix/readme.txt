@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.0.3
+Version : 1.0.7
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -64,6 +64,14 @@ INSTALLATION
 ================================================================================
                     MIDI-RANGE-FIX — MISES À JOUR
 ================================================================================
+
+v1.0.7 | 2026-07-23
+   range-fix.js — Remplacement du cercle inscrit par la bounding box rectangulaire
+   dans _nearestBorderPoint. Le cercle sur-estimait la distance en approche diagonale
+   d'un coin de token Large : ex. Brown Bear diagonalement adjacent = 5.6ft au lieu
+   de 3.5ft → Foundry arrondissait à 6ft et bloquait l'attaque à tort. La bounding
+   box (point le plus proche sur le rectangle) correspond exactement au "nearest cell
+   edge" de D&D 5e sur grille carrée, sans biais diagonal.
 
 v1.0.6 | 2026-07-22
    range-fix.js — Fix centres de cases (Foundry v13) :

@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.2.7
+Version : 1.2.9
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -72,6 +72,20 @@ INSTALLATION
 ================================================================================
                     BESTIAIRE — MISES À JOUR
 ================================================================================
+
+v1.2.9 | 2026-07-23
+   index.js — Guard avant Actors.registerSheet : si carnet est actif et activé,
+   bestiary laisse carnet enregistrer la fiche complète (CarnetSheet étend déjà
+   AshBestiarySheet). Évite que bestiary et carnet écrasent mutuellement la clé
+   "dnd5e.CharacterActorSheet" dans le registre Foundry, ce qui faisait
+   disparaître les onglets Relations et Bestiaire dès que carnet était activé.
+   CONFIG.asharaSheets.bestiary est toujours exposé (avant le guard) pour que
+   carnet puisse l'étendre correctement.
+
+v1.2.8 | 2026-07-23
+   index.js — Expose CONFIG.asharaSheets.bestiary après l'enregistrement de la
+   fiche. Sans ça, carnet étendait relations uniquement et l'onglet Bestiaire
+   disparaissait de la fiche PJ dès que carnet était activé.
 
 v1.2.7 | 2026-07-22
    bestiary.js — Textareas de notes auto-redimensionnées à la hauteur du contenu
