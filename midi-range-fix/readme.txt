@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.0.7
+Version : 1.0.8
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -64,6 +64,9 @@ INSTALLATION
 ================================================================================
                     MIDI-RANGE-FIX — MISES À JOUR
 ================================================================================
+
+v1.0.8 | 2026-07-23
+   Synchronisation module.json / readme.txt sur la même version.
 
 v1.0.7 | 2026-07-23
    range-fix.js — Remplacement du cercle inscrit par la bounding box rectangulaire

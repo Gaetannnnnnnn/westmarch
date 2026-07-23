@@ -3,7 +3,7 @@
                       Module Foundry VTT — Open Source
 ================================================================================
 
-Version : 2.0.7
+Version : 2.0.8
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : Open source — redistribution autorisée avec attribution
@@ -108,6 +108,9 @@ INSTALLATION
 ================================================================================
                     WESTMARCH — MISES À JOUR
 ================================================================================
+
+v2.0.8 | 2026-07-23
+   Synchronisation module.json / readme.txt sur la même version.
 
 v2.0.7 | 2026-07-22
    socket.js — suppression du code mort (sendFakeWarning, handler

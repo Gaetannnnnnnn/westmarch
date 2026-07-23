@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.0.1
+Version : 1.0.2
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -69,6 +69,9 @@ INSTALLATION
 ================================================================================
                     CARTE-EXPEDITIONS — MISES À JOUR
 ================================================================================
+
+v1.0.2 | 2026-07-23
+   Synchronisation module.json / readme.txt sur la même version.
 
 v1.0.1 | 2026-07-22
    index.js — Fix imports : map.js et map-settings.js référencés depuis modules/

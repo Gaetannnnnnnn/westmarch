@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.2.9
+Version : 1.3.0
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -72,6 +72,9 @@ INSTALLATION
 ================================================================================
                     BESTIAIRE — MISES À JOUR
 ================================================================================
+
+v1.3.0 | 2026-07-23
+   Synchronisation module.json / readme.txt sur la même version.
 
 v1.2.9 | 2026-07-23
    index.js — Guard avant Actors.registerSheet : si carnet est actif et activé,

@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.0.3
+Version : 1.0.4
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -133,6 +133,9 @@ INSTALLATION
 ================================================================================
                     TUTORIEL — MISES À JOUR
 ================================================================================
+
+v1.0.4 | 2026-07-23
+   Synchronisation module.json / readme.txt sur la même version.
 
 v1.0.3 | 2026-07-23
    toolbar.js — onClick → onChange sur le bouton tutoriel (Foundry v13).

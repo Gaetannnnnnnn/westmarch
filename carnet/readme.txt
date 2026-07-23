@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.0.4
+Version : 1.0.5
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -107,6 +107,9 @@ INSTALLATION
 ================================================================================
                     CARNET D'EXPÉDITIONS — MISES À JOUR
 ================================================================================
+
+v1.0.5 | 2026-07-23
+   Synchronisation module.json / readme.txt sur la même version.
 
 v1.0.4 | 2026-07-23
    carnet.js — Retrait dummy/activeTool, onClick → onChange, name "westmarch-ashara"
