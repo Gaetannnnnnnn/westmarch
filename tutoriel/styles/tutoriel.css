@@ -352,6 +352,11 @@
     box-shadow: 0 0 5px rgba(200, 160, 48, 0.55);
 }
 
+.tuto-dot.dim {
+    opacity: 0.3;
+    transform: scale(0.75);
+}
+
 /* ---- Bouton fermer ---- */
 
 .tuto-close-btn {

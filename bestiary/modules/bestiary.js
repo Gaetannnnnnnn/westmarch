@@ -83,12 +83,36 @@ function isInFolder(actor, folderId) {
 }
 function isInPJFolder(actor) { return isInFolder(actor, game.settings.get(MODULE, "folderPJ")); }
 
-// Créatures disponibles pour ajout manuel (dossier Creatures, pas déjà dans le bestiaire)
-function availableCreatures(actor) {
+// Créatures disponibles pour ajout manuel (compendium en priorité, sinon dossier monde)
+async function availableCreatures(actor) {
     const existing = new Set(beastList(actor).map(e => e.targetId));
+    const packId   = game.settings.get(MODULE, "packCreatures");
+    if (packId) {
+        const pack = game.packs.get(packId);
+        if (pack) {
+            const docs = await pack.getDocuments();
+            return docs
+                .filter(a => !existing.has(a.id))
+                .sort((a, b) => a.name.localeCompare(b.name));
+        }
+    }
+    // Fallback : dossier monde (legacy)
+    const folderId = game.settings.get(MODULE, "folderCreatures");
     return game.actors
-        .filter(a => isInFolder(a, game.settings.get(MODULE, "folderCreatures")) && !existing.has(a.id))
+        .filter(a => isInFolder(a, folderId) && !existing.has(a.id))
         .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+// Retourne true si le token est une créature (compendium ou dossier monde)
+function isCreatureToken(token) {
+    if (!token.actor?.id) return false;
+    // Tokens non-liés issus du compendium → actor.pack est renseigné
+    const packId = game.settings.get(MODULE, "packCreatures");
+    if (packId && token.actor.pack === packId) return true;
+    // Fallback : acteurs monde dans le dossier creatures (legacy)
+    const folderId = game.settings.get(MODULE, "folderCreatures");
+    if (folderId && isInFolder(token.actor, folderId)) return true;
+    return false;
 }
 
 // ---- HTML onglet -------------------------------------------
@@ -214,7 +238,9 @@ function buildCreaturePickerHtml(creatures, uid) {
 
 async function openAddDialog(actor) {
     const uid       = `bst-add-${Date.now()}`;
-    const creatures = availableCreatures(actor);
+    const creatures = await availableCreatures(actor);
+    // Index par ID pour retrouver nom/img dans le callback de confirmation
+    const creaturesById = new Map(creatures.map(c => [c.id, c]));
     let selectedId  = null;
     let result      = null;
 
@@ -252,7 +278,8 @@ async function openAddDialog(actor) {
                 label: "Ajouter", icon: '<i class="fas fa-check"></i>',
                 callback: () => {
                     if (!selectedId) return;
-                    const target = game.actors.get(selectedId);
+                    // Acteur monde ou acteur compendium (retrouvé via l'index du dialog)
+                    const target = game.actors.get(selectedId) ?? creaturesById.get(selectedId);
                     result = {
                         targetId:   selectedId,
                         targetName: target?.name ?? "Inconnue",
@@ -260,7 +287,7 @@ async function openAddDialog(actor) {
                         hostility:  0,
                         note:       "",
                         firstScene: game.scenes.current?.name ?? "",
-                        revealed:   !(target?.getFlag("ashara-relations", "anonymous") ?? false),
+                        revealed:   !(target?.getFlag?.("ashara-relations", "anonymous") ?? false),
                     };
                 }
             },
@@ -430,13 +457,13 @@ async function scanVisibleTokens() {
 
         const existing = new Set(beastList(myActor).map(e => e.targetId));
 
-        // Créatures présentes sur la scène (dossier "Creatures")
+        // Créatures présentes sur la scène (compendium ou dossier monde)
         // seenIds déduplique les tokens qui partagent le même acteur de base (ex: 5 Knights)
         const seenIds = new Set();
         const toAdd = tokens.filter(t => {
             if (!t.actor?.id) return false;
             if (t.actor.id === myActor.id) return false;
-            if (!isInFolder(t.actor, game.settings.get(MODULE, "folderCreatures"))) return false;
+            if (!isCreatureToken(t)) return false;
             if (existing.has(t.actor.id)) return false;
             if (seenIds.has(t.actor.id)) return false;
             seenIds.add(t.actor.id);

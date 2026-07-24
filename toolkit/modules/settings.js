@@ -114,9 +114,21 @@ export function registerSettings() {
         requiresReload: false
     });
 
+    // ---- Réapprovisionnement automatique des boutiques ----
+
+    game.settings.register("toolkit", "enableMejRestock", {
+        name: "Réapprovisionnement automatique des boutiques",
+        hint: "Active ou désactive entièrement le système de réapprovisionnement. Quand désactivé, aucun timer n'est lancé et le bouton de réapprovisionnement n'apparaît pas dans les boutiques.",
+        scope: "world",
+        config: true,
+        type: Boolean,
+        default: true,
+        requiresReload: false
+    });
+
     game.settings.register("toolkit", "shopRestockDays", {
         name: "Réapprovisionnement boutiques — Délai par défaut (jours)",
-        hint: "Nombre de jours de calendrier par défaut avant qu'un article à 0 soit remis à 1. Utilisé si aucune valeur par rareté n'est définie. Mettre 0 pour désactiver la fonctionnalité.",
+        hint: "Délai utilisé si aucune valeur par rareté n'est définie pour un article. 0 = pas de fallback (seules les rarétés avec une valeur > 0 seront réapprovisionnées).",
         scope: "world",
         config: true,
         type: Number,
@@ -126,7 +138,7 @@ export function registerSettings() {
 
     game.settings.register("toolkit", "shopRestockDaysCommon", {
         name: "Réapprovisionnement boutiques — Commun (jours)",
-        hint: "Délai pour les articles de rareté Commun. 0 = utilise le délai par défaut.",
+        hint: "Délai pour les articles de rareté Commun. 0 = désactivé pour cette rareté.",
         scope: "world",
         config: true,
         type: Number,
@@ -136,7 +148,7 @@ export function registerSettings() {
 
     game.settings.register("toolkit", "shopRestockDaysUncommon", {
         name: "Réapprovisionnement boutiques — Peu commun (jours)",
-        hint: "Délai pour les articles de rareté Peu commun. 0 = utilise le délai par défaut.",
+        hint: "Délai pour les articles de rareté Peu commun. 0 = désactivé pour cette rareté.",
         scope: "world",
         config: true,
         type: Number,
@@ -146,7 +158,7 @@ export function registerSettings() {
 
     game.settings.register("toolkit", "shopRestockDaysRare", {
         name: "Réapprovisionnement boutiques — Rare (jours)",
-        hint: "Délai pour les articles de rareté Rare. 0 = utilise le délai par défaut.",
+        hint: "Délai pour les articles de rareté Rare. 0 = désactivé pour cette rareté.",
         scope: "world",
         config: true,
         type: Number,
@@ -156,7 +168,7 @@ export function registerSettings() {
 
     game.settings.register("toolkit", "shopRestockDaysVeryRare", {
         name: "Réapprovisionnement boutiques — Très rare (jours)",
-        hint: "Délai pour les articles de rareté Très rare. 0 = utilise le délai par défaut.",
+        hint: "Délai pour les articles de rareté Très rare. 0 = désactivé pour cette rareté.",
         scope: "world",
         config: true,
         type: Number,
@@ -166,11 +178,28 @@ export function registerSettings() {
 
     game.settings.register("toolkit", "shopRestockDaysLegendary", {
         name: "Réapprovisionnement boutiques — Légendaire (jours)",
-        hint: "Délai pour les articles de rareté Légendaire. 0 = utilise le délai par défaut.",
+        hint: "Délai pour les articles de rareté Légendaire. 0 = désactivé pour cette rareté.",
         scope: "world",
         config: true,
         type: Number,
         default: 0,
         requiresReload: false
+    });
+
+    // ---- Groupement visuel des sections dans la page de settings ----
+    Hooks.on("renderSettingsConfig", (app, html) => {
+        const root = $(html);
+
+        // Séparateur "Boutiques MEJ"
+        const mejShopGroup = root.find('[name="toolkit.enableMejShopFix"]').closest('.form-group');
+        if (mejShopGroup.length) {
+            mejShopGroup.before(`<h3 style="border-bottom:1px solid #4db6ac; padding-bottom:4px; margin:16px 0 8px; color:#4db6ac; font-size:0.95em; text-transform:uppercase; letter-spacing:0.06em;">Boutiques MEJ</h3>`);
+        }
+
+        // Séparateur "Réapprovisionnement automatique"
+        const restockGroup = root.find('[name="toolkit.enableMejRestock"]').closest('.form-group');
+        if (restockGroup.length) {
+            restockGroup.before(`<h3 style="border-bottom:1px solid #4db6ac; padding-bottom:4px; margin:16px 0 8px; color:#4db6ac; font-size:0.95em; text-transform:uppercase; letter-spacing:0.06em;">Réapprovisionnement automatique</h3>`);
+        }
     });
 }

@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.0.8
+Version : 1.0.9
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -14,25 +14,22 @@ Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
 DESCRIPTION
 --------------------------------------------------------------------------------
 
-Ajoute deux onglets sur la fiche de chaque personnage joueur :
+Ajoute deux onglets indépendants sur la fiche de chaque personnage joueur :
 
-  Carnet — Notes d'expédition rédigées avec ProseMirror (éditeur enrichi).
-  Chaque expédition a sa propre section avec titre, dates et zone de texte.
-  Un clic sur le nom d'une expédition depuis l'onglet Temps morts navigue
-  directement vers sa section dans le Carnet.
+  Carnet — Notes libres rédigées avec ProseMirror (éditeur enrichi). Les notes
+  sont indépendantes des expéditions. Chaque note a un titre éditable, un
+  éditeur de texte enrichi, et peut optionnellement être liée à une expédition
+  (badge cliquable de navigation).
 
-  Temps morts — Cartes par expédition avec dates de début et de fin,
-  durée calculée automatiquement, et statut (En cours / Terminée / Planifiée).
-  Le nom de chaque expédition est éditable directement dans la carte.
-  Les GM peuvent définir ou effacer les dates individuellement via les boutons
-  intégrés (📅 = date actuelle, ✕ = effacer).
+  Expéditions — Cartes par expédition avec dates de début et de fin, durée
+  calculée automatiquement, et statut (En cours / Terminée / Planifiée). Le nom
+  est éditable dans la carte. Le GM peut définir ou effacer les dates via les
+  boutons intégrés (📅 = date actuelle, ✕ = effacer). Chaque expédition peut
+  créer ou afficher une note liée dans l'onglet Carnet.
 
 Le bouton "Date Expédition" dans la barre WestMarch (barre de gauche, GM uniquement)
-enregistre automatiquement la date actuelle pour tous les membres de la party :
-  - Si l'acteur n'a pas d'expédition en cours → crée une nouvelle avec la
-    date actuelle comme début.
-  - Si l'acteur a une expédition en cours (début sans fin) → enregistre la
-    date actuelle comme fin.
+crée toujours une nouvelle expédition (date de début) pour tous les membres de la
+party. La date de fin se gère manuellement dans l'onglet Expéditions.
 
 Les données sont stockées en flags sur l'acteur (scope "carnet").
 Aucune modification des fiches, items ou features existants.
@@ -49,11 +46,11 @@ modules/settings.js
    Paramètre d'activation avec rechargement requis.
 
 modules/carnet.js
-   Logique principale : CRUD des expéditions (flags), formatage des dates
-   (game.time.calendar natif Foundry v13, Simple Calendar en fallback),
-   récupération de la party (westmarch), génération HTML des deux onglets,
-   câblage des événements, éditeur ProseMirror inline,
-   bouton barre de gauche "Date Expédition".
+   Logique principale : deux flags indépendants ("expeditions" et "carnetNotes"),
+   CRUD pour chacun, formatage des dates (game.time.calendar v13 natif,
+   Simple Calendar en fallback), récupération de la party, génération HTML
+   des deux onglets, câblage des événements, liens navigables entre onglets,
+   éditeur ProseMirror inline, bouton barre de gauche "Date Expédition".
 
 modules/character-sheet.js
    Factory createCarnetSheet(BaseSheet) : crée la sous-classe de fiche PJ
@@ -93,6 +90,7 @@ PARAMÈTRES CONFIGURABLES
 Accessibles via : Paramètres du jeu → Configuration des modules → Soruta — Carnet d'Expéditions
 
 - Activer le Carnet d'Expéditions (rechargement requis)
+- Nom du dossier des PJ (défaut : "PJ" — sensible à la casse)
 
 --------------------------------------------------------------------------------
 INSTALLATION
@@ -108,7 +106,23 @@ INSTALLATION
                     CARNET D'EXPÉDITIONS — MISES À JOUR
 ================================================================================
 
-v1.0.8 | 2026-07-23
+v1.0.9 | 2026-07-24
+   carnet.js — Séparation complète des deux onglets en sources de données
+   indépendantes. Onglet Carnet → flag "carnetNotes" [{id, title, content,
+   linkedExpId?}]. Onglet Expéditions → flag "expeditions" [{id, name,
+   startDate, endDate}] (champ "note" retiré). Les deux onglets fonctionnent
+   et s'affichent sans dépendre l'un de l'autre.
+   Liens optionnels navigables : depuis une note, "Lier à une expédition"
+   ouvre un sélecteur → stocke linkedExpId sur la note → affiche badge violet
+   cliquable "Expédition : [nom]" qui navigue vers l'onglet Expéditions et
+   scroll sur la carte. Depuis une expédition, "Créer une note" génère une note
+   liée et navigue vers l'onglet Carnet ; si note déjà liée, affiche "Note liée"
+   cliquable.
+   Bouton "Date Expédition" : crée toujours une nouvelle expédition (plus de
+   logique "ferme si ouverte"). La clôture se fait manuellement via le bouton
+   de date de fin dans l'onglet Expéditions.
+
+v1.0.8 | 2026-07-24
    carnet.js — Fix bouton toolbar "Date Expédition" et boutons de date dans
    l'onglet Expéditions (anciennement "Temps morts") : remplacement de
    SimpleCalendar.api.currentDateTime() par game.time.calendar (API Foundry v13
@@ -125,6 +139,12 @@ v1.0.8 | 2026-07-23
    Texte empty-state "Date du TM" → "Date Expédition" dans buildDowntimeHtml.
    wireDowntimeTab : guard instanceof Element, try-catch sur handlers, message
    d'avertissement mis à jour.
+   getPartyMembers() réécrit : plus de dépendance au setting westmarch
+   "partyMaster" (inutilisé/incorrect). Même logique que getPlayerActors() dans
+   tm.js : filtre game.actors sur type "character" + hasPlayerOwner + dossier
+   dont le nom correspond au setting "pjFolderName" (ou sous-dossier).
+   settings.js — Nouveau paramètre "Nom du dossier des PJ" (pjFolderName,
+   défaut "PJ") configurable dans les settings du module.
 
 v1.0.7 | 2026-07-23
    carnet.css — Fix positionnement des menus déroulants ProseMirror : ajout de

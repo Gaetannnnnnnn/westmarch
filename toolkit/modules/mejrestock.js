@@ -44,15 +44,14 @@ const _raritySettingKey = {
 };
 
 function getRestockDays(rarity = "") {
-    const globalDefault = game.settings.get("toolkit", "shopRestockDays") ?? 7;
-    if (globalDefault <= 0) return 0; // feature désactivée globalement
     const norm = String(rarity).toLowerCase().replace(/[\s_-]/g, "");
     const key  = _raritySettingKey[norm];
     if (key) {
-        const val = game.settings.get("toolkit", key) ?? 0;
-        if (val > 0) return val;
+        // Valeur spécifique à la rareté : 0 = désactivé pour cette rareté (pas de fallback global).
+        return game.settings.get("toolkit", key) ?? 0;
     }
-    return globalDefault;
+    // Pas de rareté reconnue → fallback global. 0 = pas de fallback.
+    return game.settings.get("toolkit", "shopRestockDays") ?? 0;
 }
 
 function getItemRarity(item) {
@@ -78,8 +77,8 @@ export function MejRestockHooks() {
 
         if (page.flags?.["monks-enhanced-journal"]?.type !== "shop") return;
 
-        // Vérification globale : si le délai par défaut est 0, feature désactivée
-        if ((game.settings.get("toolkit", "shopRestockDays") ?? 7) <= 0) return;
+        // Vérification globale : feature désactivée par la case à cocher
+        if (!game.settings.get("toolkit", "enableMejRestock")) return;
 
         const items   = page.flags?.["monks-enhanced-journal"]?.items ?? {};
         const timers  = foundry.utils.deepClone(page.flags?.["toolkit"]?.restock        ?? {});
@@ -123,7 +122,7 @@ export function MejRestockHooks() {
         const activeGM = game.users.activeGM;
         if (activeGM && activeGM.id !== game.user.id) return;
 
-        if (getRestockDays() <= 0) return;
+        if (!game.settings.get("toolkit", "enableMejRestock")) return;
 
         for (const journal of game.journal.contents) {
             for (const page of journal.pages.contents) {
@@ -170,7 +169,7 @@ export function MejRestockHooks() {
     //    apparaissent (debounce 50 ms). Filet à 1,5 s en backup.
     // ----------------------------------------------------------
     Hooks.on("renderApplicationV2", (application, element) => {
-        if (getRestockDays() <= 0) return;
+        if (!game.settings.get("toolkit", "enableMejRestock")) return;
 
         // MEJ stocke l'ID de la page courante dans application.options.pageId
         // (application.document est undefined dans EnhancedJournal)

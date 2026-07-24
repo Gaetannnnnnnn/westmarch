@@ -2,6 +2,8 @@
 // settings.js — Enregistrement des paramètres du tutoriel
 // ============================================================
 
+import { isSectionAvailable } from './tutorial.js';
+
 const MODULE = "tutoriel";
 
 export const MODULE_TOGGLES = [
@@ -63,6 +65,14 @@ export function registerSettings() {
         config: true,
         type:   Boolean,
         default: false
+    });
+
+    // ---- Masquer les toggles des modules absents dans la page de config ----
+    Hooks.on("renderSettingsConfig", (app, html) => {
+        for (const { key } of MODULE_TOGGLES) {
+            if (isSectionAvailable(key)) continue;
+            $(html).find(`[name="tutoriel.${key}"]`).closest(".form-group").hide();
+        }
     });
 
     // ---- Bouton lancement manuel (en dernier : si registerMenu échoue en v13,

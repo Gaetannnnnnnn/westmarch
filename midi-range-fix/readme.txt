@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.1.3
+Version : 1.2.0
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -64,6 +64,25 @@ INSTALLATION
 ================================================================================
                     MIDI-RANGE-FIX — MISES À JOUR
 ================================================================================
+
+v1.2.0 | 2026-07-24
+   range-fix.js — Fix patch perdu après la première attaque. Cause racine :
+   midi-qol ou libWrapper appelle Object.defineProperty(canvas.grid,
+   'measurePath', { value: fn }) pendant le workflow d'attaque, remplaçant
+   notre getter/setter (configurable: true) par un value descriptor sans
+   déclencher notre setter. Résultat : dès l'attaque 1, notre getter est
+   détruit ; l'attaque 2 utilise la version midi-qol sans correction bord→bord.
+   Nouvelle architecture triple couche :
+     1. _ourPatch déplacé en portée MODULE (référence stable, marquée par un
+        Symbol _PATCH_MARK) — comparaisons === fiables inter-appels.
+     2. Object.defineProperty getter/setter conservé (résiste aux assignments).
+     3. Hook dnd5e.preUseItem : réinstalle le getter/setter avant chaque item
+        use, avant que midi-qol ne démarre son workflow.
+     4. Polling setInterval 250ms : détecte si le descripteur est redevenu un
+        value descriptor (remplacement tiers via Object.defineProperty) et
+        réinstalle immédiatement.
+   _readCurrentFn() lit le descripteur brut (sans passer par notre getter) pour
+   capturer un _trueOriginal non circulaire. canvasInit arrête le polling proprement.
 
 v1.1.3 | 2026-07-23
    range-fix.js — Patch rendu permanent via Object.defineProperty : au lieu de

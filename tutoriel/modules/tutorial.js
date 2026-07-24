@@ -50,6 +50,32 @@ export const SETTING_KEYS = {
 };
 
 // ================================================================
+// MODULES REQUIS PAR SECTION
+// [] = toujours disponible  |  plusieurs IDs = au moins un doit être actif
+// ================================================================
+
+export const SECTION_MODULES = {
+    barreWestmarch:  [],                                    // tutoriel crée lui-même le groupe
+    bestiary:        ["ashara-bestiary"],
+    relations:       ["ashara-relations"],
+    carnet:          ["carnet"],
+    boutiques:       ["monks-enhanced-journal"],
+    tempsMorts:      ["westmarch-ashara"],
+    apparenceTokens: ["toolkit"],
+    outilsGm:        ["westmarch-ashara", "toolkit"],       // OR — au moins un
+};
+
+/**
+ * Retourne true si la section est disponible (au moins un module requis est actif).
+ * Sections sans module requis (ex: barreWestmarch) sont toujours disponibles.
+ */
+export function isSectionAvailable(sectionKey) {
+    const required = SECTION_MODULES[sectionKey] ?? [];
+    if (required.length === 0) return true;
+    return required.some(modId => !!game.modules.get(modId)?.active);
+}
+
+// ================================================================
 // ÉTAT GLOBAL
 // ================================================================
 
@@ -90,6 +116,21 @@ async function _openActorSheetTab(tabName) {
 const _toSheet = tab => () => _openActorSheetTab(tab);
 
 // ================================================================
+// NAVIGATION : ouvrir / activer le groupe WestMarch dans la barre
+// ================================================================
+
+// En Foundry v13 les outils d'un groupe ne sont dans le DOM que si ce groupe
+// est actif. On clique le bouton de groupe WestMarch s'il n'est pas déjà actif.
+async function _expandWestmarch() {
+    const grp = document.querySelector("[data-control='westmarch']");
+    if (!grp) return;
+    // Considère le groupe comme actif si l'un de ses outils est déjà dans le DOM
+    if (document.querySelector("[data-tool='tutoriel'],[data-tool='downtime'],[data-tool='carnetDate'],[data-tool='fakeWarning']")) return;
+    grp.click();
+    await new Promise(r => setTimeout(r, 350));
+}
+
+// ================================================================
 // DÉFINITION DES ÉTAPES PAR FONCTIONNALITÉ
 // ================================================================
 
@@ -112,10 +153,11 @@ const STEPS_BY_FEATURE = {
             position: "right"
         },
         {
-            target:   "[data-control='westmarch'] [data-tool='tutoriel'], [data-group='westmarch'] [data-tool='tutoriel']",
-            title:    "Bouton Tutoriel",
-            text:     "Ce bouton <i class='fas fa-circle-question'></i> relance ce tutoriel à tout moment. Accessible à <strong>tous les joueurs</strong>. Appuyez sur <kbd>Echap</kbd> pour fermer à tout moment.",
-            position: "right"
+            beforeShow: _expandWestmarch,
+            target:     "[data-tool='tutoriel']",
+            title:      "Bouton Tutoriel",
+            text:       "Ce bouton <i class='fas fa-circle-question'></i> relance ce tutoriel à tout moment. Accessible à <strong>tous les joueurs</strong>. Appuyez sur <kbd>Echap</kbd> pour fermer à tout moment.",
+            position:   "right"
         },
     ],
 
@@ -177,11 +219,12 @@ const STEPS_BY_FEATURE = {
             position:   "bottom"
         },
         {
-            target:   "[data-control='westmarch'] [data-tool='carnetDate'], [data-group='westmarch'] [data-tool='carnetDate']",
-            title:    "Bouton Date Expédition (GM)",
-            text:     "Ce bouton enregistre la date actuelle (Simple Calendar) pour toute la party : il ouvre une nouvelle expédition si aucune n'est en cours, ou clôt celle qui est active.",
-            position: "right",
-            gmOnly:   true
+            beforeShow: _expandWestmarch,
+            target:     "[data-tool='carnetDate']",
+            title:      "Bouton Date Expédition (GM)",
+            text:       "Ce bouton crée une nouvelle expédition (date de début) pour toute la party en un clic. La date de fin se gère manuellement dans l'onglet Expéditions de chaque fiche.",
+            position:   "right",
+            gmOnly:     true
         },
     ],
 
@@ -219,11 +262,12 @@ const STEPS_BY_FEATURE = {
             playerOnly: true
         },
         {
-            target:   "[data-control='westmarch'] [data-tool='downtime'], [data-group='westmarch'] [data-tool='downtime']",
-            title:    "Valider les temps morts (GM)",
-            text:     "Ce bouton ouvre la liste de toutes les déclarations en attente. Vérifiez les gains calculés pour chaque joueur et cliquez <strong>Valider</strong> pour appliquer les bonus directement sur leur fiche.",
-            position: "right",
-            gmOnly:   true
+            beforeShow: _expandWestmarch,
+            target:     "[data-tool='downtime']",
+            title:      "Valider les temps morts (GM)",
+            text:       "Ce bouton ouvre la liste de toutes les déclarations en attente. Vérifiez les gains calculés pour chaque joueur et cliquez <strong>Valider</strong> pour appliquer les bonus directement sur leur fiche.",
+            position:   "right",
+            gmOnly:     true
         },
     ],
 
@@ -252,11 +296,12 @@ const STEPS_BY_FEATURE = {
     // ---- Outils GM ----
     outilsGm: [
         {
-            target:   "[data-control='westmarch'] [data-tool='fakeWarning'], [data-group='westmarch'] [data-tool='fakeWarning']",
-            title:    "Faux message de maintenance",
-            text:     "Ce bouton <i class='fas fa-triangle-exclamation'></i> envoie une fausse notification jaune à un joueur précis — pour lui faire croire qu'un problème technique a été résolu.",
-            position: "right",
-            gmOnly:   true
+            beforeShow: _expandWestmarch,
+            target:     "[data-tool='fakeWarning']",
+            title:      "Faux message de maintenance",
+            text:       "Ce bouton <i class='fas fa-triangle-exclamation'></i> envoie une fausse notification jaune à un joueur précis — pour lui faire croire qu'un problème technique a été résolu.",
+            position:   "right",
+            gmOnly:     true
         },
         {
             target:   null,
@@ -293,6 +338,9 @@ const STEPS_BY_FEATURE = {
 export function startTutorial(selectedSections = null) {
     _steps = [];
     for (const [section, settingKey] of Object.entries(SETTING_KEYS)) {
+        // Filtrer les sections dont le module requis n'est pas actif
+        if (!isSectionAvailable(section)) continue;
+
         const include = selectedSections !== null
             ? selectedSections.includes(section)
             : game.settings.get(MODULE, settingKey);
@@ -458,9 +506,28 @@ function _mkPanel(styleStr) {
 }
 
 function _renderDots(current, total) {
-    return Array.from({ length: Math.min(total, 12) }, (_, i) =>
-        `<span class="tuto-dot${i === current ? " active" : ""}"></span>`
-    ).join("");
+    const MAX = 12;
+    if (total <= MAX) {
+        // Tous les points tiennent — on les affiche tous
+        return Array.from({ length: total }, (_, i) =>
+            `<span class="tuto-dot${i === current ? " active" : ""}"></span>`
+        ).join("");
+    }
+    // Fenêtre glissante de MAX points centrée sur l'étape courante
+    const half  = Math.floor(MAX / 2);
+    const start = clamp(current - half, 0, total - MAX);
+    const end   = start + MAX - 1;
+    let html = "";
+    // Point tronqué à gauche = fondu
+    if (start > 0) html += `<span class="tuto-dot dim"></span>`;
+    for (let i = start; i <= end; i++) {
+        const isActive = i === current;
+        const isDim    = (i === start && start > 0) || (i === end && end < total - 1);
+        html += `<span class="tuto-dot${isActive ? " active" : ""}${isDim ? " dim" : ""}"></span>`;
+    }
+    // Point tronqué à droite = fondu
+    if (end < total - 1) html += `<span class="tuto-dot dim"></span>`;
+    return html;
 }
 
 // ================================================================

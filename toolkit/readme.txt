@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.0.5
+Version : 1.0.6
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -114,6 +114,18 @@ INSTALLATION
 ================================================================================
                     TOOLKIT — MISES À JOUR
 ================================================================================
+
+v1.0.6 | 2026-07-24
+   mejrestock.js — Fix logique getRestockDays : le délai par défaut à 0 ne
+   désactive plus la fonctionnalité entière. Désormais 0 sur le délai par
+   défaut = "pas de fallback" (seules les rarétés avec une valeur > 0 sont
+   réapprovisionnées). 0 sur une rareté = désactivé pour cette rareté (sans
+   fallback sur le global).
+   settings.js — Ajout du paramètre "enableMejRestock" (case à cocher on/off)
+   pour activer/désactiver entièrement le système de réapprovisionnement.
+   Ajout de séparateurs visuels dans la page de settings : sections
+   "Boutiques MEJ" et "Réapprovisionnement automatique" clairement délimitées.
+   Mise à jour des hints pour refléter le nouveau comportement.
 
 v1.0.5 | 2026-07-23
    Synchronisation module.json / readme.txt sur la même version.

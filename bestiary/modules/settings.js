@@ -30,9 +30,18 @@ export function registerSettings() {
         default: "",
     });
 
+    game.settings.register("ashara-bestiary", "packCreatures", {
+        name: "Compendium des créatures (ID)",
+        hint: "ID du compendium contenant les monstres et créatures (ex : world.creature). Les tokens de ce compendium présents sur une scène avec un PJ sont automatiquement ajoutés au bestiaire. Prioritaire sur le dossier si renseigné.",
+        scope: "world",
+        config: true,
+        type: String,
+        default: "world.creature",
+    });
+
     game.settings.register("ashara-bestiary", "folderCreatures", {
-        name: "Dossier des créatures",
-        hint: "Sélectionner le dossier acteur qui contient les monstres et créatures. Quand un token de ce dossier apparaît sur une scène avec un PJ, il est automatiquement ajouté au bestiaire de ce joueur.",
+        name: "Dossier des créatures (legacy)",
+        hint: "Dossier acteur de secours si aucun compendium n'est configuré. Ignoré si 'Compendium des créatures' est renseigné et valide.",
         scope: "world",
         config: true,
         type: String,

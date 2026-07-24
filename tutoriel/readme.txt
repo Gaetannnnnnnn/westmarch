@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.0.7
+Version : 1.1.0
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -32,7 +32,8 @@ Fournit un guide interactif du serveur Ashara.
   souhaitées. Accessible aux joueurs et au GM.
 
   Configuration par module — Le GM peut activer ou désactiver les sections du
-  tutoriel correspondant à chaque module installé.
+  tutoriel correspondant à chaque module installé. Les sections dont le module
+  requis est absent sont automatiquement masquées du sélecteur et des settings.
 
 --------------------------------------------------------------------------------
 FICHIERS
@@ -153,6 +154,39 @@ INSTALLATION
 ================================================================================
                     TUTORIEL — MISES À JOUR
 ================================================================================
+
+v1.1.0 | 2026-07-24
+   tutorial.js — Ajout de SECTION_MODULES (map section → module(s) requis) et
+   isSectionAvailable() : retourne true si au moins un module requis est actif.
+   Sections sans module requis (barreWestmarch) sont toujours disponibles.
+   startTutorial() filtre désormais les sections dont le module n'est pas actif.
+   welcome.js — showTutorialSelector() filtre les lignes par isSectionAvailable().
+   settings.js — Hook renderSettingsConfig masque les toggles des modules absents
+   dans la page de configuration (les settings restent enregistrés pour la
+   persistance en cas de (ré)activation d'un module).
+
+v1.0.9 | 2026-07-24
+   toolbar.js — Fix bouton tutoriel invisible pour les joueurs : le garde
+   "if (!controls.westmarch) return" empêchait la création du bouton quand
+   aucun module GM n'avait préalablement créé le groupe WestMarch (tous
+   gardés par isGM). Remplacé par la création du groupe si absent (même
+   pattern que tm.js et carnet.js).
+
+v1.0.8 | 2026-07-24
+   tutorial.js — Fix bulle au centre sur les étapes ciblant un outil WestMarch :
+   en Foundry v13, les outils d'un groupe ne sont dans le DOM que si le groupe
+   est actif. Ajout de _expandWestmarch() (beforeShow) sur les 4 étapes
+   concernées (tutoriel, carnetDate, downtime, fakeWarning). Correction des
+   sélecteurs : [data-control='westmarch'] [data-tool='xxx'] → [data-tool='xxx']
+   (en v13 les tools sont dans une liste séparée, pas des descendants du groupe).
+   Mise à jour du texte de l'étape carnetDate pour refléter le nouveau
+   comportement (crée toujours une nouvelle expédition).
+   tutorial.js — Fix points de progression : Math.min(total, 12) remplacé par
+   une fenêtre glissante de 12 points centrée sur l'étape courante. Pour ≤12
+   étapes, tous les points sont affichés. Pour >12, la fenêtre glisse et les
+   points aux extrémités de la troncature ont la classe "dim".
+   tutoriel.css — Ajout de .tuto-dot.dim (opacité 0.3, scale 0.75) pour
+   indiquer visuellement la troncature de la fenêtre.
 
 v1.0.7 | 2026-07-23
    tutorial.js — Refonte complète par fonctionnalité (remplace la structure par

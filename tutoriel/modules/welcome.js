@@ -2,7 +2,7 @@
 // welcome.js — Fenêtre de bienvenue
 // ============================================================
 
-import { startTutorial, SECTION_LABELS, SECTION_ICONS, SETTING_KEYS } from './tutorial.js';
+import { startTutorial, SECTION_LABELS, SECTION_ICONS, SETTING_KEYS, isSectionAvailable } from './tutorial.js';
 
 const MODULE = "tutoriel";
 
@@ -20,16 +20,18 @@ export function showWelcomeIfNeeded() {
  * Permet de choisir quelles parties du tutoriel revoir.
  */
 export function showTutorialSelector() {
-    const rows = Object.entries(SECTION_LABELS).map(([key, label]) => {
-        const checked = game.settings.get(MODULE, SETTING_KEYS[key]) ? "checked" : "";
-        const icon    = SECTION_ICONS[key] ?? "fa-circle";
-        return `
+    const rows = Object.entries(SECTION_LABELS)
+        .filter(([key]) => isSectionAvailable(key))
+        .map(([key, label]) => {
+            const checked = game.settings.get(MODULE, SETTING_KEYS[key]) ? "checked" : "";
+            const icon    = SECTION_ICONS[key] ?? "fa-circle";
+            return `
         <label class="tuto-section-row">
             <input type="checkbox" name="tuto-section" value="${key}" ${checked}>
             <i class="fas ${icon}"></i>
             <span>${label}</span>
         </label>`;
-    }).join("");
+        }).join("");
 
     const content = `
     <div class="tuto-selector-body">

@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.3.0
+Version : 1.3.1
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -56,7 +56,8 @@ Accessibles via : Paramètres du jeu → Configuration des modules → Soruta �
 - Activer le bestiaire
 - Activer l'anonymisation
 - Dossier des personnages joueurs (PJ) — liste déroulante
-- Dossier des créatures — liste déroulante
+- Compendium des créatures (ID) — ex : world.creature
+- Dossier des créatures (legacy) — fallback si pas de compendium
 
 --------------------------------------------------------------------------------
 INSTALLATION
@@ -72,6 +73,17 @@ INSTALLATION
 ================================================================================
                     BESTIAIRE — MISES À JOUR
 ================================================================================
+
+v1.3.1 | 2026-07-24
+   settings.js — Nouveau paramètre "Compendium des créatures (ID)" (packCreatures,
+   défaut : "world.creature"). Le paramètre "Dossier des créatures" passe en
+   fallback legacy (ignoré si le compendium est configuré et valide).
+   bestiary.js — availableCreatures() devient async et lit depuis le compendium
+   via game.packs.get(packId).getDocuments(). Nouveau helper isCreatureToken() :
+   détecte les tokens de créature via token.actor.pack (compendium non-lié) OU
+   isInFolder() (acteur monde legacy). scanVisibleTokens() utilise isCreatureToken().
+   openAddDialog() adapté pour résoudre nom/img depuis l'index local du dialog
+   (game.actors.get() ne trouve pas les acteurs de compendium).
 
 v1.3.0 | 2026-07-23
    Synchronisation module.json / readme.txt sur la même version.

@@ -35,4 +35,13 @@ export function registerSettings() {
         default: true,
         requiresReload: true
     });
+
+    game.settings.register(MODULE, "pjFolderName", {
+        name: "Nom du dossier des PJ",
+        hint: "Nom exact du dossier (ou sous-dossier) contenant les acteurs joueurs. Utilisé par le bouton \"Date Expédition\" pour identifier les membres de la party. Sensible à la casse.",
+        scope: "world",
+        config: true,
+        type: String,
+        default: "PJ"
+    });
 }
