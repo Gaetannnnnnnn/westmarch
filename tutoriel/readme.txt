@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.1.3
+Version : 1.1.4
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -154,6 +154,16 @@ INSTALLATION
 ================================================================================
                     TUTORIEL — MISES À JOUR
 ================================================================================
+
+v1.1.4 | 2026-07-24
+   settings.js — Fix fenêtre de bienvenue invisible pour les autres joueurs :
+   showWelcome était scope "client" → chaque navigateur gérait son propre état,
+   cocher la case ne concernait que le GM. Changé en scope "world" : le GM
+   contrôle l'activation pour tout le monde. Ajout de hideWelcome (scope
+   "client", config false) : stocké par utilisateur quand il clique "Ne plus
+   afficher". welcome.js — showWelcomeIfNeeded() vérifie les deux (world ON et
+   client OFF). Bouton "Ne plus afficher" écrit hideWelcome=true (client) au
+   lieu de showWelcome=false (world).
 
 v1.1.3 | 2026-07-24
    tutorial.js — Fix _openActorSheetTab() : ciblait parfois le panneau de contenu

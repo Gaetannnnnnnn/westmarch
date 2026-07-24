@@ -44,12 +44,6 @@
 const _MODULE     = "midi-range-fix";
 const _PATCH_MARK = Symbol("midiRangeFix"); // identifie _ourPatch sans comparer le code
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Ajustement de portée (en pieds) — modifiable ici, sans passer par les settings.
-// Soustrait du résultat bord→bord pour compenser le rayon du token attaquant.
-// 2.5 ft = demi-case (rayon d'un token Medium sur grille 5 ft).
-// ─────────────────────────────────────────────────────────────────────────────
-const _RANGE_ADJUST_FT = 2.5;
 
 // Référence stable à la version "originale" (midi-qol) à appeler en fallback.
 let _trueOriginal = null;
@@ -105,7 +99,8 @@ function _ourPatch(waypoints, options) {
 
         const result = _trueOriginal([attackerBorder, targetBorder], options);
         if (result && typeof result.distance === "number") {
-            result.distance = Math.max(0, result.distance - _RANGE_ADJUST_FT);
+            const adjust = game.settings.get(_MODULE, "rangeAdjust") ?? 2.5;
+            result.distance = Math.max(0, result.distance - adjust);
         }
         return result;
 
@@ -243,7 +238,7 @@ function _startPoll() {
     _pollInterval = setInterval(() => {
         if (!canvas?.grid) return;
         _ensurePatch();
-    }, 250);
+    }, 2000);
 }
 
 function _stopPoll() {

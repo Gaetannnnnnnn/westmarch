@@ -181,7 +181,7 @@ function openImportPopup(onConfirm) {
         state.lastX = ev.clientX;
         state.lastY = ev.clientY;
     });
-    window.addEventListener("pointermove", (ev) => {
+    const _onPointerMove = (ev) => {
         if (!state.dragging) return;
         const ratio = pixelRatio();
         state.offsetX += (ev.clientX - state.lastX) * ratio;
@@ -189,8 +189,10 @@ function openImportPopup(onConfirm) {
         state.lastX = ev.clientX;
         state.lastY = ev.clientY;
         redraw();
-    });
-    window.addEventListener("pointerup", () => { state.dragging = false; });
+    };
+    const _onPointerUp = () => { state.dragging = false; };
+    window.addEventListener("pointermove", _onPointerMove);
+    window.addEventListener("pointerup",   _onPointerUp);
 
     // ---- Cadrage : zoom (molette + slider) ----
     canvas.addEventListener("wheel", (ev) => {
@@ -223,6 +225,8 @@ function openImportPopup(onConfirm) {
     // ---- Fermeture / validation ----
     const cleanup = () => {
         overlay.remove();
+        window.removeEventListener("pointermove", _onPointerMove);
+        window.removeEventListener("pointerup",   _onPointerUp);
     };
 
     overlay.find(".westmarch-import-cancel").on("click", cleanup);

@@ -224,76 +224,29 @@
     color: #c39bd3;
 }
 
-/* ---- Éditeur ProseMirror ---- */
+/* ---- Dialog éditeur ProseMirror ---- */
 
-.carnet-editor-wrap {
-    position: relative;
-    border: 1px solid rgba(155, 89, 182, 0.4);
-    border-radius: 4px;
-    background: rgba(0, 0, 0, 0.2);
-    min-height: 120px;
-    padding: 4px;
-    margin-top: 4px;
-    overflow: visible;
-}
-
-.carnet-editor-wrap .editor-container {
-    min-height: 100px;
-}
-
-/* ---- Fix menus déroulants ProseMirror ---- */
-/* Les dropdowns s'ancrent au .carnet-editor-wrap (position:relative)
-   et non à un ancêtre lointain du dialog. */
-
-.carnet-editor-wrap .editor-menu {
-    position: relative;
-    z-index: 10;
-}
-
-.carnet-editor-wrap .prosemirror-dropdown,
-.carnet-editor-wrap .dropdown-menu,
-.carnet-editor-wrap .pm-dropdown {
-    z-index: 1000;
-    position: absolute;
-}
-
-.carnet-editor-buttons {
+.carnet-editor-dialog .window-content {
     display: flex;
-    gap: 6px;
-    margin-top: 6px;
+    flex-direction: column;
+    padding: 8px;
 }
 
-.carnet-btn-save,
-.carnet-btn-cancel {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    padding: 4px 12px;
+.carnet-dialog-editor {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+}
+
+.carnet-dialog-editor .editor-content {
+    flex: 1;
+    min-height: 240px;
+    border: 1px solid rgba(155, 89, 182, 0.35);
     border-radius: 4px;
-    font-size: 12px;
-    cursor: pointer;
-    transition: background 0.15s;
-}
-
-.carnet-btn-save {
-    background: rgba(155, 89, 182, 0.2);
-    border: 1px solid rgba(155, 89, 182, 0.5);
-    color: #c39bd3;
-}
-
-.carnet-btn-save:hover {
-    background: rgba(155, 89, 182, 0.35);
-}
-
-.carnet-btn-cancel {
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    color: #888;
-}
-
-.carnet-btn-cancel:hover {
-    background: rgba(255, 255, 255, 0.08);
-    color: #bbb;
+    background: rgba(0, 0, 0, 0.25);
+    padding: 6px 8px;
+    overflow-y: auto;
 }
 
 /* ============================================================

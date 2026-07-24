@@ -11,7 +11,8 @@ const MODULE = "tutoriel";
  * n'a pas choisi "Ne plus afficher".
  */
 export function showWelcomeIfNeeded() {
-    if (!game.settings.get(MODULE, "showWelcome")) return;
+    if (!game.settings.get(MODULE, "showWelcome")) return;  // GM a désactivé pour tout le monde
+    if (game.settings.get(MODULE, "hideWelcome"))  return;  // cet utilisateur a cliqué "Ne plus afficher"
     showWelcome();
 }
 
@@ -103,8 +104,8 @@ export function showWelcome() {
                 icon:     '<i class="fas fa-eye-slash"></i>',
                 label:    "Ne plus afficher",
                 callback: () => {
-                    game.settings.set(MODULE, "showWelcome", false);
-                    ui.notifications.info("[Tutoriel] La fenêtre d'accueil ne s'affichera plus au login. Vous pouvez la rouvrir via le bouton dans la barre WestMarch.");
+                    game.settings.set(MODULE, "hideWelcome", true);
+                    ui.notifications.info("[Tutoriel] La fenêtre d'accueil ne s'affichera plus pour toi. Tu peux la rouvrir via le bouton « ? » dans la barre WestMarch.");
                 }
             }
         },

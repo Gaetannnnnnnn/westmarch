@@ -55,15 +55,22 @@ export function registerSettings() {
         });
     }
 
-    // ---- Préférence utilisateur (par client) ----
-
-    // Afficher la fenêtre de bienvenue au login (par défaut : non)
+    // Afficher la fenêtre de bienvenue au login — contrôle GM (scope world)
     game.settings.register(MODULE, "showWelcome", {
         name:   "Afficher la fenêtre de bienvenue au login",
-        hint:   "Si activé, la fenêtre d'accueil s'affiche automatiquement à chaque connexion.",
-        scope:  "client",
+        hint:   "Si activé, la fenêtre d'accueil s'affiche pour tous les joueurs à chaque connexion (sauf s'ils ont cliqué « Ne plus afficher »).",
+        scope:  "world",
         config: true,
         type:   Boolean,
+        default: false
+    });
+
+    // Préférence par client — mis à true quand l'utilisateur clique "Ne plus afficher".
+    // Non visible dans la config (config: false). Réinitialisé si le GM désactive puis réactive showWelcome.
+    game.settings.register(MODULE, "hideWelcome", {
+        scope:   "client",
+        config:  false,
+        type:    Boolean,
         default: false
     });
 

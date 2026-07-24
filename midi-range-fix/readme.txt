@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.2.2
+Version : 1.2.4
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -64,6 +64,21 @@ INSTALLATION
 ================================================================================
                     MIDI-RANGE-FIX — MISES À JOUR
 ================================================================================
+
+v1.2.4 | 2026-07-24
+   range-fix.js — Optimisation perf : polling de vérification du patch réduit
+   de 250ms à 2000ms (de 4×/s à 0.5×/s). Le filet de sécurité est conservé
+   (détecte un écrasement via Object.defineProperty tiers) mais la charge CPU
+   constante est divisée par 8. Le hook dnd5e.preUseItem reste le mécanisme
+   principal de réinstallation avant chaque attaque.
+
+v1.2.3 | 2026-07-24
+   settings.js — Nouveau setting "rangeAdjust" (Number, défaut 2.5 ft, scope
+   world, config true). Configurable dans Paramètres du jeu sans rechargement.
+   Bloc d'explication mis à jour : formule bord→bord − ajustement, tableau
+   d'exemples recalculé.
+   range-fix.js — _RANGE_ADJUST_FT (constante) remplacé par
+   game.settings.get("midi-range-fix", "rangeAdjust") avec fallback 2.5.
 
 v1.2.2 | 2026-07-24
    range-fix.js — Ajout de _RANGE_ADJUST_FT (constante module, défaut 2.5 ft).

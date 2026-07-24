@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.1.0
+Version : 1.1.2
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -105,6 +105,29 @@ INSTALLATION
 ================================================================================
                     CARNET D'EXPÉDITIONS — MISES À JOUR
 ================================================================================
+
+v1.1.2 | 2026-07-24
+   carnet.js — Remplacement de l'éditeur ProseMirror inline (ApplicationV2 part)
+   par un Dialog popup. L'éditeur inline dans un PART ApplicationV2 n'avait pas
+   le contexte DOM/CSS nécessaire pour les menus ProseMirror : la toolbar
+   s'affichait comme une liste plate HEADINGS/BLOCK/INLINE inutilisable.
+   initNoteEditor() ouvre désormais un new Dialog({...}) avec ProseMirrorEditor.create()
+   initialisé dans le callback render. Le Dialog a son propre DOM complet et les
+   menus déroulants fonctionnent correctement. Taille : 640×520. Boutons
+   Sauvegarder / Annuler. La sauvegarde passe par actor.setFlag() (pas besoin
+   de restauration DOM manuelle : le flag update déclenche le re-render de la fiche).
+   carnet.css — Suppression des anciens styles .carnet-editor-wrap / .carnet-editor-buttons /
+   .carnet-btn-save / .carnet-btn-cancel (inutilisés). Ajout styles .carnet-editor-dialog /
+   .carnet-dialog-editor / .carnet-dialog-editor .editor-content.
+
+v1.1.1 | 2026-07-24
+   carnet.js — Fix ouverture d'onglet navigateur au clic sur les liens : Foundry
+   v13 ApplicationV2 a un handler global sur tous les <a[href]> qui appelle
+   window.open(anchor.href). Nos liens avaient href="#" → window.open("#")
+   ouvrait un nouvel onglet Foundry. Suppression de l'attribut href sur tous
+   les <a> interactifs (carnet-go-exp, carnet-link-exp, carnet-del-note,
+   carnet-go-note, carnet-create-note, carnet-del-exp). Ajout de cursor:pointer
+   en style inline pour conserver l'apparence cliquable.
 
 v1.1.0 | 2026-07-24
    carnet.js — Fix menu ProseMirror orphelin : Foundry v13 injecte .editor-menu

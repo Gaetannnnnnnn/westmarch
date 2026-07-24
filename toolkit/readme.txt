@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.0.6
+Version : 1.0.7
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -114,6 +114,14 @@ INSTALLATION
 ================================================================================
                     TOOLKIT — MISES À JOUR
 ================================================================================
+
+v1.0.7 | 2026-07-24
+   token.js — Fix fuite mémoire : les listeners window "pointermove" et "pointerup"
+   ajoutés à l'ouverture du popup d'import de token n'étaient jamais supprimés.
+   À chaque ouverture du popup (Importer un token), un nouveau listener
+   s'accumulait sur window. Les handlers sont maintenant stockés en variables
+   nommées (_onPointerMove, _onPointerUp) et retirés via removeEventListener
+   dans cleanup() à la fermeture (Annuler ou Créer).
 
 v1.0.6 | 2026-07-24
    mejrestock.js — Fix logique getRestockDays : le délai par défaut à 0 ne

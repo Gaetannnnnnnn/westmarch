@@ -352,15 +352,15 @@ export function buildJournalHtml(actor) {
     const cards = notes.map(note => {
         const linkedExp  = note.linkedExpId ? exps.find(e => e.id === note.linkedExpId) : null;
         const linkBadge  = linkedExp
-            ? `<a class="carnet-go-exp" href="#" data-exp-id="${linkedExp.id}"
+            ? `<a class="carnet-go-exp" data-exp-id="${linkedExp.id}"
                   title="Voir l'expédition liée dans l'onglet Expéditions"
-                  style="font-size:11px;color:#9b59b6;text-decoration:none;white-space:nowrap;">
+                  style="font-size:11px;color:#9b59b6;text-decoration:none;white-space:nowrap;cursor:pointer;">
                    <i class="fas fa-calendar-alt"></i> ${linkedExp.name || "Expédition"}
                </a>`
             : (canEdit
-                ? `<a class="carnet-link-exp" href="#" data-note-id="${note.id}"
+                ? `<a class="carnet-link-exp" data-note-id="${note.id}"
                       title="Lier cette note à une expédition"
-                      style="font-size:11px;color:#666;text-decoration:none;white-space:nowrap;">
+                      style="font-size:11px;color:#666;text-decoration:none;white-space:nowrap;cursor:pointer;">
                        <i class="fas fa-link"></i> Lier à une expédition
                    </a>`
                 : "");
@@ -382,7 +382,7 @@ export function buildJournalHtml(actor) {
                     <div class="carnet-note-actions-row">
                         ${linkBadge}
                         ${canEdit ? `
-                        <a class="carnet-del-note" href="#" data-note-id="${note.id}" title="Supprimer cette note">
+                        <a class="carnet-del-note" data-note-id="${note.id}" title="Supprimer cette note" style="cursor:pointer;">
                             <i class="fas fa-trash"></i>
                         </a>` : ""}
                     </div>
@@ -460,16 +460,16 @@ export function buildDowntimeHtml(actor) {
         // Notes liées à cette expédition
         const linkedNotes = notes.filter(n => n.linkedExpId === exp.id);
         const noteLink = linkedNotes.length
-            ? `<a class="carnet-go-note" href="#" data-note-id="${linkedNotes[0].id}"
+            ? `<a class="carnet-go-note" data-note-id="${linkedNotes[0].id}"
                   title="Voir la note liée dans l'onglet Carnet"
-                  style="font-size:11px;color:#9b59b6;text-decoration:none;white-space:nowrap;">
+                  style="font-size:11px;color:#9b59b6;text-decoration:none;white-space:nowrap;cursor:pointer;">
                    <i class="fas fa-book-open"></i>
                    ${linkedNotes.length === 1 ? "Note liée" : `${linkedNotes.length} notes liées`}
                </a>`
             : (isGM
-                ? `<a class="carnet-create-note" href="#" data-exp-id="${exp.id}" data-exp-name="${(exp.name ?? "").replace(/"/g, "&quot;")}"
+                ? `<a class="carnet-create-note" data-exp-id="${exp.id}" data-exp-name="${(exp.name ?? "").replace(/"/g, "&quot;")}"
                       title="Créer une note liée dans le Carnet"
-                      style="font-size:11px;color:#666;text-decoration:none;white-space:nowrap;">
+                      style="font-size:11px;color:#666;text-decoration:none;white-space:nowrap;cursor:pointer;">
                        <i class="fas fa-plus"></i> Créer une note
                    </a>`
                 : "");
@@ -494,7 +494,7 @@ export function buildDowntimeHtml(actor) {
                         </span>
                         ${noteLink}
                         ${isGM ? `
-                        <a class="carnet-del-exp" href="#" data-exp-id="${exp.id}" title="Supprimer">
+                        <a class="carnet-del-exp" data-exp-id="${exp.id}" title="Supprimer" style="cursor:pointer;">
                             <i class="fas fa-trash"></i>
                         </a>` : ""}
                     </div>
@@ -875,79 +875,55 @@ async function _linkNoteToExpDialog(actor, noteId, sheet) {
 // ÉDITEUR PROSEMIRROR (inline sur une note)
 // ================================================================
 
-async function initNoteEditor(actor, container, noteId) {
-    const display    = container.querySelector(`.carnet-note-display[data-note-id="${noteId}"]`);
-    const actionsRow = container.querySelector(`.carnet-edit-actions[data-note-id="${noteId}"]`);
-    if (!display || display.classList.contains('carnet-editing')) return;
-
+async function initNoteEditor(actor, _container, noteId) {
     const note    = getCarnetNotes(actor).find(n => n.id === noteId);
     const content = note?.content ?? "";
 
-    display.classList.add('carnet-editing');
-    if (actionsRow) actionsRow.style.display = 'none';
+    let editorRef = null;
 
-    const editorWrap = document.createElement('div');
-    editorWrap.className = 'carnet-editor-wrap';
-    display.after(editorWrap);
-
-    // Snapshot des .editor-menu existants avant la création de l'éditeur.
-    // Foundry v13 injecte parfois le menu dans le PARENT de editorWrap
-    // (pas à l'intérieur). On le détecte et on le rapatrie dans editorWrap
-    // pour qu'il soit retiré proprement avec editorWrap.remove().
-    const menusBefore = new Set(document.querySelectorAll('.editor-menu'));
-
-    let editor;
-    try {
-        editor = await ProseMirrorEditor.create(editorWrap, {
-            plugins:  ProseMirrorEditor.defaultPlugins,
-            content,
-            editable: true
-        });
-    } catch (err) {
-        console.error(`[${MODULE}] ProseMirrorEditor.create failed:`, err);
-        editorWrap.remove();
-        display.classList.remove('carnet-editing');
-        if (actionsRow) actionsRow.style.display = '';
-        return;
-    }
-
-    // Déplace dans editorWrap tout menu orphelin créé par ProseMirror
-    for (const menu of document.querySelectorAll('.editor-menu')) {
-        if (!menusBefore.has(menu) && !editorWrap.contains(menu)) {
-            editorWrap.prepend(menu);
+    new Dialog({
+        title:   `✏ ${note?.title ?? "Modifier la note"}`,
+        content: `
+            <div class="carnet-dialog-editor">
+                <div class="editor-content prosemirror" style="min-height:260px;">${content}</div>
+            </div>`,
+        buttons: {
+            save: {
+                icon:     '<i class="fas fa-save"></i>',
+                label:    "Sauvegarder",
+                callback: async () => {
+                    const html    = editorRef ? _getEditorHtml(editorRef) : content;
+                    const updated = getCarnetNotes(actor).map(n =>
+                        n.id === noteId ? { ...n, content: html } : n
+                    );
+                    await actor.setFlag(MODULE, "carnetNotes", updated);
+                    // La mise à jour du flag déclenche le re-render de l'onglet.
+                }
+            },
+            cancel: {
+                icon:  '<i class="fas fa-times"></i>',
+                label: "Annuler"
+            }
+        },
+        default: "save",
+        render: async (html) => {
+            const target = html[0]?.querySelector?.('.editor-content');
+            if (!target) return;
+            try {
+                editorRef = await ProseMirrorEditor.create(target, {
+                    plugins:  ProseMirrorEditor.defaultPlugins,
+                    content,
+                    editable: true
+                });
+            } catch (err) {
+                console.error(`[${MODULE}] ProseMirrorEditor.create failed:`, err);
+            }
         }
-    }
-
-    const btnRow = document.createElement('div');
-    btnRow.className = 'carnet-editor-buttons';
-    btnRow.innerHTML = `
-        <button type="button" class="carnet-btn-save"><i class="fas fa-save"></i> Sauvegarder</button>
-        <button type="button" class="carnet-btn-cancel"><i class="fas fa-times"></i> Annuler</button>`;
-    editorWrap.after(btnRow);
-
-    function restore(html) {
-        btnRow.remove();
-        editorWrap.remove();
-        display.classList.remove('carnet-editing');
-        display.innerHTML = html
-            ? `<div class="carnet-note-content">${html}</div>`
-            : `<p class="carnet-note-placeholder"><em>Note vide. Cliquez sur Modifier pour rédiger.</em></p>`;
-        if (actionsRow) actionsRow.style.display = '';
-        actionsRow?.querySelector('.carnet-edit-note')?.addEventListener('click', () => {
-            initNoteEditor(actor, container, noteId);
-        });
-    }
-
-    btnRow.querySelector('.carnet-btn-save').addEventListener('click', async () => {
-        const html    = _getEditorHtml(editor);
-        const updated = getCarnetNotes(actor).map(n =>
-            n.id === noteId ? { ...n, content: html } : n
-        );
-        await actor.setFlag(MODULE, "carnetNotes", updated);
-        restore(html);
-    });
-
-    btnRow.querySelector('.carnet-btn-cancel').addEventListener('click', () => restore(content));
+    }, {
+        width:   640,
+        height:  520,
+        classes: ["dialog", "carnet-editor-dialog"]
+    }).render(true);
 }
 
 function _getEditorHtml(editor) {
