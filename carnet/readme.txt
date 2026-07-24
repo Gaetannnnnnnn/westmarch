@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.0.9
+Version : 1.1.0
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -105,6 +105,14 @@ INSTALLATION
 ================================================================================
                     CARNET D'EXPÉDITIONS — MISES À JOUR
 ================================================================================
+
+v1.1.0 | 2026-07-24
+   carnet.js — Fix menu ProseMirror orphelin : Foundry v13 injecte .editor-menu
+   dans le parent de editorWrap plutôt qu'à l'intérieur. Après
+   ProseMirrorEditor.create(), tout menu nouvellement apparu hors de editorWrap
+   est déplacé dedans via prepend(). Ainsi editorWrap.remove() (save/cancel)
+   emporte le menu et évite qu'il reste affiché dans l'onglet Carnet comme
+   liste brute HEADINGS/BLOCK/etc.
 
 v1.0.9 | 2026-07-24
    carnet.js — Séparation complète des deux onglets en sources de données

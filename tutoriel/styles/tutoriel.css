@@ -207,7 +207,7 @@
 #tuto-bubble[data-arrow="right"]::before {
     display: block;
     right: calc(100% + 1px);
-    top: 50%;
+    top: var(--tuto-arrow-v, 50%);
     transform: translateY(-50%);
     border-top:    11px solid transparent;
     border-bottom: 11px solid transparent;
@@ -218,7 +218,7 @@
 #tuto-bubble[data-arrow="right"]::after {
     display: block;
     right: 100%;
-    top: 50%;
+    top: var(--tuto-arrow-v, 50%);
     transform: translateY(-50%);
     border-top:    9px solid transparent;
     border-bottom: 9px solid transparent;
@@ -231,7 +231,7 @@
 #tuto-bubble[data-arrow="left"]::before {
     display: block;
     left: calc(100% + 1px);
-    top: 50%;
+    top: var(--tuto-arrow-v, 50%);
     transform: translateY(-50%);
     border-top:    11px solid transparent;
     border-bottom: 11px solid transparent;
@@ -242,7 +242,7 @@
 #tuto-bubble[data-arrow="left"]::after {
     display: block;
     left: 100%;
-    top: 50%;
+    top: var(--tuto-arrow-v, 50%);
     transform: translateY(-50%);
     border-top:    9px solid transparent;
     border-bottom: 9px solid transparent;
@@ -255,7 +255,7 @@
 #tuto-bubble[data-arrow="bottom"]::before {
     display: block;
     bottom: calc(100% + 1px);
-    left: 50%;
+    left: var(--tuto-arrow-h, 50%);
     transform: translateX(-50%);
     border-left:   11px solid transparent;
     border-right:  11px solid transparent;
@@ -266,7 +266,7 @@
 #tuto-bubble[data-arrow="bottom"]::after {
     display: block;
     bottom: 100%;
-    left: 50%;
+    left: var(--tuto-arrow-h, 50%);
     transform: translateX(-50%);
     border-left:   9px solid transparent;
     border-right:  9px solid transparent;
@@ -279,7 +279,7 @@
 #tuto-bubble[data-arrow="top"]::before {
     display: block;
     top: calc(100% + 1px);
-    left: 50%;
+    left: var(--tuto-arrow-h, 50%);
     transform: translateX(-50%);
     border-left:  11px solid transparent;
     border-right: 11px solid transparent;
@@ -290,7 +290,7 @@
 #tuto-bubble[data-arrow="top"]::after {
     display: block;
     top: 100%;
-    left: 50%;
+    left: var(--tuto-arrow-h, 50%);
     transform: translateX(-50%);
     border-left:  9px solid transparent;
     border-right: 9px solid transparent;

@@ -65,11 +65,16 @@ export const SECTION_MODULES = {
     outilsGm:        ["westmarch-ashara", "toolkit"],       // OR — au moins un
 };
 
+// Sections réservées au GM (toutes leurs étapes sont gmOnly)
+export const SECTION_GM_ONLY = new Set(["boutiques", "outilsGm"]);
+
 /**
- * Retourne true si la section est disponible (au moins un module requis est actif).
- * Sections sans module requis (ex: barreWestmarch) sont toujours disponibles.
+ * Retourne true si la section est disponible pour l'utilisateur courant :
+ *   - au moins un module requis est actif
+ *   - la section n'est pas GM-only si l'utilisateur est joueur
  */
 export function isSectionAvailable(sectionKey) {
+    if (SECTION_GM_ONLY.has(sectionKey) && !game.user?.isGM) return false;
     const required = SECTION_MODULES[sectionKey] ?? [];
     if (required.length === 0) return true;
     return required.some(modId => !!game.modules.get(modId)?.active);
@@ -105,10 +110,17 @@ async function _openActorSheetTab(tabName) {
             : actor.sheet.element?.[0]);
     if (!sheetEl) return;
 
-    const tabBtn = sheetEl.querySelector(`[data-tab="${tabName}"]`);
-    if (tabBtn) {
-        tabBtn.click();
-        await new Promise(r => setTimeout(r, 300));
+    // Priorité au BOUTON de navigation (dans <nav class="tabs">) plutôt qu'au
+    // panneau de contenu (class="tab"). Le panneau est invisible quand l'onglet
+    // n'est pas actif → getBoundingClientRect() = 0,0,0,0 → bulle collée au bord.
+    const navBtn =
+        sheetEl.querySelector(`nav.tabs [data-tab="${tabName}"]`) ??
+        sheetEl.querySelector(`.tabs:not(.tab-body) [data-tab="${tabName}"]`) ??
+        sheetEl.querySelector(`[data-tab="${tabName}"]:not(.tab)`);
+
+    if (navBtn) {
+        navBtn.click();
+        await new Promise(r => setTimeout(r, 450));
     }
 }
 
@@ -172,12 +184,11 @@ const STEPS_BY_FEATURE = {
             position:   "bottom"
         },
         {
-            beforeShow: _toSheet("bestiary"),
-            target:     ".tab[data-tab='bestiary']",
-            title:      "Consulter une entrée",
-            text:       "Cliquez sur une entrée pour voir sa description, son image et les informations enregistrées par le GM.",
-            textGM:     "Cliquez sur une entrée pour la modifier. Vous pouvez y ajouter une description, une image et toute information utile au joueur.",
-            position:   "right"
+            target:   null,
+            title:    "Consulter une entrée",
+            text:     "Cliquez sur une entrée pour voir sa description, son image et les informations enregistrées par le GM. Cliquez à nouveau sur la flèche pour déplier les notes.",
+            textGM:   "Cliquez sur une entrée pour la modifier. Vous pouvez y ajouter une description, une image et toute information utile au joueur. Cliquez sur la flèche pour déplier les notes.",
+            position: "center"
         },
     ],
 
@@ -586,6 +597,16 @@ function _positionBubble(bubble, targetEl, position) {
         bubble.style.top       = `${top}px`;
         bubble.style.left      = `${left}px`;
         bubble.style.transform = "";
+
+        // Ajuste la position de la flèche pour qu'elle pointe sur le centre
+        // de la cible même si la bulle a été clampée (ex: cible en haut de l'écran)
+        if (dir === "right" || dir === "left") {
+            const pct = clamp((cy - top) / BH * 100, 8, 92);
+            bubble.style.setProperty("--tuto-arrow-v", `${pct}%`);
+        } else {
+            const pct = clamp((cx - left) / BW * 100, 8, 92);
+            bubble.style.setProperty("--tuto-arrow-h", `${pct}%`);
+        }
     });
 }
 

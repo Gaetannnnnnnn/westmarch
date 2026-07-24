@@ -890,6 +890,12 @@ async function initNoteEditor(actor, container, noteId) {
     editorWrap.className = 'carnet-editor-wrap';
     display.after(editorWrap);
 
+    // Snapshot des .editor-menu existants avant la création de l'éditeur.
+    // Foundry v13 injecte parfois le menu dans le PARENT de editorWrap
+    // (pas à l'intérieur). On le détecte et on le rapatrie dans editorWrap
+    // pour qu'il soit retiré proprement avec editorWrap.remove().
+    const menusBefore = new Set(document.querySelectorAll('.editor-menu'));
+
     let editor;
     try {
         editor = await ProseMirrorEditor.create(editorWrap, {
@@ -903,6 +909,13 @@ async function initNoteEditor(actor, container, noteId) {
         display.classList.remove('carnet-editing');
         if (actionsRow) actionsRow.style.display = '';
         return;
+    }
+
+    // Déplace dans editorWrap tout menu orphelin créé par ProseMirror
+    for (const menu of document.querySelectorAll('.editor-menu')) {
+        if (!menusBefore.has(menu) && !editorWrap.contains(menu)) {
+            editorWrap.prepend(menu);
+        }
     }
 
     const btnRow = document.createElement('div');

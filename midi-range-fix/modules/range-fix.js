@@ -44,6 +44,13 @@
 const _MODULE     = "midi-range-fix";
 const _PATCH_MARK = Symbol("midiRangeFix"); // identifie _ourPatch sans comparer le code
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Ajustement de portée (en pieds) — modifiable ici, sans passer par les settings.
+// Soustrait du résultat bord→bord pour compenser le rayon du token attaquant.
+// 2.5 ft = demi-case (rayon d'un token Medium sur grille 5 ft).
+// ─────────────────────────────────────────────────────────────────────────────
+const _RANGE_ADJUST_FT = 2.5;
+
 // Référence stable à la version "originale" (midi-qol) à appeler en fallback.
 let _trueOriginal = null;
 let _pollInterval = null;
@@ -55,6 +62,13 @@ let _pollInterval = null;
 function _ourPatch(waypoints, options) {
     try {
         if (!waypoints || waypoints.length !== 2) {
+            return _trueOriginal(waypoints, options);
+        }
+
+        // Ne pas intercepter les mesures de la règle manuelle (glissée par l'utilisateur).
+        // Quand la règle est active (_state > 0), on laisse Foundry mesurer normalement.
+        // Le correctif bord→bord ne s'applique qu'aux appels midi-qol (règle inactive).
+        if (canvas?.controls?.ruler?._state > 0) {
             return _trueOriginal(waypoints, options);
         }
 
@@ -89,7 +103,11 @@ function _ourPatch(waypoints, options) {
         const attackerBorder = _nearestBorderPoint(targetCenter,   attacker);
         const targetBorder   = _nearestBorderPoint(attackerCenter, target);
 
-        return _trueOriginal([attackerBorder, targetBorder], options);
+        const result = _trueOriginal([attackerBorder, targetBorder], options);
+        if (result && typeof result.distance === "number") {
+            result.distance = Math.max(0, result.distance - _RANGE_ADJUST_FT);
+        }
+        return result;
 
     } catch(err) {
         console.warn("[midi-range-fix] Erreur dans measurePath, fallback midi-qol :", err);

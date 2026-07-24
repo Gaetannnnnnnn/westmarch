@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.2.0
+Version : 1.2.2
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -64,6 +64,22 @@ INSTALLATION
 ================================================================================
                     MIDI-RANGE-FIX — MISES À JOUR
 ================================================================================
+
+v1.2.2 | 2026-07-24
+   range-fix.js — Ajout de _RANGE_ADJUST_FT (constante module, défaut 2.5 ft).
+   Après le calcul bord→bord, cette valeur est soustraite de result.distance
+   (Math.max 0). Compense le rayon du token attaquant : 2.5 ft = demi-case
+   d'un token Medium sur grille 5 ft. Modifiable directement dans le fichier
+   sans passer par les settings du module.
+
+v1.2.1 | 2026-07-24
+   range-fix.js — Fix règle manuelle : _ourPatch interceptait tous les appels
+   à measurePath, y compris les glissés de la règle Foundry. Résultat : la
+   ligne dessinée (anneau → anneau) et la distance affichée (bord→bord des
+   bounding boxes) ne correspondaient pas. Ajout d'un guard ruler._state > 0 :
+   si la règle est activement glissée par l'utilisateur, on retourne la mesure
+   native Foundry sans correction. Le correctif bord→bord ne s'applique qu'aux
+   appels midi-qol (règle inactive).
 
 v1.2.0 | 2026-07-24
    range-fix.js — Fix patch perdu après la première attaque. Cause racine :

@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.1.0
+Version : 1.1.3
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -154,6 +154,25 @@ INSTALLATION
 ================================================================================
                     TUTORIEL — MISES À JOUR
 ================================================================================
+
+v1.1.3 | 2026-07-24
+   tutorial.js — Fix _openActorSheetTab() : ciblait parfois le panneau de contenu
+   (.tab) au lieu du bouton de navigation (<nav>). Le panneau inactif a un
+   getBoundingClientRect() = 0,0,0,0 → bulle collée au bord gauche. Priorité
+   désormais : nav.tabs [data-tab] → .tabs:not(.tab-body) → :not(.tab).
+   Étape "Consulter une entrée" (bestiaire) : target null + position center —
+   l'étape décrit une action générale, pointer le panneau entier n'avait pas de sens.
+
+v1.1.2 | 2026-07-24
+   tutorial.js + tutoriel.css — Fix flèche qui ne pointait pas la cible quand la
+   bulle était clampée (ex: cible en haut de l'écran, bulle décalée vers le bas).
+   Les flèches CSS utilisent désormais les variables --tuto-arrow-v / --tuto-arrow-h
+   calculées dynamiquement en JS après le clamp viewport.
+
+v1.1.1 | 2026-07-24
+   tutorial.js — Ajout de SECTION_GM_ONLY (boutiques, outilsGm). isSectionAvailable()
+   retourne false pour ces sections quand l'utilisateur n'est pas GM. Les joueurs
+   ne voient plus "Boutiques" et "Outils GM" dans le sélecteur ni dans le tutoriel.
 
 v1.1.0 | 2026-07-24
    tutorial.js — Ajout de SECTION_MODULES (map section → module(s) requis) et
