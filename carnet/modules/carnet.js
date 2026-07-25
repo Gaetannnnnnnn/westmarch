@@ -1036,47 +1036,110 @@ async function _linkNoteToExpDialog(actor, noteId, sheet) {
 }
 
 // ================================================================
-// ÉDITEUR NOTES — textarea simple (v1.1.3)
+// ÉDITEUR NOTES — contenteditable + barre d'outils (v1.1.6)
 // ================================================================
+
+const _TOOLBAR_BTNS = [
+    { cmd: "bold",                 label: "<strong>G</strong>",   title: "Gras (Ctrl+B)" },
+    { cmd: "italic",               label: "<em>I</em>",           title: "Italique (Ctrl+I)" },
+    { cmd: "underline",            label: "<u>S</u>",             title: "Souligné (Ctrl+U)" },
+    { cmd: "strikeThrough",        label: "<s>R</s>",             title: "Barré" },
+    { sep: true },
+    { cmd: "formatBlock", val: "h2",  label: "T1",               title: "Titre" },
+    { cmd: "formatBlock", val: "h3",  label: "T2",               title: "Sous-titre" },
+    { cmd: "formatBlock", val: "p",   label: "¶",                title: "Paragraphe normal" },
+    { sep: true },
+    { cmd: "insertUnorderedList",  label: "•",                    title: "Liste à puces" },
+    { cmd: "insertOrderedList",    label: "1.",                   title: "Liste numérotée" },
+];
+
+function _buildToolbar() {
+    const sep = `<span style="width:1px;background:rgba(255,255,255,0.15);
+                               margin:2px 4px;align-self:stretch;flex-shrink:0;"></span>`;
+    const btns = _TOOLBAR_BTNS.map(b => {
+        if (b.sep) return sep;
+        return `<button type="button"
+                    class="carnet-tb-btn"
+                    data-cmd="${b.cmd}"
+                    ${b.val ? `data-val="${b.val}"` : ""}
+                    title="${b.title}"
+                    style="min-width:26px;height:26px;padding:0 5px;border-radius:3px;
+                           border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.05);
+                           color:#ccc;font-size:12px;cursor:pointer;line-height:1;
+                           display:inline-flex;align-items:center;justify-content:center;">
+                    ${b.label}
+                </button>`;
+    }).join("");
+
+    return `<div class="carnet-editor-toolbar"
+                 style="display:flex;flex-wrap:wrap;align-items:center;gap:3px;
+                        padding:6px 8px;border-bottom:1px solid rgba(255,255,255,0.1);
+                        background:rgba(0,0,0,0.2);flex-shrink:0;">
+                ${btns}
+            </div>`;
+}
+
+function _wireToolbar(editor) {
+    document.querySelectorAll('.carnet-tb-btn').forEach(btn => {
+        btn.addEventListener('mousedown', e => {
+            e.preventDefault(); // garde le focus sur l'éditeur
+            const { cmd, val } = btn.dataset;
+            document.execCommand(cmd, false, val ?? null);
+            editor?.focus();
+        });
+    });
+}
 
 async function initNoteEditor(actor, _container, noteId) {
     const note = getCarnetNotes(actor).find(n => n.id === noteId);
     if (!note) return;
 
     const stored = note.content ?? "";
-    const plain  = _htmlToText(stored);
+
+    const editorContent = `
+        <div style="display:flex;flex-direction:column;height:100%;">
+            ${_buildToolbar()}
+            <div id="carnet-note-editor"
+                 contenteditable="true"
+                 style="flex:1;overflow-y:auto;padding:10px 14px;min-height:280px;
+                        outline:none;font-size:13px;line-height:1.7;color:#ccc;
+                        background:rgba(0,0,0,0.12);"
+            >${stored}</div>
+        </div>`;
 
     const DialogClass = foundry.applications.api?.DialogV2 ?? null;
 
     if (DialogClass?.wait) {
-        // ── DialogV2 (Foundry v13) ─────────────────────────────
-        let textValue = plain;
+        let savedContent = stored;
 
         const action = await DialogClass.wait({
             window:      { title: `✏ ${note.title ?? "Modifier la note"}` },
-            position:    { width: 640, height: 520 },
-            content:     `<textarea id="carnet-note-ta"
-                              style="width:100%;height:320px;resize:vertical;
-                                     font-family:inherit;font-size:13px;line-height:1.6;
-                                     padding:10px;box-sizing:border-box;"
-                          >${_escHtml(plain)}</textarea>`,
+            position:    { width: 660, height: 560 },
+            content:     editorContent,
             rejectClose: false,
             render: () => {
-                const ta = document.getElementById("carnet-note-ta");
-                if (ta) {
-                    ta.addEventListener("input", () => { textValue = ta.value; });
-                    setTimeout(() => { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }, 60);
-                }
+                const editor = document.getElementById("carnet-note-editor");
+                _wireToolbar(editor);
+                setTimeout(() => {
+                    if (!editor) return;
+                    editor.focus();
+                    // curseur à la fin
+                    const range = document.createRange();
+                    range.selectNodeContents(editor);
+                    range.collapse(false);
+                    window.getSelection()?.removeAllRanges();
+                    window.getSelection()?.addRange(range);
+                }, 60);
             },
             buttons: [
                 {
-                    action:  "save",
-                    label:   "Sauvegarder",
-                    icon:    '<i class="fas fa-save"></i>',
-                    default: true,
+                    action:   "save",
+                    label:    "Sauvegarder",
+                    icon:     '<i class="fas fa-save"></i>',
+                    default:  true,
                     callback: () => {
-                        const ta = document.getElementById("carnet-note-ta");
-                        if (ta) textValue = ta.value;
+                        const editor = document.getElementById("carnet-note-editor");
+                        if (editor) savedContent = editor.innerHTML;
                     }
                 },
                 { action: "cancel", label: "Annuler", icon: '<i class="fas fa-times"></i>' }
@@ -1086,7 +1149,7 @@ async function initNoteEditor(actor, _container, noteId) {
         if (action !== "save") return;
 
         const updated = getCarnetNotes(actor).map(n =>
-            n.id === noteId ? { ...n, content: _textToHtml(textValue) } : n
+            n.id === noteId ? { ...n, content: savedContent } : n
         );
         await actor.setFlag(MODULE, "carnetNotes", updated);
 
@@ -1094,63 +1157,27 @@ async function initNoteEditor(actor, _container, noteId) {
         // ── Fallback Dialog v1 ─────────────────────────────────
         new Dialog({
             title:   `✏ ${note.title ?? "Modifier la note"}`,
-            content: `<div style="padding:4px 0;">
-                          <textarea id="carnet-note-ta"
-                              style="width:100%;height:300px;resize:vertical;
-                                     font-family:inherit;font-size:13px;line-height:1.6;
-                                     padding:10px;box-sizing:border-box;"
-                          >${_escHtml(plain)}</textarea>
-                      </div>`,
+            content: `<div style="padding:4px 0;">${editorContent}</div>`,
             buttons: {
                 save: {
                     icon:  '<i class="fas fa-save"></i>',
                     label: "Sauvegarder",
                     callback: async (html) => {
-                        const val     = html[0]?.querySelector('#carnet-note-ta')?.value ?? plain;
+                        const editor  = html[0]?.querySelector('#carnet-note-editor');
+                        const content = editor ? editor.innerHTML : stored;
                         const updated = getCarnetNotes(actor).map(n =>
-                            n.id === noteId ? { ...n, content: _textToHtml(val) } : n
+                            n.id === noteId ? { ...n, content } : n
                         );
                         await actor.setFlag(MODULE, "carnetNotes", updated);
                     }
                 },
                 cancel: { icon: '<i class="fas fa-times"></i>', label: "Annuler" }
             },
-            default: "save"
-        }, { width: 640, height: 500 }).render(true);
+            default: "save",
+            render: (html) => {
+                const editor = html[0]?.querySelector('#carnet-note-editor');
+                _wireToolbar(editor);
+            }
+        }, { width: 660, height: 540 }).render(true);
     }
-}
-
-// ── Helpers HTML ↔ texte ──────────────────────────────────────
-
-/** Convertit du HTML stocké en texte brut pour la textarea. */
-function _htmlToText(html) {
-    if (!html) return "";
-    return html
-        .replace(/<\/p>\s*<p>/gi, "\n")
-        .replace(/<br\s*\/?>/gi, "\n")
-        .replace(/<\/?(p|div|h[1-6]|li|tr|ul|ol)[^>]*>/gi, "\n")
-        .replace(/<[^>]+>/g, "")
-        .replace(/&lt;/g, "<").replace(/&gt;/g, ">")
-        .replace(/&amp;/g, "&").replace(/&nbsp;/g, " ")
-        .replace(/\n{3,}/g, "\n\n")
-        .trim();
-}
-
-/** Convertit le texte brut de la textarea en HTML paragraphes pour stockage. */
-function _textToHtml(text) {
-    if (!text) return "";
-    return text
-        .split("\n")
-        .map(line => {
-            const esc = line.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-            return `<p>${esc || "<br>"}</p>`;
-        })
-        .join("");
-}
-
-/** Échappe les caractères HTML pour injection dans un attribut value ou textarea. */
-function _escHtml(str) {
-    return (str ?? "")
-        .replace(/&/g, "&amp;").replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }

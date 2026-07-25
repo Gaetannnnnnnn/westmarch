@@ -1,208 +1,270 @@
 /* ============================================================
-   carnet.css — Styles Soruta — Carnet d'Expéditions
+   carnet.css — Soruta — Carnet d'Expéditions  v1.1.8
+   Palette : grimoire médiéval — or, bordeaux, vert forêt, parchemin
    ============================================================ */
 
-/* ---- Corps commun aux deux onglets ---- */
+/*
+   Palette de référence
+   ─────────────────────────────────────────────────────────────
+   Or ancien        #c9a227   rgba(201,162,39, …)
+   Or clair         #e8cc6a
+   Bordeaux         #8b2635   rgba(139,38,53, …)
+   Bordeaux doux    #b94a5a
+   Vert forêt       #2d6a4f   rgba(45,106,79, …)
+   Vert clair       #4a9e78
+   Parchemin        #c8b89a
+   Parchemin sombre #8a7a65
+   Encre            #3a3020
+   ──────────────────────────────────────────────────────────── */
+
+/* ============================================================
+   COMMUN
+   ============================================================ */
 
 .carnet-body {
     display: flex;
     flex-direction: column;
-    gap: 0;
-    padding: 12px 14px;
+    padding: 14px 16px;
     min-height: 100%;
 }
+
+/* ── Bouton Ajouter ──────────────────────────────────────────── */
 
 .carnet-add-bar {
     display: flex;
     justify-content: flex-end;
-    margin-bottom: 10px;
+    margin-bottom: 14px;
 }
 
 .carnet-add-bar button {
-    display: flex;
+    display: inline-flex;
     align-items: center;
     gap: 6px;
-    padding: 4px 12px;
-    background: rgba(155, 89, 182, 0.15);
-    border: 1px solid rgba(155, 89, 182, 0.4);
+    padding: 5px 14px;
+    background: rgba(201, 162, 39, 0.1);
+    border: 1px solid rgba(201, 162, 39, 0.35);
     border-radius: 4px;
-    color: #c39bd3;
+    color: #c9a227;
     font-size: 12px;
+    font-weight: 600;
     cursor: pointer;
-    transition: background 0.15s, color 0.15s;
+    letter-spacing: 0.03em;
+    transition: background 0.15s, color 0.15s, border-color 0.15s, box-shadow 0.15s;
 }
 
 .carnet-add-bar button:hover {
-    background: rgba(155, 89, 182, 0.3);
-    color: #d7bde2;
+    background: rgba(201, 162, 39, 0.22);
+    color: #e8cc6a;
+    border-color: rgba(201, 162, 39, 0.55);
+    box-shadow: 0 2px 8px rgba(201, 162, 39, 0.1);
 }
 
-/* ---- État vide ---- */
+/* ── État vide ───────────────────────────────────────────────── */
 
 .carnet-empty-state {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 10px;
-    padding: 40px 20px;
-    color: #666;
+    gap: 14px;
+    padding: 50px 20px;
     text-align: center;
 }
 
 .carnet-empty-state i {
-    font-size: 2em;
-    color: #444;
+    font-size: 2.4em;
+    color: rgba(201, 162, 39, 0.25);
 }
 
 .carnet-empty-state p {
     margin: 0;
     font-size: 13px;
-    line-height: 1.5;
+    line-height: 1.65;
+    color: #5c5040;
+    max-width: 260px;
 }
 
-/* ============================================================
-   ONGLET JOURNAL
-   ============================================================ */
+/* ── Flash surbrillance ──────────────────────────────────────── */
 
-/* ---- Section par expédition ---- */
-
-.carnet-exp-section {
-    padding: 14px 0 10px;
-    transition: background 0.3s;
-}
-
-.carnet-separator {
-    border: none;
-    border-top: 1px solid rgba(255, 255, 255, 0.07);
-    margin: 0;
-}
-
-/* Expédition en cours : bord gauche coloré */
-.carnet-exp-section.is-open {
-    border-left: 3px solid #9b59b6;
-    padding-left: 10px;
-}
-
-/* Animation de surbrillance lors du scroll depuis l'onglet Temps morts */
 @keyframes carnet-flash {
-    0%   { background: rgba(155, 89, 182, 0.25); }
+    0%   { background: rgba(201, 162, 39, 0.18); }
     100% { background: transparent; }
 }
 
 .carnet-highlight {
     animation: carnet-flash 2s ease-out forwards;
-    border-radius: 4px;
+    border-radius: 5px;
 }
 
-/* ---- En-tête de section ---- */
+/* ============================================================
+   ONGLET CARNET — Notes
+   ============================================================ */
 
-.carnet-exp-header {
+.carnet-note-card {
+    padding: 12px 14px 12px 16px;
+    border-radius: 5px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-left: 3px solid rgba(201, 162, 39, 0.2);
+    transition: border-color 0.15s, background 0.15s, border-left-color 0.15s;
+    margin-bottom: 2px;
+}
+
+.carnet-note-card:hover {
+    background: rgba(201, 162, 39, 0.03);
+    border-color: rgba(255, 255, 255, 0.09);
+    border-left-color: rgba(201, 162, 39, 0.5);
+}
+
+.carnet-separator {
+    border: none;
+    border-top: 1px solid rgba(201, 162, 39, 0.08);
+    margin: 5px 0;
+}
+
+/* ── En-tête de note ─────────────────────────────────────────── */
+
+.carnet-note-header {
     margin-bottom: 8px;
 }
 
-.carnet-exp-title-row {
+.carnet-note-title-row {
     display: flex;
     align-items: center;
     gap: 8px;
-    flex-wrap: wrap;
 }
 
-.carnet-exp-title {
-    margin: 0;
-    font-size: 14px;
+.carnet-note-title-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid transparent;
+    border-radius: 0;
+    color: #c8b89a;
+    font-size: 13px;
     font-weight: 700;
-    color: #ddd;
+    padding: 2px 0;
     letter-spacing: 0.02em;
+    transition: border-color 0.15s, color 0.15s;
 }
 
-/* ---- Badges de statut ---- */
-
-.carnet-badge {
-    display: inline-flex;
-    align-items: center;
-    gap: 4px;
-    padding: 2px 8px;
-    border-radius: 10px;
-    font-size: 10px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    white-space: nowrap;
+.carnet-note-title-input:hover,
+.carnet-note-title-input:focus {
+    border-bottom-color: rgba(201, 162, 39, 0.45);
+    outline: none;
+    color: #e8cc6a;
 }
 
-.carnet-badge.open {
-    background: rgba(155, 89, 182, 0.2);
-    border: 1px solid rgba(155, 89, 182, 0.5);
-    color: #c39bd3;
+.carnet-note-title-input::placeholder {
+    color: #3a3020;
+    font-weight: 400;
 }
 
-.carnet-badge.closed {
-    background: rgba(46, 204, 113, 0.12);
-    border: 1px solid rgba(46, 204, 113, 0.3);
-    color: #82e0aa;
+.carnet-note-title-label {
+    flex: 1;
+    font-size: 13px;
+    font-weight: 700;
+    color: #c8b89a;
 }
 
-.carnet-badge.pending {
-    background: rgba(149, 165, 166, 0.12);
-    border: 1px solid rgba(149, 165, 166, 0.3);
-    color: #aab7b8;
-}
-
-/* ---- Chips de dates ---- */
-
-.carnet-date-chips {
+.carnet-note-actions-row {
     display: flex;
-    gap: 8px;
-    flex-wrap: wrap;
-    margin-top: 5px;
-}
-
-.carnet-date-chip {
-    display: inline-flex;
     align-items: center;
-    gap: 5px;
-    padding: 2px 9px;
-    border-radius: 4px;
-    font-size: 11px;
-    color: #bbb;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    gap: 8px;
+    flex-shrink: 0;
 }
 
-.carnet-date-chip.start i { color: #82e0aa; }
-.carnet-date-chip.end   i { color: #f0b27a; }
+/* ── Liens expédition ────────────────────────────────────────── */
 
-/* ---- Zone de note ---- */
+.carnet-link-exp,
+.carnet-go-exp {
+    font-size: 11px;
+    text-decoration: none;
+    cursor: pointer;
+    white-space: nowrap;
+    opacity: 0.5;
+    transition: color 0.15s, opacity 0.15s;
+}
+
+.carnet-link-exp { color: #8a7a65; }
+.carnet-go-exp   { color: #c9a227; }
+
+.carnet-link-exp:hover { color: #c8b89a; opacity: 1; }
+.carnet-go-exp:hover   { color: #e8cc6a; opacity: 1; }
+
+/* ── Icône supprimer note ────────────────────────────────────── */
+
+.carnet-del-note {
+    color: #4a3f35;
+    font-size: 11px;
+    cursor: pointer;
+    text-decoration: none;
+    opacity: 0;
+    transition: color 0.15s, opacity 0.15s;
+}
+
+.carnet-note-card:hover .carnet-del-note {
+    opacity: 0.5;
+}
+
+.carnet-del-note:hover {
+    color: #b94a5a !important;
+    opacity: 1 !important;
+}
+
+/* ── Contenu de note ─────────────────────────────────────────── */
 
 .carnet-note-display {
-    padding: 6px 0 4px;
-    min-height: 40px;
-}
-
-.carnet-note-display.carnet-editing {
-    display: none;
+    padding: 4px 0 2px;
+    min-height: 28px;
 }
 
 .carnet-note-content {
     font-size: 13px;
-    line-height: 1.65;
-    color: #ccc;
+    line-height: 1.75;
+    color: #8a7a65;
 }
 
-.carnet-note-content p { margin: 0 0 6px; }
+.carnet-note-content p           { margin: 0 0 5px; }
 .carnet-note-content p:last-child { margin-bottom: 0; }
+
+.carnet-note-content h2 {
+    font-size: 14px;
+    font-weight: 700;
+    color: #c8b89a;
+    margin: 8px 0 4px;
+    padding-bottom: 3px;
+    border-bottom: 1px solid rgba(201, 162, 39, 0.2);
+}
+
+.carnet-note-content h3 {
+    font-size: 13px;
+    font-weight: 700;
+    color: #a89070;
+    margin: 6px 0 3px;
+}
+
+.carnet-note-content ul,
+.carnet-note-content ol { margin: 3px 0; padding-left: 20px; }
+.carnet-note-content li { margin-bottom: 2px; }
+
+.carnet-note-content strong { color: #c8b89a; }
+.carnet-note-content em     { color: #a89070; font-style: italic; }
 
 .carnet-note-placeholder {
     margin: 0;
     font-size: 12px;
-    color: #555;
+    color: #3a3020;
+    font-style: italic;
 }
 
-/* ---- Actions note ---- */
+/* ── Bouton Modifier ─────────────────────────────────────────── */
 
-.carnet-note-actions {
-    margin-top: 6px;
+.carnet-edit-actions {
+    margin-top: 9px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .carnet-edit-note {
@@ -211,99 +273,120 @@
     gap: 5px;
     padding: 3px 10px;
     background: transparent;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 4px;
-    color: #888;
+    border: 1px solid rgba(201, 162, 39, 0.15);
+    border-radius: 3px;
+    color: #5c5040;
     font-size: 11px;
     cursor: pointer;
-    transition: border-color 0.15s, color 0.15s;
+    transition: border-color 0.15s, color 0.15s, background 0.15s;
 }
 
 .carnet-edit-note:hover {
-    border-color: rgba(155, 89, 182, 0.5);
-    color: #c39bd3;
-}
-
-/* ---- Dialog éditeur ProseMirror ---- */
-
-.carnet-editor-dialog .window-content {
-    display: flex;
-    flex-direction: column;
-    padding: 8px;
-}
-
-.carnet-dialog-editor {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
-}
-
-.carnet-dialog-editor .editor-content {
-    flex: 1;
-    min-height: 240px;
-    border: 1px solid rgba(155, 89, 182, 0.35);
-    border-radius: 4px;
-    background: rgba(0, 0, 0, 0.25);
-    padding: 6px 8px;
-    overflow-y: auto;
+    border-color: rgba(201, 162, 39, 0.45);
+    color: #c9a227;
+    background: rgba(201, 162, 39, 0.07);
 }
 
 /* ============================================================
-   ONGLET TEMPS MORTS — CARTES
+   ÉDITEUR — Barre d'outils + contenteditable
+   ============================================================ */
+
+.carnet-tb-btn:hover {
+    background: rgba(201, 162, 39, 0.2) !important;
+    border-color: rgba(201, 162, 39, 0.45) !important;
+    color: #e8cc6a !important;
+}
+
+.carnet-tb-btn:active {
+    background: rgba(201, 162, 39, 0.35) !important;
+}
+
+#carnet-note-editor {
+    caret-color: #c9a227;
+}
+
+#carnet-note-editor h2 {
+    font-size: 15px;
+    font-weight: 700;
+    color: #c8b89a;
+    margin: 10px 0 5px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid rgba(201, 162, 39, 0.25);
+}
+
+#carnet-note-editor h3 {
+    font-size: 13px;
+    font-weight: 700;
+    color: #a89070;
+    margin: 8px 0 4px;
+}
+
+#carnet-note-editor p          { margin: 0 0 6px; }
+#carnet-note-editor p:last-child { margin-bottom: 0; }
+
+#carnet-note-editor ul,
+#carnet-note-editor ol { padding-left: 22px; margin: 4px 0; }
+#carnet-note-editor li { margin-bottom: 3px; line-height: 1.65; }
+
+/* ============================================================
+   ONGLET EXPÉDITIONS — Cartes
    ============================================================ */
 
 .carnet-tm-cards {
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 8px;
 }
 
-/* ---- Carte d'expédition ---- */
+/* ── Carte ───────────────────────────────────────────────────── */
 
 .carnet-tm-card {
     display: flex;
     border-radius: 6px;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.07);
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.06);
     overflow: hidden;
-    transition: border-color 0.15s, box-shadow 0.15s;
+    transition: border-color 0.15s, box-shadow 0.15s, background 0.15s;
 }
 
 .carnet-tm-card:hover {
-    border-color: rgba(255, 255, 255, 0.12);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+    background: rgba(201, 162, 39, 0.025);
+    border-color: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 3px 14px rgba(0, 0, 0, 0.25);
 }
 
 .carnet-tm-card.open {
-    border-color: rgba(155, 89, 182, 0.3);
-    box-shadow: 0 0 0 1px rgba(155, 89, 182, 0.12) inset;
+    border-color: rgba(139, 38, 53, 0.3);
 }
 
-/* Bande colorée à gauche */
+.carnet-tm-card.open:hover {
+    border-color: rgba(139, 38, 53, 0.5);
+    box-shadow: 0 3px 14px rgba(139, 38, 53, 0.1);
+}
+
+/* ── Bande gauche ────────────────────────────────────────────── */
 
 .carnet-tm-stripe {
     width: 4px;
     flex-shrink: 0;
-    background: rgba(149, 165, 166, 0.3);
 }
 
-.carnet-tm-card.open    .carnet-tm-stripe { background: #9b59b6; }
-.carnet-tm-card.closed  .carnet-tm-stripe { background: #27ae60; }
-.carnet-tm-card.pending .carnet-tm-stripe { background: #7f8c8d; }
+.carnet-tm-card.open    .carnet-tm-stripe { background: #8b2635; }
+.carnet-tm-card.closed  .carnet-tm-stripe { background: #2d6a4f; }
+.carnet-tm-card.pending .carnet-tm-stripe { background: rgba(138, 122, 101, 0.4); }
 
-/* Contenu de la carte */
+/* ── Contenu ─────────────────────────────────────────────────── */
 
 .carnet-tm-content {
     flex: 1;
     min-width: 0;
-    padding: 10px 12px;
+    padding: 11px 14px 12px;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 9px;
 }
 
-/* ---- En-tête de carte ---- */
+/* ── En-tête ─────────────────────────────────────────────────── */
 
 .carnet-tm-header {
     display: flex;
@@ -319,27 +402,28 @@
 .carnet-name-input {
     width: 100%;
     background: transparent;
-    border: 1px solid transparent;
-    border-radius: 3px;
-    color: #ddd;
+    border: none;
+    border-bottom: 1px solid transparent;
+    border-radius: 0;
+    color: #c8b89a;
     font-size: 13px;
     font-weight: 600;
-    padding: 2px 5px;
+    padding: 2px 0;
     min-width: 0;
-    transition: border-color 0.15s, background 0.15s;
+    transition: border-color 0.15s, color 0.15s;
 }
 
 .carnet-name-input:hover,
 .carnet-name-input:focus {
-    border-color: rgba(155, 89, 182, 0.4);
+    border-bottom-color: rgba(201, 162, 39, 0.4);
     outline: none;
-    background: rgba(0, 0, 0, 0.2);
+    color: #e8cc6a;
 }
 
 .carnet-name-label {
     font-size: 13px;
     font-weight: 600;
-    color: #ddd;
+    color: #c8b89a;
 }
 
 .carnet-tm-header-right {
@@ -349,34 +433,80 @@
     flex-shrink: 0;
 }
 
-/* Lien → Carnet */
+/* ── Badges statut ───────────────────────────────────────────── */
 
-.carnet-to-journal,
-.carnet-del-exp {
-    color: #555;
-    font-size: 13px;
-    transition: color 0.15s;
-    text-decoration: none;
-    line-height: 1;
+.carnet-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 2px 8px;
+    border-radius: 3px;
+    font-size: 9px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    white-space: nowrap;
 }
 
-.carnet-to-journal:hover { color: #c39bd3; }
-.carnet-del-exp:hover    { color: #e74c3c; }
+.carnet-badge.open {
+    background: rgba(139, 38, 53, 0.18);
+    border: 1px solid rgba(139, 38, 53, 0.4);
+    color: #b94a5a;
+}
 
-/* ---- Ligne de dates ---- */
+.carnet-badge.closed {
+    background: rgba(45, 106, 79, 0.14);
+    border: 1px solid rgba(45, 106, 79, 0.35);
+    color: #4a9e78;
+}
+
+.carnet-badge.pending {
+    background: rgba(138, 122, 101, 0.1);
+    border: 1px solid rgba(138, 122, 101, 0.25);
+    color: #6b5e4e;
+}
+
+/* ── Liens / actions (droit en-tête) ────────────────────────── */
+
+.carnet-go-note,
+.carnet-create-note,
+.carnet-del-exp {
+    font-size: 11px;
+    text-decoration: none;
+    cursor: pointer;
+    white-space: nowrap;
+    opacity: 0;
+    transition: color 0.15s, opacity 0.15s;
+}
+
+.carnet-tm-card:hover .carnet-go-note,
+.carnet-tm-card:hover .carnet-create-note,
+.carnet-tm-card:hover .carnet-del-exp {
+    opacity: 0.65;
+}
+
+.carnet-go-note:hover     { color: #c9a227 !important; opacity: 1 !important; }
+.carnet-create-note:hover { color: #4a9e78 !important; opacity: 1 !important; }
+.carnet-del-exp:hover     { color: #b94a5a !important; opacity: 1 !important; }
+
+/* ── Zone dates ──────────────────────────────────────────────── */
 
 .carnet-tm-dates {
     display: flex;
-    align-items: center;
-    gap: 12px;
+    align-items: flex-start;
+    gap: 10px;
     flex-wrap: wrap;
+    padding: 8px 10px;
+    background: rgba(0, 0, 0, 0.18);
+    border-radius: 4px;
+    border: 1px solid rgba(201, 162, 39, 0.07);
 }
 
 .carnet-date-block {
     display: flex;
     flex-direction: column;
     gap: 3px;
-    min-width: 100px;
+    min-width: 90px;
 }
 
 .carnet-date-block.duration {
@@ -384,53 +514,52 @@
 }
 
 .carnet-date-label {
-    font-size: 10px;
+    font-size: 9px;
     font-weight: 700;
     text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: #666;
+    letter-spacing: 0.09em;
+    color: #4a3f35;
     white-space: nowrap;
 }
 
 .carnet-date-label i {
-    font-size: 9px;
-    margin-right: 2px;
+    font-size: 8px;
+    margin-right: 3px;
 }
 
 .carnet-date-value {
     font-size: 12px;
-    color: #bbb;
+    color: #8a7a65;
     white-space: nowrap;
+    font-weight: 500;
 }
 
 .carnet-date-value.empty {
-    color: #555;
+    color: #3a3020;
     font-style: italic;
 }
 
 .carnet-duration-value {
     font-size: 12px;
-    color: #9b59b6;
-    font-weight: 600;
+    color: #c9a227;
+    font-weight: 700;
     white-space: nowrap;
 }
 
-/* Séparateur → entre dates */
-
 .carnet-dates-sep {
-    color: #444;
-    font-size: 14px;
+    color: #2e2518;
+    font-size: 16px;
     flex-shrink: 0;
-    align-self: flex-end;
-    padding-bottom: 2px;
+    align-self: center;
+    padding-top: 18px;
 }
 
-/* ---- Boutons d'édition de date (GM) ---- */
+/* ── Boutons de date (GM) ────────────────────────────────────── */
 
 .carnet-date-actions {
     display: flex;
     gap: 3px;
-    margin-top: 2px;
+    margin-top: 3px;
 }
 
 .carnet-date-btn {
@@ -443,20 +572,20 @@
     border-radius: 3px;
     border: 1px solid transparent;
     background: transparent;
-    color: #555;
+    color: #3a3020;
     font-size: 10px;
     cursor: pointer;
     transition: background 0.12s, color 0.12s, border-color 0.12s;
 }
 
 .carnet-date-btn[data-action="set"]:hover {
-    background: rgba(155, 89, 182, 0.2);
-    border-color: rgba(155, 89, 182, 0.4);
-    color: #c39bd3;
+    background: rgba(201, 162, 39, 0.16);
+    border-color: rgba(201, 162, 39, 0.4);
+    color: #c9a227;
 }
 
 .carnet-date-btn[data-action="clear"]:hover {
-    background: rgba(231, 76, 60, 0.15);
-    border-color: rgba(231, 76, 60, 0.35);
-    color: #e74c3c;
+    background: rgba(139, 38, 53, 0.15);
+    border-color: rgba(139, 38, 53, 0.38);
+    color: #b94a5a;
 }
