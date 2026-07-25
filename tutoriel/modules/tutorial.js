@@ -179,15 +179,15 @@ const STEPS_BY_FEATURE = {
             beforeShow: _toSheet("bestiary"),
             target:     "nav.tabs [data-tab='bestiary'], .tabs .item[data-tab='bestiary']",
             title:      "Onglet Bestiaire",
-            text:       "L'onglet <strong>Bestiaire</strong> liste les créatures que vous avez rencontrées ou identifiées. Le GM y ajoute des entrées après chaque session — vous ne pouvez pas en créer vous-même.",
-            textGM:     "Vos joueurs ont un onglet <strong>Bestiaire</strong> sur leur fiche. Ouvrez la fiche d'un joueur → onglet Bestiaire → bouton Ajouter pour créer une entrée après une rencontre.",
+            text:       "L'onglet <strong>Bestiaire</strong> liste les créatures que vous avez rencontrées. Les entrées sont ajoutées <strong>automatiquement</strong> quand vous croisez une créature sur une scène — vous n'avez rien à faire.",
+            textGM:     "Le Bestiaire se remplit <strong>automatiquement</strong> : dès qu'un PJ entre en contact avec une créature sur une scène, une entrée est créée dans son Bestiaire. Vous pouvez aussi en ajouter manuellement via le bouton Ajouter sur la fiche du joueur.",
             position:   "bottom"
         },
         {
             target:   null,
             title:    "Consulter une entrée",
-            text:     "Cliquez sur une entrée pour voir sa description, son image et les informations enregistrées par le GM. Cliquez à nouveau sur la flèche pour déplier les notes.",
-            textGM:   "Cliquez sur une entrée pour la modifier. Vous pouvez y ajouter une description, une image et toute information utile au joueur. Cliquez sur la flèche pour déplier les notes.",
+            text:     "Cliquez sur la flèche d'une entrée pour déplier les notes du GM sur cette créature.",
+            textGM:   "Cliquez sur la flèche d'une entrée pour la déplier. Vous pouvez y renseigner la scène de première rencontre et ajouter des notes visibles par le joueur.",
             position: "center"
         },
     ],
@@ -198,8 +198,8 @@ const STEPS_BY_FEATURE = {
             beforeShow: _toSheet("relations"),
             target:     "nav.tabs [data-tab='relations'], .tabs .item[data-tab='relations']",
             title:      "Onglet Relations",
-            text:       "L'onglet <strong>Relations</strong> liste vos liens avec les PJ, PNJ et factions. Cliquez <strong>+</strong> pour ajouter un lien, ou glissez un acteur depuis le panneau Acteurs.",
-            textGM:     "Vos joueurs peuvent noter leurs liens avec PJ, PNJ et factions dans l'onglet <strong>Relations</strong> de leur fiche. Vous pouvez aussi y ajouter ou modifier des entrées depuis la fiche d'un joueur.",
+            text:       "L'onglet <strong>Relations</strong> liste vos liens avec les PJ et PNJ. Les entrées sont ajoutées <strong>automatiquement</strong> quand vous croisez quelqu'un sur une scène. Vous pouvez aussi en ajouter manuellement via le bouton <strong>+</strong>.",
+            textGM:     "Les Relations se remplissent <strong>automatiquement</strong> : dès qu'un PJ partage une scène avec un autre personnage, une entrée est créée dans ses Relations. Vous pouvez aussi en ajouter ou modifier depuis la fiche d'un joueur.",
             position:   "bottom"
         },
         {

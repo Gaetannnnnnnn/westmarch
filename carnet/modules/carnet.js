@@ -490,6 +490,9 @@ async function _closeExpDialog(members) {
 // BUILDER HTML — Onglet Carnet (notes indépendantes)
 // ================================================================
 
+// État de repliage des notes (en mémoire, réinitialisé si la page est rechargée)
+const _collapsedNotes = new Set();
+
 export function buildJournalHtml(actor) {
     const notes   = getCarnetNotes(actor);
     const canEdit = actor.isOwner;
@@ -516,18 +519,25 @@ export function buildJournalHtml(actor) {
     }
 
     const cards = notes.map(note => {
-        const linkedExp  = note.linkedExpId ? exps.find(e => e.id === note.linkedExpId) : null;
-        const linkBadge  = linkedExp
+        const isCollapsed = _collapsedNotes.has(note.id);
+        const linkedExp   = note.linkedExpId ? exps.find(e => e.id === note.linkedExpId) : null;
+
+        const linkBadge = linkedExp
             ? `<a class="carnet-go-exp" data-exp-id="${linkedExp.id}"
                   title="Voir l'expédition liée dans l'onglet Expéditions"
                   style="font-size:11px;color:#9b59b6;text-decoration:none;white-space:nowrap;cursor:pointer;">
                    <i class="fas fa-calendar-alt"></i> ${linkedExp.name || "Expédition"}
-               </a>`
+               </a>
+               ${canEdit ? `<a class="carnet-unlink-note" data-note-id="${note.id}"
+                  title="Délier de l'expédition"
+                  style="font-size:11px;color:#666;text-decoration:none;cursor:pointer;margin-left:4px;">
+                   <i class="fas fa-unlink"></i>
+               </a>` : ""}`
             : (canEdit
                 ? `<a class="carnet-link-exp" data-note-id="${note.id}"
                       title="Lier cette note à une expédition"
                       style="font-size:11px;color:#666;text-decoration:none;white-space:nowrap;cursor:pointer;">
-                       <i class="fas fa-link"></i> Lier à une expédition
+                       <i class="fas fa-link"></i> Lier
                    </a>`
                 : "");
 
@@ -538,7 +548,13 @@ export function buildJournalHtml(actor) {
         return `
         <div class="carnet-note-card" data-note-id="${note.id}">
             <div class="carnet-note-header">
-                <div class="carnet-note-title-row">
+                <button type="button" class="carnet-toggle-note" data-note-id="${note.id}"
+                        title="${isCollapsed ? "Déplier" : "Replier"}"
+                        style="background:none;border:none;color:#8a7a65;cursor:pointer;
+                               padding:2px 6px 2px 0;font-size:11px;flex-shrink:0;">
+                    <i class="fas fa-chevron-${isCollapsed ? "right" : "down"}"></i>
+                </button>
+                <div class="carnet-note-title-row" style="flex:1;min-width:0;">
                     ${canEdit
                         ? `<input class="carnet-note-title-input" type="text"
                                   data-note-id="${note.id}"
@@ -548,21 +564,23 @@ export function buildJournalHtml(actor) {
                     <div class="carnet-note-actions-row">
                         ${linkBadge}
                         ${canEdit ? `
-                        <a class="carnet-del-note" data-note-id="${note.id}" title="Supprimer cette note" style="cursor:pointer;">
+                        <a class="carnet-del-note" data-note-id="${note.id}" title="Supprimer" style="cursor:pointer;">
                             <i class="fas fa-trash"></i>
                         </a>` : ""}
                     </div>
                 </div>
             </div>
-            <div class="carnet-note-display" data-note-id="${note.id}">
-                ${noteHtml}
+            <div class="carnet-note-body"${isCollapsed ? ' style="display:none;"' : ''}>
+                <div class="carnet-note-display" data-note-id="${note.id}">
+                    ${noteHtml}
+                </div>
+                ${canEdit ? `
+                <div class="carnet-edit-actions" data-note-id="${note.id}">
+                    <button type="button" class="carnet-edit-note" data-note-id="${note.id}">
+                        <i class="fas fa-pen"></i> Modifier
+                    </button>
+                </div>` : ""}
             </div>
-            ${canEdit ? `
-            <div class="carnet-edit-actions" data-note-id="${note.id}">
-                <button type="button" class="carnet-edit-note" data-note-id="${note.id}">
-                    <i class="fas fa-pen"></i> Modifier
-                </button>
-            </div>` : ""}
         </div>`;
     }).join('<hr class="carnet-separator">');
 
@@ -739,6 +757,39 @@ export function wireJournalTab(actor, element, sheet) {
             await actor.setFlag(MODULE, "carnetNotes",
                 getCarnetNotes(actor).filter(n => n.id !== noteId)
             );
+        });
+    });
+
+    // Replier / déplier une note
+    element.querySelectorAll('.carnet-toggle-note').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const noteId = btn.dataset.noteId;
+            const card   = element.querySelector(`.carnet-note-card[data-note-id="${noteId}"]`);
+            const body   = card?.querySelector('.carnet-note-body');
+            const icon   = btn.querySelector('i');
+            if (_collapsedNotes.has(noteId)) {
+                _collapsedNotes.delete(noteId);
+                if (body) body.style.display = '';
+                btn.title = 'Replier';
+                icon?.classList.replace('fa-chevron-right', 'fa-chevron-down');
+            } else {
+                _collapsedNotes.add(noteId);
+                if (body) body.style.display = 'none';
+                btn.title = 'Déplier';
+                icon?.classList.replace('fa-chevron-down', 'fa-chevron-right');
+            }
+        });
+    });
+
+    // Délier une note de son expédition
+    element.querySelectorAll('.carnet-unlink-note').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            e.preventDefault();
+            const noteId  = btn.dataset.noteId;
+            const updated = getCarnetNotes(actor).map(n =>
+                n.id === noteId ? { ...n, linkedExpId: null } : n
+            );
+            await actor.setFlag(MODULE, "carnetNotes", updated);
         });
     });
 
@@ -1040,22 +1091,23 @@ async function _linkNoteToExpDialog(actor, noteId, sheet) {
 // ================================================================
 
 const _TOOLBAR_BTNS = [
-    { cmd: "bold",                 label: "<strong>G</strong>",   title: "Gras (Ctrl+B)" },
-    { cmd: "italic",               label: "<em>I</em>",           title: "Italique (Ctrl+I)" },
-    { cmd: "underline",            label: "<u>S</u>",             title: "Souligné (Ctrl+U)" },
-    { cmd: "strikeThrough",        label: "<s>R</s>",             title: "Barré" },
+    { cmd: "bold",                label: "<strong>G</strong>", title: "Gras (Ctrl+B)" },
+    { cmd: "italic",              label: "<em>I</em>",         title: "Italique (Ctrl+I)" },
+    { cmd: "underline",           label: "<u>S</u>",           title: "Souligné (Ctrl+U)" },
+    { cmd: "strikeThrough",       label: "<s>R</s>",           title: "Barré" },
     { sep: true },
-    { cmd: "formatBlock", val: "h2",  label: "T1",               title: "Titre" },
-    { cmd: "formatBlock", val: "h3",  label: "T2",               title: "Sous-titre" },
-    { cmd: "formatBlock", val: "p",   label: "¶",                title: "Paragraphe normal" },
+    { cmd: "formatBlock", val: "h2", label: "T1",             title: "Titre" },
+    { cmd: "formatBlock", val: "h3", label: "T2",             title: "Sous-titre" },
+    { cmd: "formatBlock", val: "p",  label: "¶",              title: "Paragraphe normal" },
     { sep: true },
-    { cmd: "insertUnorderedList",  label: "•",                    title: "Liste à puces" },
-    { cmd: "insertOrderedList",    label: "1.",                   title: "Liste numérotée" },
+    { cmd: "insertUnorderedList", label: "•",                  title: "Liste à puces" },
+    { cmd: "insertOrderedList",   label: "1.",                 title: "Liste numérotée" },
 ];
 
 function _buildToolbar() {
     const sep = `<span style="width:1px;background:rgba(255,255,255,0.15);
-                               margin:2px 4px;align-self:stretch;flex-shrink:0;"></span>`;
+                              margin:2px 4px;align-self:stretch;flex-shrink:0;"></span>`;
+
     const btns = _TOOLBAR_BTNS.map(b => {
         if (b.sep) return sep;
         return `<button type="button"
@@ -1066,28 +1118,129 @@ function _buildToolbar() {
                     style="min-width:26px;height:26px;padding:0 5px;border-radius:3px;
                            border:1px solid rgba(255,255,255,0.12);background:rgba(255,255,255,0.05);
                            color:#ccc;font-size:12px;cursor:pointer;line-height:1;
-                           display:inline-flex;align-items:center;justify-content:center;">
+                           display:inline-flex;align-items:center;justify-content:center;
+                           transition:background .12s,border-color .12s,color .12s;">
                     ${b.label}
                 </button>`;
     }).join("");
 
-    return `<div class="carnet-editor-toolbar"
-                 style="display:flex;flex-wrap:wrap;align-items:center;gap:3px;
-                        padding:6px 8px;border-bottom:1px solid rgba(255,255,255,0.1);
-                        background:rgba(0,0,0,0.2);flex-shrink:0;">
-                ${btns}
-            </div>`;
+    const sizeSelect = `${sep}
+        <select class="carnet-tb-size" title="Taille du texte sélectionné"
+                style="height:26px;padding:0 5px;border-radius:3px;
+                       border:1px solid rgba(255,255,255,0.12);background:rgba(0,0,0,0.35);
+                       color:#ccc;font-size:11px;cursor:pointer;outline:none;">
+            <option value="">Taille…</option>
+            <option value="2">Petite</option>
+            <option value="3">Normale</option>
+            <option value="4">Grande</option>
+            <option value="5">Très grande</option>
+        </select>`;
+
+    return `<style>
+        .carnet-tb-btn.ctb-active {
+            background: rgba(201,162,39,0.28) !important;
+            border-color: rgba(201,162,39,0.55) !important;
+            color: #e8cc6a !important;
+        }
+        #carnet-note-editor h2 {
+            font-size: 1.55em; font-weight: 700;
+            margin: .55em 0 .2em; color: #e8cc6a; line-height: 1.25;
+        }
+        #carnet-note-editor h3 {
+            font-size: 1.25em; font-weight: 600;
+            margin: .45em 0 .2em; color: #c9a227; line-height: 1.3;
+        }
+        #carnet-note-editor ul, #carnet-note-editor ol { padding-left: 1.5em; margin: .3em 0; }
+        #carnet-note-editor li { margin: .15em 0; }
+        .carnet-tb-size option { background: #1a1410; }
+    </style>
+    <div class="carnet-editor-toolbar"
+         style="display:flex;flex-wrap:wrap;align-items:center;gap:3px;
+                padding:6px 8px;border-bottom:1px solid rgba(255,255,255,0.1);
+                background:rgba(0,0,0,0.2);flex-shrink:0;">
+        ${btns}${sizeSelect}
+    </div>`;
+}
+
+// Met à jour l'état actif des boutons de la toolbar selon la sélection courante
+function _updateToolbarState(editor) {
+    const sel = window.getSelection();
+    const inEditor = editor && sel?.rangeCount > 0
+        && editor.contains(sel.getRangeAt(0).commonAncestorContainer);
+
+    document.querySelectorAll('.carnet-tb-btn').forEach(btn => {
+        const { cmd, val } = btn.dataset;
+        let active = false;
+        if (inEditor) {
+            try {
+                active = cmd === 'formatBlock'
+                    ? document.queryCommandValue('formatBlock').toLowerCase() === (val ?? '').toLowerCase()
+                    : document.queryCommandState(cmd);
+            } catch(e) {}
+        }
+        btn.classList.toggle('ctb-active', active);
+    });
 }
 
 function _wireToolbar(editor) {
+    let _savedRange = null;
+
+    // Sauvegarde la sélection dès que l'éditeur perd le focus
+    // (permet de la restaurer après un clic sur le sélecteur de taille)
+    editor?.addEventListener('blur', () => {
+        const sel = window.getSelection();
+        if (sel?.rangeCount > 0 && editor.contains(sel.getRangeAt(0).commonAncestorContainer)) {
+            _savedRange = sel.getRangeAt(0).cloneRange();
+        }
+    });
+
+    const updateState = () => _updateToolbarState(editor);
+
+    // Boutons de formatage
     document.querySelectorAll('.carnet-tb-btn').forEach(btn => {
         btn.addEventListener('mousedown', e => {
             e.preventDefault(); // garde le focus sur l'éditeur
             const { cmd, val } = btn.dataset;
             document.execCommand(cmd, false, val ?? null);
             editor?.focus();
+            setTimeout(updateState, 10);
         });
     });
+
+    // Sélecteur de taille
+    const sizeSelect = document.querySelector('.carnet-tb-size');
+    if (sizeSelect) {
+        sizeSelect.addEventListener('change', function () {
+            const val = this.value;
+            this.value = '';
+            if (!val) return;
+            // Restaure la sélection dans l'éditeur avant d'appliquer la commande
+            editor?.focus();
+            if (_savedRange) {
+                const sel = window.getSelection();
+                sel?.removeAllRanges();
+                sel?.addRange(_savedRange);
+                _savedRange = null;
+            }
+            document.execCommand('fontSize', false, val);
+            setTimeout(updateState, 10);
+        });
+    }
+
+    // Mise à jour de l'état à chaque changement de sélection ou frappe
+    document.addEventListener('selectionchange', updateState);
+    editor?.addEventListener('keyup', updateState);
+
+    // Nettoyage quand le dialog est fermé (éditeur retiré du DOM)
+    const observer = new MutationObserver(() => {
+        if (!document.contains(editor)) {
+            document.removeEventListener('selectionchange', updateState);
+            observer.disconnect();
+        }
+    });
+    if (editor) observer.observe(document.body, { childList: true, subtree: true });
+
+    updateState();
 }
 
 async function initNoteEditor(actor, _container, noteId) {
@@ -1120,6 +1273,9 @@ async function initNoteEditor(actor, _container, noteId) {
             render: () => {
                 const editor = document.getElementById("carnet-note-editor");
                 _wireToolbar(editor);
+                // Capture le contenu à chaque frappe — évite le bug où le callback
+                // du bouton s'exécute après la fermeture du dialog (element retiré du DOM)
+                editor?.addEventListener('input', () => { savedContent = editor.innerHTML; });
                 setTimeout(() => {
                     if (!editor) return;
                     editor.focus();
@@ -1138,6 +1294,7 @@ async function initNoteEditor(actor, _container, noteId) {
                     icon:     '<i class="fas fa-save"></i>',
                     default:  true,
                     callback: () => {
+                        // Fallback si l'input event n'a pas capturé (ex: premier clic sans frappe)
                         const editor = document.getElementById("carnet-note-editor");
                         if (editor) savedContent = editor.innerHTML;
                     }
