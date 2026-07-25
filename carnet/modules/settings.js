@@ -20,7 +20,7 @@ export function registerSettings() {
                         border:1px solid #9b59b6;border-radius:4px;
                         background:rgba(155,89,182,0.08);">
                 <p style="margin:0 0 4px 0;"><strong>Soruta — Carnet d'Expéditions</strong> — v${version}</p>
-                <p style="margin:0 0 4px 0;font-size:0.9em;">Onglets Carnet et Temps morts sur la fiche PJ. Notes ProseMirror par expédition, dates via Simple Calendar.</p>
+                <p style="margin:0 0 4px 0;font-size:0.9em;">Onglets Carnet et Temps morts sur la fiche PJ. Notes par expédition, dates via Simple Calendar.</p>
                 <p style="margin:6px 0 0 0;font-size:0.85em;font-style:italic;color:#9b59b6;">© 2026 Soruta — Tous droits réservés. Usage personnel autorisé. Toute redistribution, modification ou usage commercial est strictement interdit sans autorisation écrite.</p>
             </div>
         `));
@@ -36,12 +36,5 @@ export function registerSettings() {
         requiresReload: true
     });
 
-    game.settings.register(MODULE, "pjFolderName", {
-        name: "Nom du dossier des PJ",
-        hint: "Nom exact du dossier (ou sous-dossier) contenant les acteurs joueurs. Utilisé par le bouton \"Date Expédition\" pour identifier les membres de la party. Sensible à la casse.",
-        scope: "world",
-        config: true,
-        type: String,
-        default: "PJ"
-    });
+
 }

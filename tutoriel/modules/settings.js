@@ -74,11 +74,26 @@ export function registerSettings() {
         default: false
     });
 
-    // ---- Masquer les toggles des modules absents dans la page de config ----
+    // ---- Bandeau + masquer les toggles des modules absents ----
     Hooks.on("renderSettingsConfig", (app, html) => {
+        const $html = $(html);
+
+        // Bandeau version / auteur avant le premier setting du module
+        const firstSetting = $html.find(`[data-setting-id^="${MODULE}."]`).first().closest(".form-group");
+        if (firstSetting.length) {
+            const version = game.modules.get(MODULE)?.version ?? "?";
+            firstSetting.before(`
+                <div style="margin-bottom:12px;padding:10px 14px;border:1px solid #2ecc71;border-radius:4px;background:rgba(46,204,113,0.08);">
+                    <p style="margin:0 0 4px 0;"><strong>Soruta — Tutoriel</strong> — v${version}</p>
+                    <p style="margin:0;font-size:0.9em;">Fenêtre de bienvenue et tutoriel interactif configurable par module.</p>
+                </div>
+            `);
+        }
+
+        // Masquer les toggles des modules absents
         for (const { key } of MODULE_TOGGLES) {
             if (isSectionAvailable(key)) continue;
-            $(html).find(`[name="tutoriel.${key}"]`).closest(".form-group").hide();
+            $html.find(`[name="tutoriel.${key}"]`).closest(".form-group").hide();
         }
     });
 

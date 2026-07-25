@@ -138,29 +138,29 @@ function dateDiff(start, end) {
 }
 
 // ================================================================
-// PARTY
+// PARTY — lecture via flags westmarch
 // ================================================================
 
-function _isInPjFolder(actor) {
-    const folderName = game.settings.get(MODULE, "pjFolderName") || "PJ";
-    let folder = actor.folder;
-    while (folder) {
-        if (folder.name === folderName) return true;
-        folder = folder.folder;
-    }
-    return false;
-}
-
+/**
+ * Retourne les acteurs PJ des joueurs appartenant à la party active du GM.
+ * La party est identifiée par user.getFlag("westmarch", "partyId") === GM.id.
+ * Les GMs eux-mêmes sont exclus (ils n'ont généralement pas de PJ dans la party).
+ */
 function getPartyMembers() {
     try {
-        return game.actors
-            .filter(a => a.type === "character" && a.hasPlayerOwner && _isInPjFolder(a))
-            .sort((a, b) => a.name.localeCompare(b.name));
+        const partyId = game.user.getFlag("westmarch", "partyId");
+        if (!partyId) return [];
+        return game.users
+            .filter(u => !u.isGM
+                && u.getFlag("westmarch", "partyId") === partyId
+                && u.character)
+            .map(u => u.character)
+            .filter(Boolean);
     } catch { return []; }
 }
 
 // ================================================================
-// BOUTON BARRE DE GAUCHE — crée toujours une nouvelle expédition
+// BOUTON BARRE DE GAUCHE — crée ou clôture une expédition
 // ================================================================
 
 export function CarnetToolbarHooks() {
@@ -174,7 +174,7 @@ export function CarnetToolbarHooks() {
         }
         controls.westmarch.tools.carnetDate = {
             name:     "carnetDate",
-            title:    "Date Expédition — Nouvelle expédition (party)",
+            title:    "Date Expédition — Ouvrir / Clôturer",
             icon:     "fa-solid fa-calendar-plus",
             button:   true,
             onChange: () => onClickDateTM(),
@@ -184,10 +184,33 @@ export function CarnetToolbarHooks() {
 }
 
 async function onClickDateTM() {
-    const currentDate = getCurrentDate();
-    const preDay      = currentDate?.day   ?? 1;
-    const preMo       = currentDate?.month ?? 0;
-    const preYear     = currentDate?.year  ?? 1;
+    const members = getPartyMembers();
+    if (!members.length) {
+        ui.notifications.warn(
+            "[Carnet] Aucun PJ dans la party active. " +
+            "Le GM doit d'abord créer une party (clic droit sur son nom dans la liste des joueurs)."
+        );
+        return;
+    }
+
+    // Y a-t-il au moins une expédition ouverte (début sans fin) parmi les membres ?
+    const hasOpen = members.some(actor =>
+        getExpeditions(actor).some(e => e.startDate && !e.endDate)
+    );
+
+    if (hasOpen) {
+        await _closeExpDialog(members);
+    } else {
+        await _createExpDialog(members);
+    }
+}
+
+// ── Helpers communs aux deux dialogs ──────────────────────────
+
+function _dateDialogContent(currentDate, extraHtml = "") {
+    const preDay  = currentDate?.day   ?? 1;
+    const preMo   = currentDate?.month ?? 0;
+    const preYear = currentDate?.year  ?? 1;
 
     const noCalWarning = !currentDate
         ? `<p style="margin:0 0 8px;font-size:11px;color:#e67e22;">
@@ -196,9 +219,10 @@ async function onClickDateTM() {
            </p>`
         : "";
 
-    const content = `
+    return { preDay, preMo, preYear, html: `
 <div style="display:flex;flex-direction:column;gap:10px;padding:4px 0;">
     ${noCalWarning}
+    ${extraHtml}
     <label style="display:flex;align-items:center;gap:8px;cursor:pointer;padding:8px 10px;
                    border-radius:5px;border:1px solid rgba(255,255,255,0.08);
                    background:rgba(255,255,255,0.03);">
@@ -227,74 +251,135 @@ async function onClickDateTM() {
             </div>
         </span>
     </label>
-    <p style="margin:0;font-size:11px;color:#aaa;padding:0 2px;">
-        <i class="fas fa-info-circle"></i>
-        Crée une nouvelle expédition (date de début) pour chaque PJ de la party.
-    </p>
-</div>`;
+</div>` };
+}
+
+function _wireCustomRadio() {
+    ["carnet-tm-day", "carnet-tm-month", "carnet-tm-year"].forEach(id => {
+        document.getElementById(id)?.addEventListener("focus", () => {
+            const r = document.getElementById("carnet-tm-radio-custom");
+            if (r) r.checked = true;
+        });
+    });
+}
+
+function _readDateFromDom(currentDate) {
+    const mode = document.querySelector('[name="carnet-tm-mode"]:checked')?.value;
+    if (mode === "current") return currentDate;
+    return {
+        day:   parseInt(document.getElementById("carnet-tm-day")?.value)   || 1,
+        month: parseInt(document.getElementById("carnet-tm-month")?.value) || 0,
+        year:  parseInt(document.getElementById("carnet-tm-year")?.value)  || 1
+    };
+}
+
+function _readDateFromJQuery(html, currentDate) {
+    const mode = html.find('[name="carnet-tm-mode"]:checked').val()
+        ?? document.querySelector('[name="carnet-tm-mode"]:checked')?.value;
+    if (mode === "current") return currentDate;
+    return {
+        day:   parseInt(html.find('#carnet-tm-day').val())   || 1,
+        month: parseInt(html.find('#carnet-tm-month').val()) || 0,
+        year:  parseInt(html.find('#carnet-tm-year').val())  || 1
+    };
+}
+
+// ── Dialog générique : choisir une date ───────────────────────
+
+async function _pickDateDialog(title) {
+    const currentDate = getCurrentDate();
+    const { html: content } = _dateDialogContent(currentDate);
+    let resolvedDate = null;
+
+    const DialogClass = foundry.applications.api?.DialogV2 ?? globalThis.DialogV2;
+
+    if (DialogClass?.wait) {
+        const action = await DialogClass.wait({
+            window:      { title },
+            position:    { width: 320 },
+            content,
+            rejectClose: false,
+            render:      () => _wireCustomRadio(),
+            buttons: [
+                {
+                    action:   "confirm",
+                    label:    "Valider",
+                    icon:     '<i class="fas fa-check"></i>',
+                    default:  true,
+                    callback: () => { resolvedDate = _readDateFromDom(currentDate); }
+                },
+                { action: "cancel", label: "Annuler", icon: '<i class="fas fa-times"></i>' }
+            ]
+        });
+        if (action !== "confirm") return null;
+    } else {
+        resolvedDate = await new Promise(resolve => {
+            new Dialog({
+                title,
+                content,
+                buttons: {
+                    confirm: {
+                        icon:  '<i class="fas fa-check"></i>',
+                        label: "Valider",
+                        callback: (html) => {
+                            try   { resolve(_readDateFromJQuery(html, currentDate)); }
+                            catch { resolve(null); }
+                        }
+                    },
+                    cancel: { icon: '<i class="fas fa-times"></i>', label: "Annuler", callback: () => resolve(null) }
+                },
+                default: "confirm"
+            }, { width: 320 }).render(true);
+        });
+    }
+    return resolvedDate;
+}
+
+// ── Dialog : créer une nouvelle expédition ─────────────────────
+
+async function _createExpDialog(members) {
+    const currentDate = getCurrentDate();
+    const { html: content } = _dateDialogContent(currentDate,
+        `<p style="margin:0;font-size:11px;color:#aaa;padding:0 2px;">
+             <i class="fas fa-info-circle"></i>
+             Crée une nouvelle expédition pour ${members.length} PJ de la party.
+         </p>`
+    );
 
     let resolvedDate = null;
     const DialogClass = foundry.applications.api?.DialogV2 ?? globalThis.DialogV2;
 
     if (DialogClass?.wait) {
         const action = await DialogClass.wait({
-            window:      { title: "Date Expédition — Nouvelle expédition" },
+            window:      { title: "Nouvelle expédition — Date de début" },
             position:    { width: 340 },
             content,
             rejectClose: false,
-            render: () => {
-                ["carnet-tm-day", "carnet-tm-month", "carnet-tm-year"].forEach(id => {
-                    document.getElementById(id)?.addEventListener("focus", () => {
-                        const r = document.getElementById("carnet-tm-radio-custom");
-                        if (r) r.checked = true;
-                    });
-                });
-            },
+            render:      () => _wireCustomRadio(),
             buttons: [
                 {
                     action:   "confirm",
-                    label:    "Créer pour la party",
+                    label:    "Créer l'expédition",
                     icon:     '<i class="fas fa-calendar-plus"></i>',
                     default:  true,
-                    callback: () => {
-                        const mode = document.querySelector('[name="carnet-tm-mode"]:checked')?.value;
-                        if (mode === "current") {
-                            resolvedDate = currentDate;
-                        } else {
-                            const day   = parseInt(document.getElementById("carnet-tm-day")?.value)   || 1;
-                            const month = parseInt(document.getElementById("carnet-tm-month")?.value) || 0;
-                            const year  = parseInt(document.getElementById("carnet-tm-year")?.value)  || 1;
-                            resolvedDate = { day, month, year };
-                        }
-                    }
+                    callback: () => { resolvedDate = _readDateFromDom(currentDate); }
                 },
                 { action: "cancel", label: "Annuler", icon: '<i class="fas fa-times"></i>' }
             ]
         });
         if (action !== "confirm" || !resolvedDate) return;
     } else {
-        // Fallback Dialog v1
         resolvedDate = await new Promise(resolve => {
             new Dialog({
-                title:   "Date Expédition — Nouvelle expédition",
+                title:   "Nouvelle expédition — Date de début",
                 content,
                 buttons: {
                     confirm: {
                         icon:  '<i class="fas fa-calendar-plus"></i>',
-                        label: "Créer pour la party",
+                        label: "Créer l'expédition",
                         callback: (html) => {
-                            try {
-                                const mode = html.find('[name="carnet-tm-mode"]:checked').val()
-                                    ?? document.querySelector('[name="carnet-tm-mode"]:checked')?.value;
-                                if (mode === "current") { resolve(currentDate); return; }
-                                const day   = parseInt(html.find('#carnet-tm-day').val())   || 1;
-                                const month = parseInt(html.find('#carnet-tm-month').val()) || 0;
-                                const year  = parseInt(html.find('#carnet-tm-year').val())  || 1;
-                                resolve({ day, month, year });
-                            } catch(err) {
-                                console.error("[Carnet] Erreur dialog callback:", err);
-                                resolve(null);
-                            }
+                            try   { resolve(_readDateFromJQuery(html, currentDate)); }
+                            catch { resolve(null); }
                         }
                     },
                     cancel: { icon: '<i class="fas fa-times"></i>', label: "Annuler", callback: () => resolve(null) }
@@ -305,19 +390,100 @@ async function onClickDateTM() {
         if (!resolvedDate) return;
     }
 
-    const members = getPartyMembers();
-    if (!members.length) {
-        ui.notifications.warn(`[Carnet] Aucun PJ trouvé. Les acteurs PJ doivent être dans un dossier nommé "${game.settings.get(MODULE, "pjFolderName") || "PJ"}".`);
-        return;
-    }
-
-    // Toujours créer une nouvelle expédition — pas de logique de fermeture
     for (const actor of members) {
         await addExpedition(actor, resolvedDate);
     }
+    ui.notifications.info(`[Carnet] Nouvelle expédition créée pour ${members.length} PJ.`);
+}
 
-    const n = members.length;
-    ui.notifications.info(`[Carnet] Nouvelle expédition créée pour ${n} PJ${n > 1 ? "s" : ""}.`);
+// ── Dialog : clôturer les expéditions ouvertes ─────────────────
+
+async function _closeExpDialog(members) {
+    const currentDate = getCurrentDate();
+
+    // Résumé des expéditions ouvertes
+    const openListHtml = members
+        .map(actor => {
+            const open = getExpeditions(actor).find(e => e.startDate && !e.endDate);
+            return open
+                ? `<li>${actor.name} — <em>${open.name || "Expédition sans nom"}</em>`
+                  + ` (début : ${formatDate(open.startDate)})</li>`
+                : null;
+        })
+        .filter(Boolean)
+        .join("");
+
+    const extraHtml = `
+        <div style="padding:8px 10px;border-radius:5px;
+                    border:1px solid rgba(231,76,60,0.3);background:rgba(231,76,60,0.06);">
+            <p style="margin:0 0 6px;font-size:11px;color:#aaa;font-weight:600;">
+                <i class="fas fa-clock"></i> Expéditions en cours :
+            </p>
+            <ul style="margin:0;padding-left:18px;font-size:12px;">${openListHtml}</ul>
+        </div>
+        <p style="margin:0;font-size:11px;color:#aaa;padding:0 2px;">
+            <i class="fas fa-flag-checkered"></i>
+            Clôture les expéditions en cours pour chaque PJ de la party.
+        </p>`;
+
+    const { html: content } = _dateDialogContent(currentDate, extraHtml);
+
+    let resolvedDate = null;
+    const DialogClass = foundry.applications.api?.DialogV2 ?? globalThis.DialogV2;
+
+    if (DialogClass?.wait) {
+        const action = await DialogClass.wait({
+            window:      { title: "Clôturer l'expédition en cours" },
+            position:    { width: 360 },
+            content,
+            rejectClose: false,
+            render:      () => _wireCustomRadio(),
+            buttons: [
+                {
+                    action:   "confirm",
+                    label:    "Clôturer",
+                    icon:     '<i class="fas fa-flag-checkered"></i>',
+                    default:  true,
+                    callback: () => { resolvedDate = _readDateFromDom(currentDate); }
+                },
+                { action: "cancel", label: "Annuler", icon: '<i class="fas fa-times"></i>' }
+            ]
+        });
+        if (action !== "confirm" || !resolvedDate) return;
+    } else {
+        resolvedDate = await new Promise(resolve => {
+            new Dialog({
+                title:   "Clôturer l'expédition en cours",
+                content,
+                buttons: {
+                    confirm: {
+                        icon:  '<i class="fas fa-flag-checkered"></i>',
+                        label: "Clôturer",
+                        callback: (html) => {
+                            try   { resolve(_readDateFromJQuery(html, currentDate)); }
+                            catch { resolve(null); }
+                        }
+                    },
+                    cancel: { icon: '<i class="fas fa-times"></i>', label: "Annuler", callback: () => resolve(null) }
+                },
+                default: "confirm"
+            }, { width: 360 }).render(true);
+        });
+        if (!resolvedDate) return;
+    }
+
+    // Clôturer toutes les expéditions ouvertes de chaque membre
+    let closedCount = 0;
+    for (const actor of members) {
+        const exps = getExpeditions(actor);
+        if (!exps.some(e => e.startDate && !e.endDate)) continue;
+        const updated = exps.map(e =>
+            (e.startDate && !e.endDate) ? { ...e, endDate: resolvedDate } : e
+        );
+        await actor.setFlag(MODULE, "expeditions", updated);
+        closedCount++;
+    }
+    ui.notifications.info(`[Carnet] Expédition clôturée pour ${closedCount} PJ.`);
 }
 
 // ================================================================
@@ -627,11 +793,9 @@ export function wireDowntimeTab(actor, element, sheet) {
                 const { expId, field, action } = btn.dataset;
                 let newDate = null;
                 if (action === "set") {
-                    newDate = getCurrentDate();
-                    if (!newDate) {
-                        ui.notifications.warn("[Carnet] Impossible de lire la date du calendrier.");
-                        return;
-                    }
+                    const label = field === "startDate" ? "Date de début" : "Date de fin";
+                    newDate = await _pickDateDialog(label);
+                    if (!newDate) return; // annulé
                 }
                 const updated = getExpeditions(actor).map(ex =>
                     ex.id === expId ? { ...ex, [field]: newDate } : ex
@@ -872,68 +1036,121 @@ async function _linkNoteToExpDialog(actor, noteId, sheet) {
 }
 
 // ================================================================
-// ÉDITEUR PROSEMIRROR (inline sur une note)
+// ÉDITEUR NOTES — textarea simple (v1.1.3)
 // ================================================================
 
 async function initNoteEditor(actor, _container, noteId) {
-    const note    = getCarnetNotes(actor).find(n => n.id === noteId);
-    const content = note?.content ?? "";
+    const note = getCarnetNotes(actor).find(n => n.id === noteId);
+    if (!note) return;
 
-    let editorRef = null;
+    const stored = note.content ?? "";
+    const plain  = _htmlToText(stored);
 
-    new Dialog({
-        title:   `✏ ${note?.title ?? "Modifier la note"}`,
-        content: `
-            <div class="carnet-dialog-editor">
-                <div class="editor-content prosemirror" style="min-height:260px;">${content}</div>
-            </div>`,
-        buttons: {
-            save: {
-                icon:     '<i class="fas fa-save"></i>',
-                label:    "Sauvegarder",
-                callback: async () => {
-                    const html    = editorRef ? _getEditorHtml(editorRef) : content;
-                    const updated = getCarnetNotes(actor).map(n =>
-                        n.id === noteId ? { ...n, content: html } : n
-                    );
-                    await actor.setFlag(MODULE, "carnetNotes", updated);
-                    // La mise à jour du flag déclenche le re-render de l'onglet.
+    const DialogClass = foundry.applications.api?.DialogV2 ?? null;
+
+    if (DialogClass?.wait) {
+        // ── DialogV2 (Foundry v13) ─────────────────────────────
+        let textValue = plain;
+
+        const action = await DialogClass.wait({
+            window:      { title: `✏ ${note.title ?? "Modifier la note"}` },
+            position:    { width: 640, height: 520 },
+            content:     `<textarea id="carnet-note-ta"
+                              style="width:100%;height:320px;resize:vertical;
+                                     font-family:inherit;font-size:13px;line-height:1.6;
+                                     padding:10px;box-sizing:border-box;"
+                          >${_escHtml(plain)}</textarea>`,
+            rejectClose: false,
+            render: () => {
+                const ta = document.getElementById("carnet-note-ta");
+                if (ta) {
+                    ta.addEventListener("input", () => { textValue = ta.value; });
+                    setTimeout(() => { ta.focus(); ta.setSelectionRange(ta.value.length, ta.value.length); }, 60);
                 }
             },
-            cancel: {
-                icon:  '<i class="fas fa-times"></i>',
-                label: "Annuler"
-            }
-        },
-        default: "save",
-        render: async (html) => {
-            const target = html[0]?.querySelector?.('.editor-content');
-            if (!target) return;
-            try {
-                editorRef = await ProseMirrorEditor.create(target, {
-                    plugins:  ProseMirrorEditor.defaultPlugins,
-                    content,
-                    editable: true
-                });
-            } catch (err) {
-                console.error(`[${MODULE}] ProseMirrorEditor.create failed:`, err);
-            }
-        }
-    }, {
-        width:   640,
-        height:  520,
-        classes: ["dialog", "carnet-editor-dialog"]
-    }).render(true);
+            buttons: [
+                {
+                    action:  "save",
+                    label:   "Sauvegarder",
+                    icon:    '<i class="fas fa-save"></i>',
+                    default: true,
+                    callback: () => {
+                        const ta = document.getElementById("carnet-note-ta");
+                        if (ta) textValue = ta.value;
+                    }
+                },
+                { action: "cancel", label: "Annuler", icon: '<i class="fas fa-times"></i>' }
+            ]
+        });
+
+        if (action !== "save") return;
+
+        const updated = getCarnetNotes(actor).map(n =>
+            n.id === noteId ? { ...n, content: _textToHtml(textValue) } : n
+        );
+        await actor.setFlag(MODULE, "carnetNotes", updated);
+
+    } else {
+        // ── Fallback Dialog v1 ─────────────────────────────────
+        new Dialog({
+            title:   `✏ ${note.title ?? "Modifier la note"}`,
+            content: `<div style="padding:4px 0;">
+                          <textarea id="carnet-note-ta"
+                              style="width:100%;height:300px;resize:vertical;
+                                     font-family:inherit;font-size:13px;line-height:1.6;
+                                     padding:10px;box-sizing:border-box;"
+                          >${_escHtml(plain)}</textarea>
+                      </div>`,
+            buttons: {
+                save: {
+                    icon:  '<i class="fas fa-save"></i>',
+                    label: "Sauvegarder",
+                    callback: async (html) => {
+                        const val     = html[0]?.querySelector('#carnet-note-ta')?.value ?? plain;
+                        const updated = getCarnetNotes(actor).map(n =>
+                            n.id === noteId ? { ...n, content: _textToHtml(val) } : n
+                        );
+                        await actor.setFlag(MODULE, "carnetNotes", updated);
+                    }
+                },
+                cancel: { icon: '<i class="fas fa-times"></i>', label: "Annuler" }
+            },
+            default: "save"
+        }, { width: 640, height: 500 }).render(true);
+    }
 }
 
-function _getEditorHtml(editor) {
-    try {
-        if (typeof ProseMirror !== "undefined" && ProseMirror?.DOMSerializer) {
-            const div        = document.createElement('div');
-            const serializer = ProseMirror.DOMSerializer.fromSchema(editor.view.state.schema);
-            div.appendChild(serializer.serializeFragment(editor.view.state.doc.content));
-            return div.innerHTML;
-        }
-    } catch {}
-    return editor.view.dom.innerHTML;
+// ── Helpers HTML ↔ texte ──────────────────────────────────────
+
+/** Convertit du HTML stocké en texte brut pour la textarea. */
+function _htmlToText(html) {
+    if (!html) return "";
+    return html
+        .replace(/<\/p>\s*<p>/gi, "\n")
+        .replace(/<br\s*\/?>/gi, "\n")
+        .replace(/<\/?(p|div|h[1-6]|li|tr|ul|ol)[^>]*>/gi, "\n")
+        .replace(/<[^>]+>/g, "")
+        .replace(/&lt;/g, "<").replace(/&gt;/g, ">")
+        .replace(/&amp;/g, "&").replace(/&nbsp;/g, " ")
+        .replace(/\n{3,}/g, "\n\n")
+        .trim();
+}
+
+/** Convertit le texte brut de la textarea en HTML paragraphes pour stockage. */
+function _textToHtml(text) {
+    if (!text) return "";
+    return text
+        .split("\n")
+        .map(line => {
+            const esc = line.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+            return `<p>${esc || "<br>"}</p>`;
+        })
+        .join("");
+}
+
+/** Échappe les caractères HTML pour injection dans un attribut value ou textarea. */
+function _escHtml(str) {
+    return (str ?? "")
+        .replace(/&/g, "&amp;").replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
