@@ -47,49 +47,101 @@ export function FakeWarningHooks() {
 }
 
 function openFakeWarningDialog() {
-    const players = game.users.filter(u => u.active && !u.isGM);
-    if (players.length === 0) {
-        ui.notifications.warn("Aucun joueur connecté.");
+    // Tous les utilisateurs connectés, sauf soi-même
+    const targets = game.users.filter(u => u.active && u.id !== game.user.id);
+    if (targets.length === 0) {
+        ui.notifications.warn("Aucun autre utilisateur connecté.");
         return;
     }
 
-    const options = players.map(u => `<option value="${u.id}">${u.name}</option>`).join("");
+    // Checkboxes groupées : GMs d'abord, puis joueurs
+    const gms     = targets.filter(u => u.isGM);
+    const players = targets.filter(u => !u.isGM);
+
+    const renderGroup = (users, label) => {
+        if (!users.length) return "";
+        const rows = users.map(u => `
+            <label style="display:flex;align-items:center;gap:6px;padding:3px 0;cursor:pointer;">
+                <input type="checkbox" class="fw-target-cb" value="${u.id}">
+                <span>${u.name}</span>
+                ${u.isGM ? `<span style="font-size:10px;color:#c9a227;margin-left:2px;">(GM)</span>` : ""}
+            </label>`).join("");
+        return `<div style="margin-bottom:6px;">
+            <div style="font-size:10px;text-transform:uppercase;letter-spacing:.06em;
+                        color:#8a7a65;margin-bottom:4px;">${label}</div>
+            ${rows}
+        </div>`;
+    };
+
+    const checkboxes = renderGroup(gms, "GM") + renderGroup(players, "Joueurs");
+
+    const selectAllBtn = `<button type="button" id="fw-select-all"
+        style="font-size:11px;padding:2px 8px;border-radius:3px;
+               border:1px solid rgba(255,255,255,0.15);background:rgba(255,255,255,0.06);
+               color:#ccc;cursor:pointer;">Tout sélectionner</button>`;
 
     new Dialog({
         title: "Faux message de maintenance",
         content: `
-            <div style="display:flex; flex-direction:column; gap:8px; padding:4px 0;">
-                <label><strong>Joueur visé :</strong></label>
-                <select name="westmarch-fake-target" style="width:100%;">${options}</select>
-                <label><strong>Message</strong> (affiché en jaune, façon avertissement Foundry) :</label>
-                <textarea name="westmarch-fake-message" rows="3" style="width:100%; resize:vertical;">${DEFAULT_MESSAGE}</textarea>
+            <div style="display:flex;flex-direction:column;gap:10px;padding:4px 0;">
+                <div>
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+                        <strong>Destinataires :</strong>
+                        ${selectAllBtn}
+                    </div>
+                    <div style="padding:6px 8px;border-radius:4px;
+                                border:1px solid rgba(255,255,255,0.1);
+                                background:rgba(0,0,0,0.15);max-height:160px;overflow-y:auto;">
+                        ${checkboxes}
+                    </div>
+                </div>
+                <div>
+                    <label style="display:block;margin-bottom:4px;">
+                        <strong>Message</strong> <span style="font-size:11px;color:#8a7a65;">(affiché en jaune)</span>
+                    </label>
+                    <textarea name="westmarch-fake-message" rows="3"
+                              style="width:100%;resize:vertical;">${DEFAULT_MESSAGE}</textarea>
+                </div>
             </div>
         `,
+        render: (html) => {
+            const $html = $(html);
+            $html.find('#fw-select-all').on('click', function() {
+                const cbs = $html.find('.fw-target-cb');
+                const allChecked = cbs.toArray().every(cb => cb.checked);
+                cbs.prop('checked', !allChecked);
+                this.textContent = allChecked ? 'Tout sélectionner' : 'Tout décocher';
+            });
+        },
         buttons: {
             send: {
-                icon: '<i class="fas fa-paper-plane"></i>',
+                icon:  '<i class="fas fa-paper-plane"></i>',
                 label: "Envoyer",
                 callback: (html) => {
-                    // En Foundry v13, jQuery est en cours de dépréciation : selon
-                    // le contexte, "html" peut être un élément DOM brut plutôt
-                    // qu'un objet jQuery. ".find" n'existe alors pas, l'erreur
-                    // passe silencieusement (visible seulement dans la console
-                    // du navigateur), et le message n'était jamais envoyé.
-                    // On force le wrapping jQuery pour être sûr, comme ailleurs
-                    // dans le module (voir settings.js).
-                    const $html = $(html);
-                    const userId = $html.find('[name="westmarch-fake-target"]').val();
+                    const $html   = $(html);
                     const message = $html.find('[name="westmarch-fake-message"]').val()?.trim();
-                    if (!userId || !message) return;
-                    sendFakeWarning(userId, message);
-                    ui.notifications.info(`Faux message envoyé à ${game.users.get(userId)?.name ?? "?"}.`);
+                    if (!message) return;
+
+                    const userIds = $html.find('.fw-target-cb:checked')
+                        .toArray().map(cb => cb.value);
+                    if (!userIds.length) {
+                        ui.notifications.warn("Sélectionne au moins un destinataire.");
+                        return;
+                    }
+
+                    const names = [];
+                    for (const userId of userIds) {
+                        sendFakeWarning(userId, message);
+                        names.push(game.users.get(userId)?.name ?? "?");
+                    }
+                    ui.notifications.info(`Faux message envoyé à : ${names.join(", ")}.`);
                 }
             },
             cancel: {
-                icon: '<i class="fas fa-times"></i>',
+                icon:  '<i class="fas fa-times"></i>',
                 label: "Annuler"
             }
         },
         default: "send"
-    }).render(true);
+    }, { width: 360 }).render(true);
 }
