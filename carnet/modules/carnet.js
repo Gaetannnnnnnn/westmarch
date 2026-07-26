@@ -542,7 +542,7 @@ export function buildJournalHtml(actor) {
             const chevron = currentSectionCollapsed ? "fa-chevron-right" : "fa-chevron-down";
             const titleEsc = (item.title ?? "").replace(/"/g, "&quot;");
             return `
-        <div class="carnet-section-header carnet-item" data-item-id="${item.id}" data-item-type="section">
+        <div class="carnet-section-header carnet-item" data-carnet-id="${item.id}" data-carnet-type="section">
             ${canEdit ? `<div class="carnet-drag-handle" draggable="true" title="Déplacer"><i class="fas fa-grip-vertical"></i></div>` : ""}
             <button type="button" class="carnet-toggle-section" data-section-id="${item.id}"
                     title="${currentSectionCollapsed ? "Déplier" : "Replier"}">
@@ -589,7 +589,7 @@ export function buildJournalHtml(actor) {
             : `<p class="carnet-note-placeholder"><em>Note vide. Cliquez sur Modifier pour rédiger.</em></p>`;
 
         return `
-        <div class="carnet-note-card carnet-item" data-item-id="${note.id}" data-item-type="note"
+        <div class="carnet-note-card carnet-item" data-carnet-id="${note.id}" data-carnet-type="note"
              data-note-id="${note.id}"${hidden ? ' style="display:none;"' : ''}>
             ${canEdit ? `<div class="carnet-drag-handle" draggable="true" title="Déplacer"><i class="fas fa-grip-vertical"></i></div>` : ""}
             <div class="carnet-note-inner">
@@ -764,10 +764,10 @@ export function buildDowntimeHtml(actor) {
 /** Applique ou retire la visibilité sur toutes les notes sous une section donnée. */
 function _applySectionCollapse(element, sectionId, collapsed) {
     const allItems = [...element.querySelectorAll('.carnet-item')];
-    const idx = allItems.findIndex(el => el.dataset.itemId === sectionId);
+    const idx = allItems.findIndex(el => el.dataset.carnetId === sectionId);
     if (idx === -1) return;
     for (let i = idx + 1; i < allItems.length; i++) {
-        if (allItems[i].dataset.itemType === "section") break;
+        if (allItems[i].dataset.carnetType === "section") break;
         allItems[i].style.display = collapsed ? "none" : "";
     }
 }
@@ -775,10 +775,11 @@ function _applySectionCollapse(element, sectionId, collapsed) {
 /**
  * Câble le drag-and-drop de réordonnancement sur tous les .carnet-item.
  *
- * Approche : draggable="true" est sur la POIGNÉE (.carnet-drag-handle), pas
- * sur l'item parent. Ainsi le drag ne peut démarrer que depuis la poignée —
- * aucun flag _handleDown nécessaire, aucune interférence avec les handlers
- * mousedown de Foundry / dnd5e.
+ * Approche : draggable="true" est posé via JS sur la POIGNÉE (.carnet-drag-handle)
+ * pour ne pas être interféré par dnd5e v3 (qui scanne [data-item-id] dans
+ * _attachPartListeners). Les items utilisent désormais data-carnet-id au lieu
+ * de data-item-id pour éviter que la fiche dnd5e les traite comme des items
+ * d'inventaire et leur ajoute ses propres handlers dragstart.
  */
 function _wireDragDrop(actor, element) {
     let _dragOverEl = null;
@@ -788,28 +789,42 @@ function _wireDragDrop(actor, element) {
         _dragOverEl = null;
     };
 
-    element.querySelectorAll('.carnet-item').forEach(item => {
+    const items = [...element.querySelectorAll('.carnet-item')];
+    console.log(`[Carnet] _wireDragDrop : ${items.length} carnet-item(s) trouvés`);
+
+    items.forEach(item => {
         const handle = item.querySelector('.carnet-drag-handle');
+        console.log(`[Carnet]   item carnet-id="${item.dataset.carnetId}" handle=`, handle, `draggable="${handle?.getAttribute('draggable')}"`);
 
         // ── SOURCE : la poignée initie le drag ────────────────────
         if (handle) {
+            // On force draggable via JS au cas où le rendu HTML l'aurait retiré
+            handle.setAttribute('draggable', 'true');
+            console.log(`[Carnet]   → draggable forcé en JS sur handle`);
+
             handle.addEventListener('dragstart', e => {
-                // Empêche Foundry d'intercepter (la poignée est dans un item
-                // qui peut avoir des attributs data-item-id reconnus par dnd5e)
+                console.log("[Carnet] dragstart sur handle, carnet-id=", item.dataset.carnetId);
+                // stopPropagation + stopImmediatePropagation pour bloquer
+                // tout handler dnd5e enregistré en amont ou sur le même élément
                 e.stopPropagation();
-                _draggedItemId = item.dataset.itemId;
+                e.stopImmediatePropagation();
+                _draggedItemId = item.dataset.carnetId;
                 item.classList.add('carnet-dragging');
                 e.dataTransfer.effectAllowed = 'move';
                 e.dataTransfer.setData('text/plain', _draggedItemId);
                 // Image ghost = l'item entier plutôt que la seule poignée
                 try { e.dataTransfer.setDragImage(item, 20, 10); } catch {}
             });
+        } else {
+            console.warn("[Carnet]   ⚠ aucune poignée .carnet-drag-handle dans cet item");
         }
 
         // ── CIBLE : tous les items acceptent un dépôt ─────────────
         item.addEventListener('dragover', e => {
-            if (!_draggedItemId || _draggedItemId === item.dataset.itemId) return;
+            if (!_draggedItemId) { console.log("[Carnet] dragover ignoré : pas de _draggedItemId"); return; }
+            if (_draggedItemId === item.dataset.carnetId) return;
             e.preventDefault();
+            e.stopPropagation(); // empêche le handler drop de la fiche dnd5e
             e.dataTransfer.dropEffect = 'move';
             clearDragOver();
             _dragOverEl = item;
@@ -824,7 +839,8 @@ function _wireDragDrop(actor, element) {
 
         item.addEventListener('drop', async e => {
             e.preventDefault();
-            if (!_draggedItemId || _draggedItemId === item.dataset.itemId) {
+            e.stopPropagation(); // empêche _onDrop de la fiche dnd5e
+            if (!_draggedItemId || _draggedItemId === item.dataset.carnetId) {
                 clearDragOver();
                 return;
             }
@@ -837,7 +853,7 @@ function _wireDragDrop(actor, element) {
             if (fromIdx === -1) return;
             const moved     = notes[fromIdx];
             const without   = notes.filter((_, i) => i !== fromIdx);
-            const targetIdx = without.findIndex(n => n.id === item.dataset.itemId);
+            const targetIdx = without.findIndex(n => n.id === item.dataset.carnetId);
             if (targetIdx === -1) return;
             const insertAt  = insertBefore ? targetIdx : targetIdx + 1;
             without.splice(insertAt, 0, moved);
@@ -846,6 +862,7 @@ function _wireDragDrop(actor, element) {
     });
 
     element.addEventListener('dragend', () => {
+        console.log("[Carnet] dragend — nettoyage");
         _draggedItemId = null;
         element.querySelectorAll('.carnet-dragging').forEach(el => el.classList.remove('carnet-dragging'));
         clearDragOver();
@@ -857,7 +874,11 @@ function _wireDragDrop(actor, element) {
 // ================================================================
 
 export function wireJournalTab(actor, element, sheet) {
-    if (!(element instanceof Element)) return;
+    if (!(element instanceof Element)) {
+        console.warn("[Carnet] wireJournalTab : element n'est pas un Element", element);
+        return;
+    }
+    console.log("[Carnet] wireJournalTab appelé", { element, actor: actor?.name });
 
     // ── Ajouter une note / une section ───────────────────────────
     element.querySelectorAll('.carnet-add-note').forEach(btn => {

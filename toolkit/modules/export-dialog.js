@@ -19,12 +19,22 @@ export function ExportDialogHooks() {
         CONFIG.asharaSheetsModules.push("toolkit");
 
     Hooks.on("getActorDirectoryEntryContext", (_html, options) => {
-        // Foundry v13 peut utiliser une clé différente selon la version ;
-        // on cherche aussi par icône en fallback.
-        const idx = options.findIndex(o =>
+        // Debug : log toutes les options pour identifier le nom exact en v13
+        console.log("[Toolkit Export] options du menu contextuel :",
+            options.map(o => ({ name: o.name, label: o.label, icon: o.icon }))
+        );
+
+        // Détection large : nom i18n connu OU icône file-export OU label localisé contenant "Export"
+        const isExportOption = (o) =>
             o.name === "SIDEBAR.Export"
             || o.name === "DOCUMENT.Export"
-            || (typeof o.icon === "string" && o.icon.includes("file-export"))
+            || o.name === "DOCUMENT.ExportData"
+            || (typeof o.icon   === "string" && o.icon.includes("file-export"))
+            || (typeof o.label  === "string" && /export/i.test(o.label));
+
+        const idx = options.findIndex(isExportOption);
+        console.log("[Toolkit Export] idx option export trouvée :", idx,
+            idx !== -1 ? options[idx] : "(non trouvée — on va quand même filtrer)"
         );
 
         const entry = {
@@ -35,18 +45,24 @@ export function ExportDialogHooks() {
                 return actor?.isOwner ?? false;
             },
             callback: async (li) => {
+                console.log("[Toolkit Export] callback déclenché, li =", li);
                 const actor = _getActor(li);
+                console.log("[Toolkit Export] acteur résolu :", actor?.name);
                 if (!actor) return;
                 await _exportWithChoice(actor);
             }
         };
 
-        if (idx !== -1) {
-            options.splice(idx, 1, entry);
-        } else {
-            // Option export absente du menu — on l'ajoute quand même
-            options.push(entry);
+        // Supprimer TOUTES les options ressemblant à un export (pas juste la première)
+        // pour éviter que Foundry native continue à apparaître à côté de la nôtre.
+        for (let i = options.length - 1; i >= 0; i--) {
+            if (isExportOption(options[i])) options.splice(i, 1);
         }
+        // Insérer notre option à la position originale (ou en fin si non trouvée)
+        const insertAt = idx !== -1 ? Math.min(idx, options.length) : options.length;
+        options.splice(insertAt, 0, entry);
+
+        console.log("[Toolkit Export] menu final :", options.map(o => o.name ?? o.label));
     });
 }
 
@@ -55,7 +71,9 @@ export function ExportDialogHooks() {
 // ================================================================
 
 async function _exportWithChoice(actor) {
+    console.log("[Toolkit Export] _exportWithChoice appelé pour", actor.name);
     const choice = await _showDialog(actor);
+    console.log("[Toolkit Export] choix =", choice);
     if (choice === null) return;   // annulé
 
     if (choice === "current") {

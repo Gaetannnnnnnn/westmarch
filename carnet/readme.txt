@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.3.2
+Version : 1.3.3
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -105,6 +105,26 @@ INSTALLATION
 ================================================================================
                     CARNET D'EXPÉDITIONS — MISES À JOUR
 ================================================================================
+
+v1.3.3 | 2026-07-26
+   carnet.js — Fix glisser-déposer (toujours inopérant en Foundry v13 / dnd5e v3).
+   Cause racine identifiée : dnd5e v3 scanne tous les éléments [data-item-id] dans
+   _attachPartListeners (appelé via super) et leur ajoute draggable="true" + un
+   handler dragstart propre. Nos .carnet-item portaient data-item-id → dnd5e les
+   traitait comme des items d'inventaire : ses handlers en capture / bubble phase
+   prenaient la main sur nos events, empêchant le drag d'aboutir.
+   Correctifs :
+   (1) Renommage data-item-id → data-carnet-id et data-item-type → data-carnet-type
+   dans buildJournalHtml() — dnd5e ne sélectionne plus nos items.
+   (2) Mise à jour de _applySectionCollapse() pour lire dataset.carnetId /
+   dataset.carnetType.
+   (3) _wireDragDrop() : handle.setAttribute('draggable', 'true') forcé en JS
+   (contournement si le rendu HTML filtre l'attribut). e.stopImmediatePropagation()
+   en plus de stopPropagation() dans le handler dragstart de la poignée pour bloquer
+   tout autre handler enregistré sur l'élément. e.stopPropagation() ajouté dans
+   les handlers dragover et drop pour empêcher _onDrop() de la fiche dnd5e de
+   tenter d'interpréter notre dépôt.
+   module.json — Bump 1.3.2 → 1.3.3.
 
 v1.3.2 | 2026-07-26
    carnet.js — Fix glisser-déposer (toujours inopérant en Foundry v13).
