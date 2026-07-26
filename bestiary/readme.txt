@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.3.1
+Version : 1.3.4
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -73,6 +73,29 @@ INSTALLATION
 ================================================================================
                     BESTIAIRE — MISES À JOUR
 ================================================================================
+
+v1.3.4 | 2026-07-25
+   bestiary.js — Logique de double-guard pour le bouton fa-ban "Retirer des
+   Relations & du Bestiaire" : quand Relations est actif, c'est Relations qui
+   injecte le bouton (guard .ashara-exclude-btn) et Bestiary saute l'injection.
+   Quand Relations est absent, Bestiary injecte le bouton complet (guard
+   .ashara-reveal-btn) incluant les boutons Anonyme, Révéler et le fa-ban unifié.
+   Évite la double injection quand les deux modules sont actifs simultanément.
+   module.json — Bump 1.3.3 → 1.3.4.
+
+v1.3.3 | 2026-07-25
+   bestiary.js — Ajout de removeFromAllBestiary(actorId) : retire l'acteur de tous
+   les bestiaires de tous les personnages. Listener Hooks.on("ashara:removeFromBestiary",
+   ...) pour la communication inter-modules. Ajout du check excludedFromBestiary dans
+   scanVisibleTokens() (skip les acteurs exclus de détection automatique).
+   module.json — Bump 1.3.2 → 1.3.3.
+
+v1.3.2 | 2026-07-25
+   bestiary.js — Ajout du bouton "Ouvrir la fiche" (.bst-open-sheet,
+   fa-external-link-alt) dans buildRowHtml() pour les GM uniquement. wireTab()
+   câble le clic. Permet aux GM d'ouvrir directement la fiche d'une créature
+   depuis l'onglet Bestiaire.
+   module.json — Bump 1.3.1 → 1.3.2.
 
 v1.3.1 | 2026-07-24
    settings.js — Nouveau paramètre "Compendium des créatures (ID)" (packCreatures,

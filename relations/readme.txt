@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.6.0
+Version : 1.6.3
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -76,6 +76,33 @@ INSTALLATION
 ================================================================================
                     RELATIONS — MISES À JOUR
 ================================================================================
+
+v1.6.3 | 2026-07-25
+   relations.js — Remplacement des boutons séparés fa-user-slash (Relations) et
+   fa-dragon (Bestiaire) par un unique bouton fa-ban "Retirer des Relations &
+   du Bestiaire". Injecté via le hook renderApplicationV2 (guard .ashara-exclude-btn).
+   isExcluded() = true si l'un ou l'autre flag est posé. Au clic : pose les deux
+   flags (excludedFromRelations + excludedFromBestiary), appelle les deux hooks
+   de retrait (ashara:removeFromRelations + ashara:removeFromBestiary), reste
+   coloré en or quand l'acteur est exclu.
+   module.json — Bump 1.6.2 → 1.6.3.
+
+v1.6.2 | 2026-07-25
+   relations.js — Ajout de removeFromAllRelations(actorId) : retire l'acteur de
+   toutes les listes de relations de tous les autres acteurs. Ajout du listener
+   Hooks.on("ashara:removeFromRelations", ...) pour la communication inter-modules.
+   Ajout du check excludedFromRelations dans scanVisibleTokens() (skip les acteurs
+   exclus). Guard renderApplicationV2 changé de .ashara-reveal-btn à
+   .ashara-exclude-btn.
+   module.json — Bump 1.6.1 → 1.6.2.
+
+v1.6.1 | 2026-07-25
+   relations.js — Ajout du bouton "Ouvrir la fiche" (.rel-open-sheet,
+   fa-external-link-alt) dans buildRowHtml() pour les GM uniquement. wireTab()
+   câble le clic avec e.stopPropagation() +
+   game.actors.get(String(targetId))?.sheet?.render(true). Permet aux GM d'ouvrir
+   directement la fiche d'un acteur depuis l'onglet Relations.
+   module.json — Bump 1.6.0 → 1.6.1.
 
 v1.6.0 | 2026-07-23
    Synchronisation module.json / readme.txt sur la même version.

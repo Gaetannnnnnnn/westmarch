@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé Ashara
 ================================================================================
 
-Version : 1.0.7
+Version : 1.0.8
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -113,6 +113,16 @@ INSTALLATION
 ================================================================================
                     WESTMARCH-ASHARA — MISES À JOUR
 ================================================================================
+
+v1.0.8 | 2026-07-25
+   fake-warning.js — Refonte du dialog de sélection des destinataires.
+   Ancienne version : `<select>` simple, joueurs actifs uniquement.
+   Nouvelle version : checkboxes groupées (GMs d'abord, puis Joueurs) — le
+   faux message peut désormais être envoyé à n'importe quel utilisateur connecté
+   sauf soi-même, y compris les autres GMs. Ajout d'un bouton "Tout sélectionner /
+   Tout décocher" pour sélection rapide. Notification de confirmation liste les
+   noms des destinataires.
+   module.json — Bump 1.0.7 → 1.0.8.
 
 v1.0.7 | 2026-07-23
    fake-warning.js — Remplacement de l'assignation complète de controls.westmarch

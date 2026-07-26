@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.1.4
+Version : 1.2.0
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -49,10 +49,10 @@ modules/settings.js
    préférence "hideWelcome" (scope client, par utilisateur).
 
 modules/welcome.js
-   Fenêtre de bienvenue (Dialog Foundry). Trois boutons :
+   Fenêtre de bienvenue (Dialog Foundry). Deux boutons :
      - Commencer le tutoriel
-     - Fermer
      - Ne plus afficher (mémorisé par client)
+   (La croix native Foundry fait office de fermeture.)
 
 modules/tutorial.js
    Moteur du tutoriel :
@@ -97,7 +97,8 @@ Relations  (tous, contenu différencié GM)
   → Ajout et gestion des relations
 
 Carnet & Expéditions  (tous, contenu différencié GM)
-  → Onglet Carnet (éditeur ProseMirror)
+  → Onglet Carnet (notes, sections, drag & drop, éditeur enrichi)
+  → Lier une note à une expédition
   → Onglet Expéditions (dates + durée)
   → Bouton Date Expédition dans la barre (GM uniquement)
 
@@ -106,13 +107,15 @@ Boutiques  (GM uniquement)
   → Réapprovisionnement automatique avec délais configurables
 
 Temps morts  (contenu différencié GM/joueur)
-  → Déclaration de temps mort depuis la fiche (joueurs)
+  → Bouton sablier sur la fiche (couleurs gris/orange/vert)
+  → Contenu de la fenêtre : blocs Gain et Artisanat, panier
+  → Après déclaration : suivi et modification
   → Validation des déclarations depuis la barre (GM)
 
 Apparence des tokens  (tous)
   → Portrait grand format (HUD)
-  → Wild Shape / Polymorph
-  → Cycle d'apparences
+  → Changer l'image du token / Cycle d'apparences (prototype token → Apparence)
+  → Wild Shape / Polymorph (prototype token → Apparence)
 
 Outils GM  (GM uniquement)
   → Faux message de maintenance
@@ -154,6 +157,50 @@ INSTALLATION
 ================================================================================
                     TUTORIEL — MISES À JOUR
 ================================================================================
+
+v1.2.0 | 2026-07-26
+   tutorial.js — Section Apparence des tokens : ajout de _openProtoTokenAppearance()
+   (ouvre la fiche PJ → clique le bouton prototype token dans l'en-tête → navigue
+   vers l'onglet Apparence via nav [data-tab="appearance"]). Les étapes "Cycle
+   d'apparences" et "Wild Shape / Polymorph" ont désormais beforeShow:
+   _openProtoTokenAppearance et target: ".tab[data-tab='appearance']" au lieu de
+   target: null / center, afin d'ouvrir le dialog de configuration du token et de
+   pointer l'onglet Apparence pour présenter les 2 parties.
+   module.json — Bump 1.1.9 → 1.2.0.
+
+v1.1.9 | 2026-07-26
+   tutorial.js — Section Temps morts joueur : l'étape unique générique remplacée
+   par 3 étapes ciblées (playerOnly) + 1 étape GM inchangée.
+     1. Bouton sablier (target: .westmarch-tm-declare) — explique les 3 couleurs
+        (gris = rien, orange = en cours, vert = déclaré)
+     2. Contenu de la fenêtre (target: null, center) — blocs Gain compétence et
+        Artisanat, panier, bouton Déclarer
+     3. Après déclaration (target: .westmarch-tm-declare) — sablier vert, tooltip,
+        possibilité de modifier en rouvrant
+     4. Valider les déclarations (target: [data-tool='downtime'], gmOnly) — inchangé
+   module.json — Bump 1.1.8 → 1.1.9.
+
+v1.1.8 | 2026-07-25
+   tutorial.js — Expansion de la section Carnet de 3 à 9 étapes avec variantes
+   gmOnly / playerOnly et textGM :
+     1. Onglet Carnet (target: nav [data-tab="carnet-journal"])
+     2. Ajouter une note (target: .carnet-add-note)
+     3. Organiser en sections (target: .carnet-add-section)
+     4. Réordonner les notes (target: .carnet-drag-handle)
+     5. Replier une note (target: .carnet-toggle-note)
+     6. Éditeur de note (target: .carnet-edit-note)
+     7. Lier à une expédition (target: .carnet-link-exp)
+     8. Onglet Expéditions (target: nav [data-tab="carnet-downtime"])
+     9. Bouton Date Expédition (target: [data-tool='carnetDate'], gmOnly)
+   module.json — Bump 1.1.7 → 1.1.8.
+
+v1.1.7 | 2026-07-25
+   welcome.js — Suppression du bouton "Fermer" dans showWelcome() : redondant
+   avec la croix native Foundry (déjà présente sur toutes les fenêtres DialogV2).
+   module.json — Bump 1.1.6 → 1.1.7.
+
+v1.1.5 → v1.1.6 | 2026-07-24 — 2026-07-25
+   Corrections et ajustements internes (voir session précédente).
 
 v1.1.4 | 2026-07-24
    settings.js — Fix fenêtre de bienvenue invisible pour les autres joueurs :

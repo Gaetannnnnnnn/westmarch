@@ -96,10 +96,6 @@ export function showWelcome() {
                 label:    "Commencer le tutoriel",
                 callback: () => startTutorial()
             },
-            close: {
-                icon:  '<i class="fas fa-times"></i>',
-                label: "Fermer"
-            },
             hide: {
                 icon:     '<i class="fas fa-eye-slash"></i>',
                 label:    "Ne plus afficher",

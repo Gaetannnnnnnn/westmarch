@@ -128,6 +128,50 @@ async function _openActorSheetTab(tabName) {
 const _toSheet = tab => () => _openActorSheetTab(tab);
 
 // ================================================================
+// NAVIGATION : ouvrir le prototype token → onglet Apparence
+// ================================================================
+
+async function _openProtoTokenAppearance() {
+    const actor = game.user.character
+        ?? (game.user.isGM ? game.actors.find(a => a.type === "character" && a.hasPlayerOwner) : null);
+    if (!actor) return;
+
+    actor.sheet.render(true);
+    await new Promise(r => setTimeout(r, 500));
+
+    const appId   = actor.sheet.appId;
+    const sheetEl = document.querySelector(`[data-appid="${appId}"]`)
+        ?? (actor.sheet.element instanceof HTMLElement
+            ? actor.sheet.element
+            : actor.sheet.element?.[0]);
+
+    // Clique le bouton "Prototype Token" dans l'en-tête de la fiche
+    if (sheetEl) {
+        const tokenBtn = sheetEl.querySelector(
+            '[data-action="openTokenConfig"], [data-action="configureToken"], .configure-token'
+        ) ?? [...(sheetEl.querySelectorAll("button") ?? [])].find(b =>
+            /token/i.test(b.title ?? "") || /token/i.test(b.getAttribute("aria-label") ?? "")
+        );
+        if (tokenBtn) {
+            tokenBtn.click();
+            await new Promise(r => setTimeout(r, 700));
+        }
+    }
+
+    // Cherche la fenêtre token-config (différente de la fiche acteur)
+    const tcEl = [...document.querySelectorAll(".application, .app")]
+        .find(el => el !== sheetEl && el.querySelector('[data-tab="appearance"]'));
+
+    if (tcEl) {
+        const tabBtn = tcEl.querySelector('nav [data-tab="appearance"], .tab-strip [data-tab="appearance"]');
+        if (tabBtn) {
+            tabBtn.click();
+            await new Promise(r => setTimeout(r, 400));
+        }
+    }
+}
+
+// ================================================================
 // NAVIGATION : ouvrir / activer le groupe WestMarch dans la barre
 // ================================================================
 
@@ -214,26 +258,82 @@ const STEPS_BY_FEATURE = {
 
     // ---- Carnet & Expéditions ----
     carnet: [
+        // ── Vue d'ensemble ───────────────────────────────────────
         {
             beforeShow: _toSheet("carnet-journal"),
             target:     "nav.tabs [data-tab='carnet-journal'], .tabs .item[data-tab='carnet-journal']",
             title:      "Onglet Carnet",
-            text:       "L'onglet <strong>Carnet</strong> permet de prendre des notes par expédition avec un éditeur enrichi (gras, italique, listes…). Cliquez <strong>Modifier</strong> pour ouvrir l'éditeur sur une expédition.",
+            text:       "L'onglet <strong>Carnet</strong> est votre journal de bord personnel. Il contient des <strong>notes libres</strong> que vous pouvez organiser, réordonner et formater à votre guise. Personne d'autre que vous (et le GM) ne peut les lire.",
+            textGM:     "L'onglet <strong>Carnet</strong> est le journal de bord du joueur. En tant que GM, vous pouvez consulter et modifier les notes de n'importe quel personnage. Les notes sont privées : un joueur ne voit que les siennes.",
             position:   "bottom"
         },
+        // ── Ajouter une note ─────────────────────────────────────
+        {
+            beforeShow: _toSheet("carnet-journal"),
+            target:     ".carnet-add-note",
+            title:      "Ajouter une note",
+            text:       "Le bouton <strong>+ Note</strong> crée une nouvelle note vide. Donnez-lui un titre en cliquant directement dessus, puis cliquez <strong>Modifier</strong> pour rédiger son contenu.",
+            textGM:     "Le bouton <strong>+ Note</strong> crée une note sur la fiche du joueur. Vous pouvez en ajouter autant que vous voulez, y compris pour y coller des résumés de session ou des informations secrètes.",
+            position:   "bottom"
+        },
+        // ── Sections ─────────────────────────────────────────────
+        {
+            beforeShow: _toSheet("carnet-journal"),
+            target:     ".carnet-add-section",
+            title:      "Organiser en sections",
+            text:       "Le bouton <strong>Section</strong> insère un séparateur nommé entre vos notes. Utilisez-le pour regrouper vos notes par thème (par ex. <em>Quêtes</em>, <em>PNJ rencontrés</em>, <em>Secrets</em>…). Cliquez le chevron d'une section pour la replier et masquer toutes ses notes.",
+            textGM:     "Les <strong>sections</strong> sont des séparateurs que le joueur (ou vous) peut créer pour organiser ses notes. Replier une section masque toutes les notes qu'elle contient jusqu'à la section suivante.",
+            position:   "bottom"
+        },
+        // ── Réordonner par drag & drop ───────────────────────────
+        {
+            beforeShow: _toSheet("carnet-journal"),
+            target:     ".carnet-drag-handle",
+            title:      "Réordonner les notes",
+            text:       "La <strong>poignée <i class='fas fa-grip-vertical'></i></strong> à gauche de chaque note ou section permet de la faire glisser pour changer son ordre. Attrapez-la et déposez la note à l'endroit souhaité — la ligne dorée indique où elle va s'insérer.",
+            textGM:     "La <strong>poignée <i class='fas fa-grip-vertical'></i></strong> à gauche permet de déplacer les notes et les sections par glisser-déposer. L'ordre est sauvegardé automatiquement sur la fiche du joueur.",
+            position:   "right"
+        },
+        // ── Replier une note ─────────────────────────────────────
+        {
+            beforeShow: _toSheet("carnet-journal"),
+            target:     ".carnet-toggle-note",
+            title:      "Replier une note",
+            text:       "Cliquez le <strong>chevron <i class='fas fa-chevron-down'></i></strong> à gauche du titre pour replier ou déplier une note individuellement. Pratique quand le carnet commence à s'allonger.",
+            position:   "right"
+        },
+        // ── Éditeur de texte ─────────────────────────────────────
+        {
+            beforeShow: _toSheet("carnet-journal"),
+            target:     ".carnet-edit-note",
+            title:      "Éditeur de note",
+            text:       "Le bouton <strong>Modifier</strong> ouvre l'éditeur enrichi. La barre d'outils propose : <strong>Gras</strong>, <em>Italique</em>, Souligné, Barré, deux niveaux de <strong>titres</strong> (T1/T2), paragraphe normal, listes à puces et numérotées, et un sélecteur de taille de police. Les icônes s'illuminent en doré quand le format est actif sur votre sélection. Cliquez <strong>Sauvegarder</strong> ou appuyez sur <kbd>Entrée</kbd> — toutes vos frappes sont capturées en temps réel.",
+            textGM:     "Le bouton <strong>Modifier</strong> ouvre l'éditeur enrichi. Il fonctionne comme un éditeur de texte classique avec barre d'outils (gras, italique, titres, listes, taille…). Les icônes s'allument quand le format est actif. Le contenu est sauvegardé à chaque frappe, pas seulement au clic sur Sauvegarder.",
+            position:   "top"
+        },
+        // ── Lier à une expédition ────────────────────────────────
+        {
+            beforeShow: _toSheet("carnet-journal"),
+            target:     ".carnet-link-exp",
+            title:      "Lier une note à une expédition",
+            text:       "Le lien <i class='fas fa-link'></i> <strong>Lier</strong> associe une note à une expédition précise. Une fois liée, le nom de l'expédition apparaît dans la note, et un lien <i class='fas fa-calendar-alt'></i> permet de sauter directement à l'expédition dans l'onglet Expéditions. Pour délier, cliquez <i class='fas fa-unlink'></i>.",
+            position:   "left"
+        },
+        // ── Onglet Expéditions ───────────────────────────────────
         {
             beforeShow: _toSheet("carnet-downtime"),
             target:     "nav.tabs [data-tab='carnet-downtime'], .tabs .item[data-tab='carnet-downtime']",
             title:      "Onglet Expéditions",
-            text:       "L'onglet <strong>Expéditions</strong> liste vos sessions avec leurs dates de début et de fin. La durée est calculée automatiquement. Cliquez sur le nom d'une expédition pour retrouver ses notes dans le Carnet.",
-            textGM:     "L'onglet <strong>Expéditions</strong> liste les sessions avec dates et durée. Les dates sont posées via le bouton <i class='fas fa-calendar-plus'></i> dans la barre WestMarch — il ouvre ou clôt une expédition pour toute la party en un clic.",
+            text:       "L'onglet <strong>Expéditions</strong> liste toutes vos sessions de jeu avec leur date de début, de fin et leur durée en jours calculée automatiquement. Cliquez sur le nom d'une expédition pour naviguer vers les notes qui lui sont liées dans le Carnet.",
+            textGM:     "L'onglet <strong>Expéditions</strong> liste les sessions avec dates et durée. Les dates sont enregistrées via le bouton <i class='fas fa-calendar-plus'></i> dans la barre WestMarch. Depuis ici vous pouvez aussi renommer une expédition ou la supprimer.",
             position:   "bottom"
         },
+        // ── Bouton GM Date Expédition ────────────────────────────
         {
             beforeShow: _expandWestmarch,
             target:     "[data-tool='carnetDate']",
-            title:      "Bouton Date Expédition (GM)",
-            text:       "Ce bouton crée une nouvelle expédition (date de début) pour toute la party en un clic. La date de fin se gère manuellement dans l'onglet Expéditions de chaque fiche.",
+            title:      "Bouton Date Expédition",
+            text:       "Ce bouton enregistre la <strong>date de début d'une nouvelle expédition</strong> pour toute la party en un seul clic, en utilisant la date du calendrier du monde. Recliquez-le en fin de session pour enregistrer la <strong>date de fin</strong> et clôturer l'expédition.",
             position:   "right",
             gmOnly:     true
         },
@@ -259,24 +359,54 @@ const STEPS_BY_FEATURE = {
 
     // ---- Temps morts ----
     tempsMorts: [
+        // ── Bouton sablier sur la fiche (joueurs) ────────────────
         {
             beforeShow: async () => {
                 const actor = game.user.character;
                 if (!actor) return;
                 actor.sheet.render(true);
-                await new Promise(r => setTimeout(r, 500));
+                await new Promise(r => setTimeout(r, 600));
+            },
+            target:     ".westmarch-tm-declare",
+            title:      "Le bouton Temps mort",
+            text:       "Le sablier <i class='fas fa-hourglass-half'></i> dans l'en-tête de votre fiche indique l'état de votre temps mort entre deux sessions. <span style='color:#888'>Gris</span> = rien déclaré. <span style='color:#e67e22'>Orange</span> = activité ajoutée mais pas encore soumise. <span style='color:#2ecc71'>Vert</span> = déclaration envoyée au GM. Cliquez-le pour ouvrir le formulaire.",
+            position:   "bottom",
+            playerOnly: true
+        },
+        // ── Ce qu'il y a dans la fenêtre (joueurs) ───────────────
+        {
+            beforeShow: async () => {
+                const actor = game.user.character;
+                if (!actor) return;
+                actor.sheet.render(true);
+                await new Promise(r => setTimeout(r, 400));
             },
             target:     null,
-            title:      "Déclarer un temps mort",
-            text:       "Un bouton <i class='fas fa-hourglass-half'></i> apparaît dans l'en-tête de votre fiche. Cliquez-le pour déclarer votre activité : choisissez une compétence ou maîtrise, renseignez les dates de début et de fin, et soumettez. Le GM valide ensuite.",
+            title:      "Déclarer une activité",
+            text:       "La fenêtre se divise en deux blocs :<br><br><strong>Gain de compétence</strong> — choisissez une compétence ou maîtrise dans la liste, entrez les dates de début et fin de votre temps mort. Le nombre de jours et le bonus sont calculés automatiquement.<br><br><strong>Artisanat</strong> — choisissez le type d'objet à fabriquer (arme, armure, parchemin…), sa rareté, son prix de base et les dates. Le coût en po et la progression sont calculés à la volée.<br><br>Cliquez <strong>Ajouter au panier</strong> pour chaque activité, puis <strong>Déclarer</strong> pour envoyer au GM. Vous pouvez combiner plusieurs activités dans une même déclaration.",
             position:   "center",
             playerOnly: true
         },
+        // ── Après la déclaration (joueurs) ────────────────────────
+        {
+            beforeShow: async () => {
+                const actor = game.user.character;
+                if (!actor) return;
+                actor.sheet.render(true);
+                await new Promise(r => setTimeout(r, 400));
+            },
+            target:     ".westmarch-tm-declare",
+            title:      "Après la déclaration",
+            text:       "Une fois déclaré, le sablier passe au <span style='color:#2ecc71'>vert</span> et affiche un résumé de vos activités au survol. Le GM sera notifié et pourra valider lors de la prochaine session. Si vous devez modifier votre déclaration, rouvrez simplement la fenêtre — elle conserve votre saisie.",
+            position:   "bottom",
+            playerOnly: true
+        },
+        // ── Valider (GM) ──────────────────────────────────────────
         {
             beforeShow: _expandWestmarch,
             target:     "[data-tool='downtime']",
             title:      "Valider les temps morts (GM)",
-            text:       "Ce bouton ouvre la liste de toutes les déclarations en attente. Vérifiez les gains calculés pour chaque joueur et cliquez <strong>Valider</strong> pour appliquer les bonus directement sur leur fiche.",
+            text:       "Ce bouton ouvre la liste de toutes les déclarations reçues. Pour chaque joueur, vous voyez ses activités, les jours travaillés et les gains calculés. Cliquez <strong>Valider</strong> pour appliquer les bonus directement sur la fiche (XP de compétence, progression de craft…). Vous pouvez aussi voir les joueurs sans déclaration via la case en bas.",
             position:   "right",
             gmOnly:     true
         },
@@ -284,23 +414,28 @@ const STEPS_BY_FEATURE = {
 
     // ---- Apparence des tokens ----
     apparenceTokens: [
+        // ── Portrait HUD ─────────────────────────────────────────
         {
             target:   null,
             title:    "Voir le portrait",
             text:     "<strong>Clic droit</strong> sur un token → HUD → bouton portrait <i class='fas fa-image'></i> : affiche en grand l'image de la fiche du personnage.",
             position: "center"
         },
+        // ── Changer l'image / cycle (prototype token → Apparence) ─
         {
-            target:   null,
-            title:    "Wild Shape / Polymorph",
-            text:     "Configurez des formes de transformation dans le prototype du token (onglet Apparence). Le bouton <i class='fas fa-dragon'></i> dans le HUD permet au GM et aux propriétaires de transformer le token et de le rétablir en un clic.",
-            position: "center"
+            beforeShow: _openProtoTokenAppearance,
+            target:     ".tab[data-tab='appearance']",
+            title:      "Changer l'image du token",
+            text:       "L'onglet <strong>Apparence</strong> du prototype token définit l'image de base du token. Vous pouvez aussi y ajouter des images alternatives — un bouton cycle dans le HUD permettra ensuite de basculer entre elles en jeu, utile pour les tenues ou états alternatifs d'un même personnage.",
+            position:   "right"
         },
+        // ── Polymorph / Wild Shape (même onglet Apparence) ───────
         {
-            target:   null,
-            title:    "Cycle d'apparences",
-            text:     "Si plusieurs images sont configurées sur un token, un bouton cycle dans le HUD permet de changer son apparence — utile pour les tenues ou états alternatifs d'un même personnage.",
-            position: "center"
+            beforeShow: _openProtoTokenAppearance,
+            target:     ".tab[data-tab='appearance']",
+            title:      "Wild Shape / Polymorph",
+            text:       "Dans le même onglet, configurez des <strong>formes de transformation</strong> pour ce token. Une fois configurées, le bouton <i class='fas fa-dragon'></i> dans le HUD permet au GM et aux propriétaires de transformer le token en un clic et de le rétablir à son apparence normale.",
+            position:   "right"
         },
     ],
 

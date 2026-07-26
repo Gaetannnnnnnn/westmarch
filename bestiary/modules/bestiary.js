@@ -138,6 +138,7 @@ function buildRowHtml(entry, actor, canEdit) {
             <span class="bst-name">${name}</span>
             ${hostilitySelector(entry.hostility ?? 0, canEdit)}
             <div class="bst-btns">
+                ${game.user.isGM && target ? `<a class="bst-open-sheet" data-target-id="${entry.targetId}" title="Ouvrir la fiche"><i class="fas fa-external-link-alt"></i></a>` : ""}
                 <a class="bst-toggle" title="Notes"><i class="fas fa-chevron-${open ? "up" : "down"}"></i></a>
                 ${canEdit ? `<a class="bst-delete" title="Retirer du bestiaire"><i class="fas fa-trash"></i></a>` : ""}
             </div>
@@ -368,6 +369,13 @@ export function wireTab(actor, $html) {
         await beastUpdate(actor, id, { hostility: h });
     });
 
+    // Ouvrir la fiche de la créature (GM uniquement)
+    $tab.on("click", ".bst-open-sheet", function (e) {
+        e.stopPropagation();
+        const targetId = $(this).data("target-id");
+        game.actors.get(String(targetId))?.sheet?.render(true);
+    });
+
     // Supprimer avec confirmation
     $tab.on("click", ".bst-delete", async function () {
         const $row  = $(this).closest(".bst-row");
@@ -466,6 +474,7 @@ async function scanVisibleTokens() {
             if (!isCreatureToken(t)) return false;
             if (existing.has(t.actor.id)) return false;
             if (seenIds.has(t.actor.id)) return false;
+            if (t.actor.getFlag(MODULE, "excludedFromBestiary") ?? false) return false;
             seenIds.add(t.actor.id);
             return true;
         });
@@ -523,6 +532,16 @@ async function anonymizeBestiary(actorId) {
     }
 }
 
+// Retire définitivement cet acteur de TOUS les bestiaires du monde
+async function removeFromAllBestiary(actorId) {
+    if (!game.user.isGM) return;
+    for (const actor of game.actors ?? []) {
+        const list = beastList(actor);
+        if (!list.some(e => e.targetId === actorId)) continue;
+        await actor.setFlag(MODULE, "list", list.filter(e => e.targetId !== actorId));
+    }
+}
+
 export function BestiaryHooks() {
     // Scan initial — sight déjà calculé au moment de canvasReady
     Hooks.on("canvasReady", () => scanVisibleTokens());
@@ -537,7 +556,8 @@ export function BestiaryHooks() {
         _sightTimer = setTimeout(() => scanVisibleTokens(), 300);
     });
 
-    // Boutons Anonyme (toggle) + Révéler — fallback si Relations n'est pas actif
+    // Boutons en-tête : Anonyme + Révéler en fallback si Relations n'est pas actif
+    // (le bouton "Retirer" unifié est injecté par le module Relations)
     Hooks.on("renderApplicationV2", (app, element) => {
         if (!game.user.isGM) return;
         if (!app.document || !(app.document instanceof Actor)) return;
@@ -546,12 +566,13 @@ export function BestiaryHooks() {
         if (!header || header.querySelector(".ashara-reveal-btn")) return;
         const id = actor.id;
 
+        // Relations inactif : injecter Anonyme + Révéler + bouton Exclure
         const isAnon = () => !!(actor.getFlag("ashara-relations", "anonymous") ?? false);
         const btnAnon = document.createElement("button");
         btnAnon.type = "button";
         btnAnon.classList.add("header-control", "icon", "fa-solid", "fa-eye-slash", "ashara-anon-btn");
         const refreshAnon = () => {
-            btnAnon.style.color    = isAnon() ? "#e74c3c" : "";
+            btnAnon.style.color     = isAnon() ? "#e74c3c" : "";
             btnAnon.dataset.tooltip = isAnon() ? "Anonyme — cliquer pour désactiver" : "Rendre anonyme";
         };
         refreshAnon();
@@ -566,18 +587,45 @@ export function BestiaryHooks() {
         btnReveal.dataset.tooltip = "Révéler à la party";
         btnReveal.addEventListener("click", () => Hooks.callAll("ashara:revealToParty", id));
 
+        const isExcluded = () =>
+            !!(actor.getFlag("ashara-relations", "excludedFromRelations") ?? false) ||
+            !!(actor.getFlag(MODULE,             "excludedFromBestiary")  ?? false);
+        const btnExclude = document.createElement("button");
+        btnExclude.type = "button";
+        btnExclude.classList.add("header-control", "icon", "fa-solid", "fa-ban", "ashara-exclude-btn");
+        const refreshExclude = () => {
+            btnExclude.style.color     = isExcluded() ? "#e74c3c" : "";
+            btnExclude.dataset.tooltip = isExcluded()
+                ? "Exclu Relations & Bestiaire — cliquer pour réactiver"
+                : "Retirer des Relations & du Bestiaire";
+        };
+        refreshExclude();
+        btnExclude.addEventListener("click", async () => {
+            const nowExcluded = !isExcluded();
+            await actor.setFlag("ashara-relations", "excludedFromRelations", nowExcluded);
+            await actor.setFlag(MODULE,             "excludedFromBestiary",  nowExcluded);
+            if (nowExcluded) {
+                Hooks.callAll("ashara:removeFromRelations", id);
+                Hooks.callAll("ashara:removeFromBestiary",  id);
+            }
+            refreshExclude();
+        });
+
         const title = header.querySelector(".window-title");
         if (title) {
             title.insertAdjacentElement("afterend", btnAnon);
             title.insertAdjacentElement("afterend", btnReveal);
+            title.insertAdjacentElement("afterend", btnExclude);
         } else {
             const close = header.querySelector(".close");
-            header.insertBefore(btnAnon,   close);
-            header.insertBefore(btnReveal, btnAnon);
+            header.insertBefore(btnAnon,    close);
+            header.insertBefore(btnReveal,  btnAnon);
+            header.insertBefore(btnExclude, btnReveal);
         }
     });
 
     // Répondre aux hooks (appels depuis les boutons, quel que soit le module émetteur)
-    Hooks.on("ashara:revealToParty", actorId => revealBestiaryToParty(actorId));
-    Hooks.on("ashara:anonymize",     actorId => anonymizeBestiary(actorId));
+    Hooks.on("ashara:revealToParty",       actorId => revealBestiaryToParty(actorId));
+    Hooks.on("ashara:anonymize",           actorId => anonymizeBestiary(actorId));
+    Hooks.on("ashara:removeFromBestiary",  actorId => removeFromAllBestiary(actorId));
 }

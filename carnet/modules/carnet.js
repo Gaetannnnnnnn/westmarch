@@ -48,6 +48,17 @@ export function getCarnetNotes(actor) {
     return actor.getFlag(MODULE, "carnetNotes") ?? [];
 }
 
+export async function addCarnetSection(actor) {
+    const notes = getCarnetNotes(actor);
+    const newSection = {
+        id:    foundry.utils.randomID(),
+        type:  "section",
+        title: "Nouvelle section"
+    };
+    await actor.setFlag(MODULE, "carnetNotes", [...notes, newSection]);
+    return newSection;
+}
+
 export async function addCarnetNote(actor, { title = "Nouvelle note", linkedExpId = null } = {}) {
     const notes   = getCarnetNotes(actor);
     const newNote = {
@@ -491,52 +502,84 @@ async function _closeExpDialog(members) {
 // ================================================================
 
 // État de repliage des notes (en mémoire, réinitialisé si la page est rechargée)
-const _collapsedNotes = new Set();
+const _collapsedNotes    = new Set(); // notes individuellement repliées
+const _collapsedSections = new Set(); // sections repliées (cache leurs notes)
+let   _draggedItemId     = null;      // id de l'item en cours de drag
 
 export function buildJournalHtml(actor) {
-    const notes   = getCarnetNotes(actor);
+    const items   = getCarnetNotes(actor); // peut contenir notes ET sections
     const canEdit = actor.isOwner;
-    const isGM    = game.user.isGM;
-    const exps    = getExpeditions(actor); // pour afficher les badges de lien
+    const exps    = getExpeditions(actor);
 
     const addBar = canEdit ? `
         <div class="carnet-add-bar">
+            <button type="button" class="carnet-add-section" title="Ajouter une section">
+                <i class="fas fa-folder-plus"></i> Section
+            </button>
             <button type="button" class="carnet-add-note">
-                <i class="fas fa-plus"></i> Ajouter une note
+                <i class="fas fa-plus"></i> Note
             </button>
         </div>` : "";
 
-    if (!notes.length) {
+    if (!items.length) {
         return `
         <div class="carnet-body">
             ${addBar}
             <div class="carnet-empty-state">
                 <i class="fas fa-book-open"></i>
                 <p>Aucune note dans le carnet.<br>
-                   Utilisez le bouton ci-dessus pour rédiger votre première note.</p>
+                   Utilisez les boutons ci-dessus pour rédiger votre première note.</p>
             </div>
         </div>`;
     }
 
-    const cards = notes.map(note => {
+    // Calcule si une note est sous une section repliée
+    let currentSectionCollapsed = false;
+    const rendered = items.map(item => {
+        // ── SECTION ─────────────────────────────────────────────
+        if (item.type === "section") {
+            currentSectionCollapsed = _collapsedSections.has(item.id);
+            const chevron = currentSectionCollapsed ? "fa-chevron-right" : "fa-chevron-down";
+            const titleEsc = (item.title ?? "").replace(/"/g, "&quot;");
+            return `
+        <div class="carnet-section-header carnet-item" data-item-id="${item.id}" data-item-type="section">
+            ${canEdit ? `<div class="carnet-drag-handle" title="Déplacer"><i class="fas fa-grip-vertical"></i></div>` : ""}
+            <button type="button" class="carnet-toggle-section" data-section-id="${item.id}"
+                    title="${currentSectionCollapsed ? "Déplier" : "Replier"}">
+                <i class="fas ${chevron}"></i>
+            </button>
+            ${canEdit
+                ? `<input class="carnet-section-title-input" type="text"
+                          data-section-id="${item.id}"
+                          value="${titleEsc}"
+                          placeholder="Nom de la section">`
+                : `<span class="carnet-section-title-label">${item.title || "Section"}</span>`}
+            ${canEdit ? `
+            <a class="carnet-del-section" data-section-id="${item.id}" title="Supprimer la section">
+                <i class="fas fa-trash"></i>
+            </a>` : ""}
+        </div>`;
+        }
+
+        // ── NOTE ─────────────────────────────────────────────────
+        const note        = item;
         const isCollapsed = _collapsedNotes.has(note.id);
+        const hidden      = currentSectionCollapsed;
         const linkedExp   = note.linkedExpId ? exps.find(e => e.id === note.linkedExpId) : null;
 
         const linkBadge = linkedExp
             ? `<a class="carnet-go-exp" data-exp-id="${linkedExp.id}"
-                  title="Voir l'expédition liée dans l'onglet Expéditions"
-                  style="font-size:11px;color:#9b59b6;text-decoration:none;white-space:nowrap;cursor:pointer;">
+                  title="Voir l'expédition liée">
                    <i class="fas fa-calendar-alt"></i> ${linkedExp.name || "Expédition"}
                </a>
                ${canEdit ? `<a class="carnet-unlink-note" data-note-id="${note.id}"
                   title="Délier de l'expédition"
-                  style="font-size:11px;color:#666;text-decoration:none;cursor:pointer;margin-left:4px;">
+                  style="font-size:11px;color:#666;cursor:pointer;margin-left:4px;">
                    <i class="fas fa-unlink"></i>
                </a>` : ""}`
             : (canEdit
                 ? `<a class="carnet-link-exp" data-note-id="${note.id}"
-                      title="Lier cette note à une expédition"
-                      style="font-size:11px;color:#666;text-decoration:none;white-space:nowrap;cursor:pointer;">
+                      title="Lier cette note à une expédition">
                        <i class="fas fa-link"></i> Lier
                    </a>`
                 : "");
@@ -546,45 +589,49 @@ export function buildJournalHtml(actor) {
             : `<p class="carnet-note-placeholder"><em>Note vide. Cliquez sur Modifier pour rédiger.</em></p>`;
 
         return `
-        <div class="carnet-note-card" data-note-id="${note.id}">
-            <div class="carnet-note-header">
-                <button type="button" class="carnet-toggle-note" data-note-id="${note.id}"
-                        title="${isCollapsed ? "Déplier" : "Replier"}"
-                        style="background:none;border:none;color:#8a7a65;cursor:pointer;
-                               padding:2px 6px 2px 0;font-size:11px;flex-shrink:0;">
-                    <i class="fas fa-chevron-${isCollapsed ? "right" : "down"}"></i>
-                </button>
-                <div class="carnet-note-title-row" style="flex:1;min-width:0;">
-                    ${canEdit
-                        ? `<input class="carnet-note-title-input" type="text"
-                                  data-note-id="${note.id}"
-                                  value="${(note.title ?? "").replace(/"/g, "&quot;")}"
-                                  placeholder="Titre de la note">`
-                        : `<span class="carnet-note-title-label">${note.title || "Note sans titre"}</span>`}
-                    <div class="carnet-note-actions-row">
-                        ${linkBadge}
-                        ${canEdit ? `
-                        <a class="carnet-del-note" data-note-id="${note.id}" title="Supprimer" style="cursor:pointer;">
-                            <i class="fas fa-trash"></i>
-                        </a>` : ""}
+        <div class="carnet-note-card carnet-item" data-item-id="${note.id}" data-item-type="note"
+             data-note-id="${note.id}"${hidden ? ' style="display:none;"' : ''}>
+            ${canEdit ? `<div class="carnet-drag-handle" title="Déplacer"><i class="fas fa-grip-vertical"></i></div>` : ""}
+            <div class="carnet-note-inner">
+                <div class="carnet-note-header">
+                    <button type="button" class="carnet-toggle-note" data-note-id="${note.id}"
+                            title="${isCollapsed ? "Déplier" : "Replier"}"
+                            style="background:none;border:none;color:#8a7a65;cursor:pointer;
+                                   padding:2px 6px 2px 0;font-size:11px;flex-shrink:0;">
+                        <i class="fas fa-chevron-${isCollapsed ? "right" : "down"}"></i>
+                    </button>
+                    <div class="carnet-note-title-row" style="flex:1;min-width:0;">
+                        ${canEdit
+                            ? `<input class="carnet-note-title-input" type="text"
+                                      data-note-id="${note.id}"
+                                      value="${(note.title ?? "").replace(/"/g, "&quot;")}"
+                                      placeholder="Titre de la note">`
+                            : `<span class="carnet-note-title-label">${note.title || "Note sans titre"}</span>`}
+                        <div class="carnet-note-actions-row">
+                            ${linkBadge}
+                            ${canEdit ? `
+                            <a class="carnet-del-note" data-note-id="${note.id}" title="Supprimer">
+                                <i class="fas fa-trash"></i>
+                            </a>` : ""}
+                        </div>
                     </div>
                 </div>
-            </div>
-            <div class="carnet-note-body"${isCollapsed ? ' style="display:none;"' : ''}>
-                <div class="carnet-note-display" data-note-id="${note.id}">
-                    ${noteHtml}
+                <div class="carnet-note-body"${isCollapsed ? ' style="display:none;"' : ''}>
+                    <div class="carnet-note-display" data-note-id="${note.id}">
+                        ${noteHtml}
+                    </div>
+                    ${canEdit ? `
+                    <div class="carnet-edit-actions" data-note-id="${note.id}">
+                        <button type="button" class="carnet-edit-note" data-note-id="${note.id}">
+                            <i class="fas fa-pen"></i> Modifier
+                        </button>
+                    </div>` : ""}
                 </div>
-                ${canEdit ? `
-                <div class="carnet-edit-actions" data-note-id="${note.id}">
-                    <button type="button" class="carnet-edit-note" data-note-id="${note.id}">
-                        <i class="fas fa-pen"></i> Modifier
-                    </button>
-                </div>` : ""}
             </div>
         </div>`;
-    }).join('<hr class="carnet-separator">');
+    });
 
-    return `<div class="carnet-body">${addBar}${cards}</div>`;
+    return `<div class="carnet-body">${addBar}${rendered.join("")}</div>`;
 }
 
 // ================================================================
@@ -711,20 +758,114 @@ export function buildDowntimeHtml(actor) {
 }
 
 // ================================================================
+// HELPERS — Sections collapse + Drag-and-drop
+// ================================================================
+
+/** Applique ou retire la visibilité sur toutes les notes sous une section donnée. */
+function _applySectionCollapse(element, sectionId, collapsed) {
+    const allItems = [...element.querySelectorAll('.carnet-item')];
+    const idx = allItems.findIndex(el => el.dataset.itemId === sectionId);
+    if (idx === -1) return;
+    for (let i = idx + 1; i < allItems.length; i++) {
+        if (allItems[i].dataset.itemType === "section") break;
+        allItems[i].style.display = collapsed ? "none" : "";
+    }
+}
+
+/**
+ * Câble le drag-and-drop de réordonnancement sur tous les .carnet-item.
+ * Seule la poignée (.carnet-drag-handle) déclenche le drag.
+ */
+function _wireDragDrop(actor, element) {
+    let _dragOverEl = null;
+
+    const clearDragOver = () => {
+        _dragOverEl?.classList.remove('carnet-drag-over-top', 'carnet-drag-over-bottom');
+        _dragOverEl = null;
+    };
+
+    element.querySelectorAll('.carnet-item').forEach(item => {
+        // La poignée active le drag ; les autres interactions ne le font pas
+        const handle = item.querySelector('.carnet-drag-handle');
+        if (handle) {
+            handle.addEventListener('mousedown', () => { item.draggable = true; });
+            item.addEventListener('dragend', () => { item.draggable = false; });
+            // Empêche les champs texte et boutons de déclencher le drag accidentellement
+            item.querySelectorAll('input, button, a').forEach(el => {
+                el.addEventListener('mousedown', e => e.stopPropagation());
+            });
+        }
+
+        item.addEventListener('dragstart', e => {
+            _draggedItemId = item.dataset.itemId;
+            item.classList.add('carnet-dragging');
+            e.dataTransfer.effectAllowed = 'move';
+            // nécessaire pour Firefox
+            e.dataTransfer.setData('text/plain', _draggedItemId);
+        });
+
+        item.addEventListener('dragover', e => {
+            if (!_draggedItemId || _draggedItemId === item.dataset.itemId) return;
+            e.preventDefault();
+            e.dataTransfer.dropEffect = 'move';
+            clearDragOver();
+            _dragOverEl = item;
+            const rect   = item.getBoundingClientRect();
+            const isTop  = e.clientY < rect.top + rect.height / 2;
+            item.classList.add(isTop ? 'carnet-drag-over-top' : 'carnet-drag-over-bottom');
+        });
+
+        item.addEventListener('dragleave', () => {
+            if (_dragOverEl === item) clearDragOver();
+        });
+
+        item.addEventListener('drop', async e => {
+            e.preventDefault();
+            if (!_draggedItemId || _draggedItemId === item.dataset.itemId) {
+                clearDragOver();
+                return;
+            }
+            const rect     = item.getBoundingClientRect();
+            const insertBefore = e.clientY < rect.top + rect.height / 2;
+            clearDragOver();
+
+            const notes   = getCarnetNotes(actor);
+            const fromIdx = notes.findIndex(n => n.id === _draggedItemId);
+            const toIdx   = notes.findIndex(n => n.id === item.dataset.itemId);
+            if (fromIdx === -1 || toIdx === -1) return;
+
+            const moved   = notes[fromIdx];
+            const without = notes.filter((_, i) => i !== fromIdx);
+            const targetIdx = without.findIndex(n => n.id === item.dataset.itemId);
+            const insertAt  = insertBefore ? targetIdx : targetIdx + 1;
+            without.splice(insertAt, 0, moved);
+            await actor.setFlag(MODULE, "carnetNotes", without);
+        });
+    });
+
+    element.addEventListener('dragend', () => {
+        _draggedItemId = null;
+        element.querySelectorAll('.carnet-dragging').forEach(el => el.classList.remove('carnet-dragging'));
+        clearDragOver();
+    });
+}
+
+// ================================================================
 // CÂBLAGE — Onglet Carnet
 // ================================================================
 
 export function wireJournalTab(actor, element, sheet) {
     if (!(element instanceof Element)) return;
 
-    // Ajouter une note
+    // ── Ajouter une note / une section ───────────────────────────
     element.querySelectorAll('.carnet-add-note').forEach(btn => {
-        btn.addEventListener('click', async () => {
-            await addCarnetNote(actor);
-        });
+        btn.addEventListener('click', async () => { await addCarnetNote(actor); });
+    });
+    element.querySelectorAll('.carnet-add-section').forEach(btn => {
+        btn.addEventListener('click', async () => { await addCarnetSection(actor); });
     });
 
-    // Renommer une note
+    // ── Renommer une note ─────────────────────────────────────────
     element.querySelectorAll('.carnet-note-title-input').forEach(input => {
         input.addEventListener('change', async () => {
             const noteId  = input.dataset.noteId;
@@ -735,14 +876,64 @@ export function wireJournalTab(actor, element, sheet) {
         });
     });
 
-    // Modifier le contenu (ProseMirror)
+    // ── Renommer une section ──────────────────────────────────────
+    element.querySelectorAll('.carnet-section-title-input').forEach(input => {
+        input.addEventListener('change', async () => {
+            const sectionId = input.dataset.sectionId;
+            const updated   = getCarnetNotes(actor).map(n =>
+                n.id === sectionId ? { ...n, title: input.value.trim() || "Section sans nom" } : n
+            );
+            await actor.setFlag(MODULE, "carnetNotes", updated);
+        });
+    });
+
+    // ── Supprimer une section ─────────────────────────────────────
+    element.querySelectorAll('.carnet-del-section').forEach(link => {
+        link.addEventListener('click', async e => {
+            e.preventDefault();
+            const sectionId = link.dataset.sectionId;
+            const section   = getCarnetNotes(actor).find(n => n.id === sectionId);
+            const ok = await Dialog.confirm({
+                title:   "Supprimer la section ?",
+                content: `<p>Supprimer <strong>${section?.title ?? "cette section"}</strong> ?
+                           Les notes qu'elle contient ne seront pas supprimées.</p>`,
+                yes: () => true, no: () => false
+            });
+            if (!ok) return;
+            await actor.setFlag(MODULE, "carnetNotes",
+                getCarnetNotes(actor).filter(n => n.id !== sectionId)
+            );
+        });
+    });
+
+    // ── Replier / déplier une section ────────────────────────────
+    element.querySelectorAll('.carnet-toggle-section').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const sectionId   = btn.dataset.sectionId;
+            const wasCollapsed = _collapsedSections.has(sectionId);
+            if (wasCollapsed) {
+                _collapsedSections.delete(sectionId);
+            } else {
+                _collapsedSections.add(sectionId);
+            }
+            _applySectionCollapse(element, sectionId, !wasCollapsed);
+            const icon = btn.querySelector('i');
+            icon?.classList.replace(
+                wasCollapsed ? 'fa-chevron-right' : 'fa-chevron-down',
+                wasCollapsed ? 'fa-chevron-down'  : 'fa-chevron-right'
+            );
+            btn.title = wasCollapsed ? 'Replier' : 'Déplier';
+        });
+    });
+
+    // ── Modifier le contenu ───────────────────────────────────────
     element.querySelectorAll('.carnet-edit-note').forEach(btn => {
         btn.addEventListener('click', () => {
             initNoteEditor(actor, element, btn.dataset.noteId);
         });
     });
 
-    // Supprimer une note
+    // ── Supprimer une note ────────────────────────────────────────
     element.querySelectorAll('.carnet-del-note').forEach(link => {
         link.addEventListener('click', async (e) => {
             e.preventDefault();
@@ -760,7 +951,7 @@ export function wireJournalTab(actor, element, sheet) {
         });
     });
 
-    // Replier / déplier une note
+    // ── Replier / déplier une note individuelle ──────────────────
     element.querySelectorAll('.carnet-toggle-note').forEach(btn => {
         btn.addEventListener('click', () => {
             const noteId = btn.dataset.noteId;
@@ -781,7 +972,7 @@ export function wireJournalTab(actor, element, sheet) {
         });
     });
 
-    // Délier une note de son expédition
+    // ── Délier / lier une expédition ─────────────────────────────
     element.querySelectorAll('.carnet-unlink-note').forEach(btn => {
         btn.addEventListener('click', async (e) => {
             e.preventDefault();
@@ -792,8 +983,6 @@ export function wireJournalTab(actor, element, sheet) {
             await actor.setFlag(MODULE, "carnetNotes", updated);
         });
     });
-
-    // Lier à une expédition
     element.querySelectorAll('.carnet-link-exp').forEach(link => {
         link.addEventListener('click', async (e) => {
             e.preventDefault();
@@ -801,8 +990,6 @@ export function wireJournalTab(actor, element, sheet) {
             await _linkNoteToExpDialog(actor, noteId, sheet);
         });
     });
-
-    // Naviguer vers l'expédition liée (onglet Expéditions)
     element.querySelectorAll('.carnet-go-exp').forEach(link => {
         link.addEventListener('click', (e) => {
             e.preventDefault();
@@ -810,6 +997,9 @@ export function wireJournalTab(actor, element, sheet) {
             _navigateToTab(sheet, "carnet-downtime", `[data-exp-id="${expId}"]`);
         });
     });
+
+    // ── Drag-and-drop pour réordonner ────────────────────────────
+    if (actor.isOwner) _wireDragDrop(actor, element);
 }
 
 // ================================================================
@@ -1136,25 +1326,7 @@ function _buildToolbar() {
             <option value="5">Très grande</option>
         </select>`;
 
-    return `<style>
-        .carnet-tb-btn.ctb-active {
-            background: rgba(201,162,39,0.28) !important;
-            border-color: rgba(201,162,39,0.55) !important;
-            color: #e8cc6a !important;
-        }
-        #carnet-note-editor h2 {
-            font-size: 1.55em; font-weight: 700;
-            margin: .55em 0 .2em; color: #e8cc6a; line-height: 1.25;
-        }
-        #carnet-note-editor h3 {
-            font-size: 1.25em; font-weight: 600;
-            margin: .45em 0 .2em; color: #c9a227; line-height: 1.3;
-        }
-        #carnet-note-editor ul, #carnet-note-editor ol { padding-left: 1.5em; margin: .3em 0; }
-        #carnet-note-editor li { margin: .15em 0; }
-        .carnet-tb-size option { background: #1a1410; }
-    </style>
-    <div class="carnet-editor-toolbar"
+    return `<div class="carnet-editor-toolbar"
          style="display:flex;flex-wrap:wrap;align-items:center;gap:3px;
                 padding:6px 8px;border-bottom:1px solid rgba(255,255,255,0.1);
                 background:rgba(0,0,0,0.2);flex-shrink:0;">
@@ -1178,7 +1350,15 @@ function _updateToolbarState(editor) {
                     : document.queryCommandState(cmd);
             } catch(e) {}
         }
-        btn.classList.toggle('ctb-active', active);
+        if (active) {
+            btn.style.background  = 'rgba(201,162,39,0.28)';
+            btn.style.borderColor = 'rgba(201,162,39,0.55)';
+            btn.style.color       = '#e8cc6a';
+        } else {
+            btn.style.background  = 'rgba(255,255,255,0.05)';
+            btn.style.borderColor = 'rgba(255,255,255,0.12)';
+            btn.style.color       = '#ccc';
+        }
     });
 }
 
@@ -1227,14 +1407,17 @@ function _wireToolbar(editor) {
         });
     }
 
-    // Mise à jour de l'état à chaque changement de sélection ou frappe
+    // Mise à jour de l'état à chaque changement de sélection, frappe ou clic
     document.addEventListener('selectionchange', updateState);
     editor?.addEventListener('keyup', updateState);
+    editor?.addEventListener('mouseup', updateState);
 
     // Nettoyage quand le dialog est fermé (éditeur retiré du DOM)
+    const _injectedStyle = document.getElementById('carnet-editor-style');
     const observer = new MutationObserver(() => {
         if (!document.contains(editor)) {
             document.removeEventListener('selectionchange', updateState);
+            document.getElementById('carnet-editor-style')?.remove();
             observer.disconnect();
         }
     });
@@ -1272,6 +1455,30 @@ async function initNoteEditor(actor, _container, noteId) {
             rejectClose: false,
             render: () => {
                 const editor = document.getElementById("carnet-note-editor");
+
+                // Injecte les règles CSS de l'éditeur dans <head> — DialogV2 sanitize
+                // et supprime les balises <style> dans son contenu HTML, donc on
+                // les injecte ici directement dans le document (bypass complet).
+                if (!document.getElementById('carnet-editor-style')) {
+                    const style = document.createElement('style');
+                    style.id = 'carnet-editor-style';
+                    style.textContent = `
+                        #carnet-note-editor h2 {
+                            font-size:1.55em;font-weight:700;
+                            margin:.55em 0 .2em;color:#e8cc6a;line-height:1.25;
+                        }
+                        #carnet-note-editor h3 {
+                            font-size:1.25em;font-weight:600;
+                            margin:.45em 0 .2em;color:#c9a227;line-height:1.3;
+                        }
+                        #carnet-note-editor ul,
+                        #carnet-note-editor ol { padding-left:1.5em;margin:.3em 0; }
+                        #carnet-note-editor li  { margin:.15em 0; }
+                        .carnet-tb-size option  { background:#1a1410; }
+                    `;
+                    document.head.appendChild(style);
+                }
+
                 _wireToolbar(editor);
                 // Capture le contenu à chaque frappe — évite le bug où le callback
                 // du bouton s'exécute après la fermeture du dialog (element retiré du DOM)

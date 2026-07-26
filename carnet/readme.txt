@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.1.2
+Version : 1.3.0
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -105,6 +105,48 @@ INSTALLATION
 ================================================================================
                     CARNET D'EXPÉDITIONS — MISES À JOUR
 ================================================================================
+
+v1.3.0 | 2026-07-25
+   carnet.js — Ajout des sections et du réordonnement par glisser-déposer.
+   addCarnetSection() crée un item {id, type:"section", title:"Nouvelle section"}.
+   buildJournalHtml() réécrit : rendu mixte sections (.carnet-section-header) et
+   notes (.carnet-note-card) avec poignée de glisser (.carnet-drag-handle) et
+   contenu inner (.carnet-note-inner). _applySectionCollapse() masque/affiche les
+   items suivants la section jusqu'à la prochaine. _wireDragDrop() gère mousedown
+   (stopPropagation sur inputs/buttons), dragstart, dragover (indicateur top/bottom
+   doré), drop (réordonne le tableau et sauvegarde le flag). wireJournalTab() mis
+   à jour : câblage section (add/rename/delete/collapse) + drag-drop + événements
+   note existants. Variables module-level : _collapsedSections (Set persistant),
+   _draggedItemId.
+   carnet.css — Ajout .carnet-drag-handle (width:18px, cursor:grab, couleur subtile),
+   .carnet-note-inner (flex:1), .carnet-section-header (fond or teinté, bordure
+   gauche), .carnet-section-title-input, .carnet-toggle-section, .carnet-del-section.
+   Ajout .carnet-dragging (opacity:0.4), .carnet-drag-over-top et
+   .carnet-drag-over-bottom (bordure or 2px). Mise à jour .carnet-note-card
+   (display:flex, gap:4px) et .carnet-add-bar (display:flex, justify:flex-end).
+   module.json — Bump 1.2.1 → 1.3.0.
+
+v1.2.1 | 2026-07-25
+   carnet.js — Corrections mineures sur la barre d'outils de l'éditeur (état
+   initial des boutons, stabilité du MutationObserver).
+   module.json — Bump 1.2.0 → 1.2.1.
+
+v1.2.0 | 2026-07-25
+   carnet.js — Fix icônes de la barre d'outils non illuminées dans l'éditeur :
+   Foundry v13 DialogV2 supprime les balises <style> du contenu HTML lors du rendu,
+   rendant le CSS d'état actif inopérant. Correction en trois volets :
+   (1) Suppression du bloc <style> dans _buildToolbar() ;
+   (2) _updateToolbarState() utilise désormais btn.style.color / btn.style.textShadow
+   (styles inline, non filtrés par DialogV2) pour indiquer l'état actif ;
+   (3) CSS des icônes injecté via document.createElement('style') +
+   document.head.appendChild() depuis le callback render, avec MutationObserver
+   qui nettoie la balise quand le dialog se ferme.
+   module.json — Bump 1.1.8 → 1.2.0.
+
+v1.1.3 → v1.1.8 | 2026-07-24 — 2026-07-25
+   Remplacement de l'éditeur ProseMirror (Dialog popup) par une textarea avec barre
+   d'outils custom (document.execCommand / queryCommandState). Diverses corrections
+   de compatibilité Foundry v13 et refactorisations internes.
 
 v1.1.2 | 2026-07-24
    carnet.js — Remplacement de l'éditeur ProseMirror inline (ApplicationV2 part)

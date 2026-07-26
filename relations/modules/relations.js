@@ -132,6 +132,7 @@ export function buildRowHtml(r, actor, canEdit) {
             <span class="rel-name">${name}</span>
             ${levelSelector(r.level ?? 0, canEdit)}
             <div class="rel-btns">
+                ${game.user.isGM && target ? `<a class="rel-open-sheet" data-target-id="${r.targetId}" title="Ouvrir la fiche"><i class="fas fa-external-link-alt"></i></a>` : ""}
                 <a class="rel-toggle" title="Notes"><i class="fas fa-chevron-${open ? "up" : "down"}"></i></a>
                 ${canEdit ? `<a class="rel-delete" title="Supprimer"><i class="fas fa-trash"></i></a>` : ""}
             </div>
@@ -538,6 +539,13 @@ export function wireTab(actor, $html) {
         await relUpdate(actor, relId, { level });
     });
 
+    // Ouvrir la fiche de l'acteur cible (GM uniquement)
+    $tab.on("click", ".rel-open-sheet", function (e) {
+        e.stopPropagation();
+        const targetId = $(this).data("target-id");
+        game.actors.get(String(targetId))?.sheet?.render(true);
+    });
+
     // Supprimer — DOM uniquement, pas de re-render
     $tab.on("click", ".rel-delete", async function () {
         const $row  = $(this).closest(".rel-row");
@@ -637,7 +645,8 @@ async function scanVisibleTokens() {
             t.actor?.id &&
             t.actor.id !== myActor.id &&
             ((isInPJFolder(t.actor) && t.actor.type === "character") || isInPNJFolder(t.actor)) &&
-            !existing.has(t.actor.id)
+            !existing.has(t.actor.id) &&
+            !(t.actor.getFlag(MODULE, "excludedFromRelations") ?? false)
         );
 
         if (!toAdd.length) return;
@@ -695,6 +704,16 @@ async function anonymizeRelations(actorId) {
     }
 }
 
+// Retire définitivement cet acteur de TOUTES les listes de relations (tous les acteurs du monde)
+async function removeFromAllRelations(actorId) {
+    if (!game.user.isGM) return;
+    for (const actor of game.actors ?? []) {
+        const list = relList(actor);
+        if (!list.some(r => r.targetId === actorId)) continue;
+        await actor.setFlag(MODULE, "list", list.filter(r => r.targetId !== actorId));
+    }
+}
+
 // ---- Export ------------------------------------------------
 
 export function RelationsHooks() {
@@ -711,22 +730,22 @@ export function RelationsHooks() {
         _sightTimer = setTimeout(() => scanVisibleTokens(), 300);
     });
 
-    // Boutons Anonyme (toggle) + Révéler — pattern sablier TM, position gauche
+    // Boutons en-tête : Anonyme, Révéler, Retirer (Relations + Bestiaire) — GM uniquement
     Hooks.on("renderApplicationV2", (app, element) => {
         if (!game.user.isGM) return;
         if (!app.document || !(app.document instanceof Actor)) return;
         const actor = app.document;
         const header = element.querySelector(".window-header");
-        if (!header || header.querySelector(".ashara-reveal-btn")) return;
+        if (!header || header.querySelector(".ashara-exclude-btn")) return;
         const id = actor.id;
 
-        // Toggle "Anonyme" — rouge si actif (flag par acteur)
+        // ── Toggle "Anonyme" ──────────────────────────────────────
         const isAnon = () => !!(actor.getFlag("ashara-relations", "anonymous") ?? false);
         const btnAnon = document.createElement("button");
         btnAnon.type = "button";
         btnAnon.classList.add("header-control", "icon", "fa-solid", "fa-eye-slash", "ashara-anon-btn");
         const refreshAnon = () => {
-            btnAnon.style.color   = isAnon() ? "#e74c3c" : "";
+            btnAnon.style.color     = isAnon() ? "#e74c3c" : "";
             btnAnon.dataset.tooltip = isAnon() ? "Anonyme — cliquer pour désactiver" : "Rendre anonyme";
         };
         refreshAnon();
@@ -735,26 +754,55 @@ export function RelationsHooks() {
             refreshAnon();
         });
 
-        // Bouton "Révéler" — révèle aux membres de la party qui ont cet acteur en anonyme
+        // ── Bouton "Révéler à la party" ───────────────────────────
         const btnReveal = document.createElement("button");
         btnReveal.type = "button";
         btnReveal.classList.add("header-control", "icon", "fa-solid", "fa-eye", "ashara-reveal-btn");
         btnReveal.dataset.tooltip = "Révéler à la party";
         btnReveal.addEventListener("click", () => Hooks.callAll("ashara:revealToParty", id));
 
-        // Position : gauche (après le titre)
+        // ── Toggle "Retirer des Relations ET du Bestiaire" ────────
+        // Un seul bouton gère les deux flags + les deux suppressions
+        const isExcluded = () =>
+            !!(actor.getFlag("ashara-relations", "excludedFromRelations") ?? false) ||
+            !!(actor.getFlag("ashara-bestiary",  "excludedFromBestiary")  ?? false);
+        const btnExclude = document.createElement("button");
+        btnExclude.type = "button";
+        btnExclude.classList.add("header-control", "icon", "fa-solid", "fa-ban", "ashara-exclude-btn");
+        const refreshExclude = () => {
+            btnExclude.style.color     = isExcluded() ? "#e74c3c" : "";
+            btnExclude.dataset.tooltip = isExcluded()
+                ? "Exclu Relations & Bestiaire — cliquer pour réactiver"
+                : "Retirer des Relations & du Bestiaire";
+        };
+        refreshExclude();
+        btnExclude.addEventListener("click", async () => {
+            const nowExcluded = !isExcluded();
+            await actor.setFlag("ashara-relations", "excludedFromRelations", nowExcluded);
+            await actor.setFlag("ashara-bestiary",  "excludedFromBestiary",  nowExcluded);
+            if (nowExcluded) {
+                Hooks.callAll("ashara:removeFromRelations", id);
+                Hooks.callAll("ashara:removeFromBestiary",  id);
+            }
+            refreshExclude();
+        });
+
+        // Position : ordre visuel Exclu | Révéler | Anonyme
         const title = header.querySelector(".window-title");
         if (title) {
             title.insertAdjacentElement("afterend", btnAnon);
             title.insertAdjacentElement("afterend", btnReveal);
+            title.insertAdjacentElement("afterend", btnExclude);
         } else {
             const close = header.querySelector(".close");
-            header.insertBefore(btnAnon,   close);
-            header.insertBefore(btnReveal, btnAnon);
+            header.insertBefore(btnAnon,    close);
+            header.insertBefore(btnReveal,  btnAnon);
+            header.insertBefore(btnExclude, btnReveal);
         }
     });
 
-    // Répondre aux hooks inter-modules (Bestiary peut aussi écouter ces hooks)
-    Hooks.on("ashara:revealToParty", actorId => revealRelationsToParty(actorId));
-    Hooks.on("ashara:anonymize",     actorId => anonymizeRelations(actorId));
+    // Répondre aux hooks inter-modules
+    Hooks.on("ashara:revealToParty",       actorId => revealRelationsToParty(actorId));
+    Hooks.on("ashara:anonymize",           actorId => anonymizeRelations(actorId));
+    Hooks.on("ashara:removeFromRelations", actorId => removeFromAllRelations(actorId));
 }
