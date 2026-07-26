@@ -93,3 +93,47 @@
     color: #a89070;
     line-height: 1.6;
 }
+
+/* Boutons */
+.tko-export-dialog .dialog-buttons {
+    display: flex;
+    gap: 8px;
+    padding: 10px 12px 12px;
+    background: #1a1008;
+    border-top: 1px solid rgba(201, 168, 76, 0.2);
+}
+
+.tko-export-dialog .dialog-button {
+    flex: 1;
+    padding: 8px 12px;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    transition: filter 0.15s, background 0.15s;
+    border: 1px solid;
+}
+
+.tko-export-dialog .dialog-button[data-button="export"] {
+    background: linear-gradient(180deg, #c9a84c 0%, #9e7c2a 100%);
+    border-color: #e0c060;
+    color: #1a1008;
+    text-shadow: none;
+}
+
+.tko-export-dialog .dialog-button[data-button="export"]:hover {
+    filter: brightness(1.15);
+}
+
+.tko-export-dialog .dialog-button[data-button="cancel"] {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(201, 168, 76, 0.25);
+    color: #a89070;
+}
+
+.tko-export-dialog .dialog-button[data-button="cancel"]:hover {
+    background: rgba(255, 255, 255, 0.09);
+    border-color: rgba(201, 168, 76, 0.5);
+    color: #c8b89a;
+}
