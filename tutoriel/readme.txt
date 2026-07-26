@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.2.3
+Version : 1.2.4
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -158,6 +158,13 @@ INSTALLATION
 ================================================================================
                     TUTORIEL — MISES À JOUR
 ================================================================================
+
+v1.2.4 | 2026-07-26
+   tutorial.js — Ajout étape "Exporter un personnage" dans la section Outils GM (gmOnly).
+   Cible .directory-list .actor (un acteur dans la sidebar), explique le clic droit →
+   Exporter et détaille les deux formats : Fiche actuelle (données modules) et Fiche
+   originale dnd5e (données modules supprimées, compatible partout).
+   module.json — Bump 1.2.3 → 1.2.4.
 
 v1.2.3 | 2026-07-26
    tutorial.js — Ajout des étapes "bouton Retirer" dans les sections Bestiaire et Relations.

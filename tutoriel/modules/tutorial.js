@@ -594,6 +594,13 @@ const STEPS_BY_FEATURE = {
             position: "center",
             gmOnly:   true
         },
+        {
+            target:   ".directory-list .actor",
+            title:    "Exporter un personnage",
+            text:     "Faites un <strong>clic droit</strong> sur n'importe quel acteur dans la sidebar et choisissez <strong>Exporter</strong>. Une fenêtre vous propose deux formats : <br><br><i class='fas fa-layer-group'></i> <strong>Fiche actuelle</strong> — export complet avec toutes les données (expéditions, relations, bestiaire, flags modules). À réimporter uniquement sur un serveur avec les mêmes modules.<br><br><i class='fas fa-dice-d20'></i> <strong>Fiche originale dnd5e</strong> — réinitialise la fiche au format dnd5e standard et supprime toutes les données propres au serveur. Compatible partout.",
+            position: "right",
+            gmOnly:   true
+        },
     ],
 };
 

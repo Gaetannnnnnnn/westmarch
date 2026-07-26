@@ -122,7 +122,7 @@ async function _showDialog(actor) {
                 <input type="radio" name="export-mode" value="original">
                 <div class="tko-export-opt-body">
                     <span class="tko-export-opt-title">
-                        <i class="fas fa-d-and-d-beyond"></i> Fiche originale dnd5e
+                        <i class="fas fa-dice-d20"></i> Fiche originale dnd5e
                     </span>
                     <span class="tko-export-opt-desc">
                         Réinitialise la fiche au format dnd5e standard et supprime
