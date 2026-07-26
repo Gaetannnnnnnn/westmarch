@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.3.1
+Version : 1.3.2
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -105,6 +105,20 @@ INSTALLATION
 ================================================================================
                     CARNET D'EXPÉDITIONS — MISES À JOUR
 ================================================================================
+
+v1.3.2 | 2026-07-26
+   carnet.js — Fix glisser-déposer (toujours inopérant en Foundry v13).
+   Cause racine du v1.3.1 : le flag _handleDown reposait sur mousedown pour
+   détecter si le drag venait de la poignée. En Foundry v13 / dnd5e v3,
+   mousedown peut être intercepté par les handlers de la fiche avant d'atteindre
+   le nôtre → _handleDown restait false → dragstart appelait e.preventDefault()
+   sur chaque tentative → drag annulé systématiquement.
+   Correctif : draggable="true" déplacé de l'item (.carnet-item) vers la poignée
+   (.carnet-drag-handle). Le drag ne peut désormais démarrer QUE depuis la
+   poignée (comportement navigateur natif, aucun flag JS nécessaire). dragstart
+   est câblé sur la poignée ; les items restent les cibles de dépôt (dragover /
+   drop inchangés). setDragImage() affiche l'item entier comme ghost.
+   module.json — Bump 1.3.1 → 1.3.2.
 
 v1.3.1 | 2026-07-26
    carnet.js — Fix glisser-déposer (poignée inopérante).

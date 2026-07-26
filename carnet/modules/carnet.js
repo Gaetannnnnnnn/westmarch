@@ -542,8 +542,8 @@ export function buildJournalHtml(actor) {
             const chevron = currentSectionCollapsed ? "fa-chevron-right" : "fa-chevron-down";
             const titleEsc = (item.title ?? "").replace(/"/g, "&quot;");
             return `
-        <div class="carnet-section-header carnet-item"${canEdit ? ' draggable="true"' : ''} data-item-id="${item.id}" data-item-type="section">
-            ${canEdit ? `<div class="carnet-drag-handle" title="Déplacer"><i class="fas fa-grip-vertical"></i></div>` : ""}
+        <div class="carnet-section-header carnet-item" data-item-id="${item.id}" data-item-type="section">
+            ${canEdit ? `<div class="carnet-drag-handle" draggable="true" title="Déplacer"><i class="fas fa-grip-vertical"></i></div>` : ""}
             <button type="button" class="carnet-toggle-section" data-section-id="${item.id}"
                     title="${currentSectionCollapsed ? "Déplier" : "Replier"}">
                 <i class="fas ${chevron}"></i>
@@ -589,9 +589,9 @@ export function buildJournalHtml(actor) {
             : `<p class="carnet-note-placeholder"><em>Note vide. Cliquez sur Modifier pour rédiger.</em></p>`;
 
         return `
-        <div class="carnet-note-card carnet-item"${canEdit ? ' draggable="true"' : ''} data-item-id="${note.id}" data-item-type="note"
+        <div class="carnet-note-card carnet-item" data-item-id="${note.id}" data-item-type="note"
              data-note-id="${note.id}"${hidden ? ' style="display:none;"' : ''}>
-            ${canEdit ? `<div class="carnet-drag-handle" title="Déplacer"><i class="fas fa-grip-vertical"></i></div>` : ""}
+            ${canEdit ? `<div class="carnet-drag-handle" draggable="true" title="Déplacer"><i class="fas fa-grip-vertical"></i></div>` : ""}
             <div class="carnet-note-inner">
                 <div class="carnet-note-header">
                     <button type="button" class="carnet-toggle-note" data-note-id="${note.id}"
@@ -774,42 +774,39 @@ function _applySectionCollapse(element, sectionId, collapsed) {
 
 /**
  * Câble le drag-and-drop de réordonnancement sur tous les .carnet-item.
- * Seule la poignée (.carnet-drag-handle) déclenche le drag.
+ *
+ * Approche : draggable="true" est sur la POIGNÉE (.carnet-drag-handle), pas
+ * sur l'item parent. Ainsi le drag ne peut démarrer que depuis la poignée —
+ * aucun flag _handleDown nécessaire, aucune interférence avec les handlers
+ * mousedown de Foundry / dnd5e.
  */
 function _wireDragDrop(actor, element) {
     let _dragOverEl = null;
-    let _handleDown = false; // true si le mousedown courant vient d'une poignée
 
     const clearDragOver = () => {
         _dragOverEl?.classList.remove('carnet-drag-over-top', 'carnet-drag-over-bottom');
         _dragOverEl = null;
     };
 
-    // Réinitialise le flag si le bouton est relâché sans déclencher de drag
-    element.addEventListener('mouseup', () => { _handleDown = false; });
-
     element.querySelectorAll('.carnet-item').forEach(item => {
-        // La poignée active le drag ; les autres interactions ne le font pas
         const handle = item.querySelector('.carnet-drag-handle');
+
+        // ── SOURCE : la poignée initie le drag ────────────────────
         if (handle) {
-            handle.addEventListener('mousedown', () => { _handleDown = true; });
-            // Empêche les champs texte et boutons de déclencher le drag accidentellement
-            item.querySelectorAll('input, button, a').forEach(el => {
-                el.addEventListener('mousedown', e => e.stopPropagation());
+            handle.addEventListener('dragstart', e => {
+                // Empêche Foundry d'intercepter (la poignée est dans un item
+                // qui peut avoir des attributs data-item-id reconnus par dnd5e)
+                e.stopPropagation();
+                _draggedItemId = item.dataset.itemId;
+                item.classList.add('carnet-dragging');
+                e.dataTransfer.effectAllowed = 'move';
+                e.dataTransfer.setData('text/plain', _draggedItemId);
+                // Image ghost = l'item entier plutôt que la seule poignée
+                try { e.dataTransfer.setDragImage(item, 20, 10); } catch {}
             });
         }
 
-        item.addEventListener('dragstart', e => {
-            // Annule le drag si le geste n'a pas commencé sur une poignée
-            if (!_handleDown) { e.preventDefault(); return; }
-            // Empêche Foundry d'intercepter ce drag (data-item-id sur l'élément)
-            e.stopPropagation();
-            _draggedItemId = item.dataset.itemId;
-            item.classList.add('carnet-dragging');
-            e.dataTransfer.effectAllowed = 'move';
-            e.dataTransfer.setData('text/plain', _draggedItemId); // requis Firefox
-        });
-
+        // ── CIBLE : tous les items acceptent un dépôt ─────────────
         item.addEventListener('dragover', e => {
             if (!_draggedItemId || _draggedItemId === item.dataset.itemId) return;
             e.preventDefault();
@@ -850,7 +847,6 @@ function _wireDragDrop(actor, element) {
 
     element.addEventListener('dragend', () => {
         _draggedItemId = null;
-        _handleDown    = false;
         element.querySelectorAll('.carnet-dragging').forEach(el => el.classList.remove('carnet-dragging'));
         clearDragOver();
     });

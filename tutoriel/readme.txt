@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.2.1
+Version : 1.2.2
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -158,6 +158,27 @@ INSTALLATION
 ================================================================================
                     TUTORIEL — MISES À JOUR
 ================================================================================
+
+v1.2.2 | 2026-07-26
+   tutorial.js — Fix _openProtoTokenAppearance : la fenêtre Prototype Token
+   ne s'ouvrait pas lors du tutoriel.
+   Cause : les approches précédentes (clic UI + recherche DOM par classe CSS)
+   étaient trop fragiles — sheetEl pouvait être null, le bouton introuvable,
+   ou la fenêtre non trouvée par querySelectorAll si ses classes avaient changé.
+   Correctif : réécriture complète avec triple stratégie ordonnée :
+   (1) Interception du hook natif renderPrototypeTokenConfig (déclenché par
+   Foundry au moment du render — le plus fiable car on reçoit l'app directement
+   sans chercher dans le DOM). Le hook est enregistré AVANT l'ouverture pour
+   ne pas rater l'événement.
+   (2) Ouverture via new PrototypeTokenConfig(actor.prototypeToken).render(true)
+   (instanciation directe de la classe Foundry) en premier lieu.
+   (3) Fallback : ouvrir la fiche acteur, attendre 800ms, puis cliquer le
+   bouton [data-action="openTokenConfig"] ou tout bouton data-action contenant
+   "token" (regex /token/i).
+   Détection "déjà ouverte" : ui.windows (registre de toutes les FormApplication
+   v1 ouvertes) est vérifié avant toute tentative d'ouverture.
+   Timeout de 5s sur le hook pour éviter un freeze si la config ne se rend pas.
+   module.json — Bump 1.2.1 → 1.2.2.
 
 v1.2.1 | 2026-07-26
    tutorial.js — Refonte section Apparence des tokens : 3 → 4 étapes.

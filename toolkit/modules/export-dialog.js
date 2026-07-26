@@ -55,13 +55,6 @@ export function ExportDialogHooks() {
 // ================================================================
 
 async function _exportWithChoice(actor) {
-    // Si l'acteur n'a pas de données propres aux modules Ashara,
-    // export direct sans dialog
-    if (!_hasCustomData(actor)) {
-        actor.exportToJSON();
-        return;
-    }
-
     const choice = await _showDialog(actor);
     if (choice === null) return;   // annulé
 

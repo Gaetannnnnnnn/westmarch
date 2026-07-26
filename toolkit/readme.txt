@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.0.8
+Version : 1.0.9
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -114,6 +114,14 @@ INSTALLATION
 ================================================================================
                     TOOLKIT — MISES À JOUR
 ================================================================================
+
+v1.0.9 | 2026-07-26
+   export-dialog.js — Fix dialog de choix absent : la fonction _exportWithChoice
+   vérifiait _hasCustomData(actor) avant d'afficher le dialog. Si l'acteur n'avait
+   pas de flags Ashara détectés (CONFIG.asharaSheetsModules vide ou flags absents),
+   l'export se faisait directement sans proposer le choix "Fiche actuelle / Fiche
+   originale". Suppression du check : le dialog s'affiche désormais systématiquement.
+   module.json — Bump 1.0.8 → 1.0.9.
 
 v1.0.8 | 2026-07-26
    export-dialog.js — Fix menu contextuel "Export" invisible / dialog absent.

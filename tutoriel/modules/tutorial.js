@@ -136,76 +136,125 @@ async function _openProtoTokenAppearance() {
         ?? (game.user.isGM ? game.actors.find(a => a.type === "character" && a.hasPlayerOwner) : null);
     if (!actor) return;
 
-    // Si la fenêtre est déjà ouverte depuis une étape précédente, juste naviguer vers Apparence
+    // Idempotent : fenêtre déjà marquée → juste naviguer vers Apparence
     const existing = document.querySelector('.tuto-proto-token');
     if (existing && document.contains(existing)) {
-        const tabBtn = existing.querySelector(
-            'nav [data-tab="appearance"], .tab-strip [data-tab="appearance"], button[data-tab="appearance"]'
-        );
-        if (tabBtn) { tabBtn.click(); await new Promise(r => setTimeout(r, 300)); }
+        _clickAppearanceTab(existing);
         return;
     }
 
-    // 1. Ouvrir (ou faire passer au premier plan) la fiche acteur
-    actor.sheet.render(true);
-    await new Promise(r => setTimeout(r, 600));
-
-    // 2. Récupérer l'élément de la fiche (ApplicationV2 : .element est un HTMLElement direct)
-    const sheetEl = actor.sheet.element instanceof HTMLElement
-        ? actor.sheet.element
-        : document.querySelector(`[data-appid="${actor.sheet.appId}"]`)
-          ?? actor.sheet.element?.[0];
-
-    // 3. Cliquer le bouton "Prototype Token" dans l'en-tête de la fiche
-    let opened = false;
-    if (sheetEl) {
-        const tokenBtn = sheetEl.querySelector(
-            '[data-action="openTokenConfig"], [data-action="configureToken"], .configure-token'
-        ) ?? [...sheetEl.querySelectorAll("button[data-action], a[data-action]")].find(b =>
-            /token/i.test(b.dataset.action ?? "")
-        );
-        if (tokenBtn) {
-            tokenBtn.click();
-            opened = true;
-            await new Promise(r => setTimeout(r, 900));
+    // La config prototype token est déjà ouverte mais pas encore marquée ?
+    // (ui.windows = registre de toutes les FormApplication v1 ouvertes)
+    const already = Object.values(ui.windows ?? {}).find(app =>
+        /token/i.test(app.constructor?.name ?? "") && app.element
+    );
+    if (already) {
+        const el = already.element instanceof HTMLElement
+            ? already.element : already.element?.[0];
+        if (el) {
+            el.classList.add('tuto-proto-token');
+            _clickAppearanceTab(el);
+            return;
         }
     }
 
-    // 4. Fallback : ouvrir directement via l'API Foundry si le clic n'a rien donné
+    // ── Enregistrer le hook AVANT d'ouvrir pour ne pas rater le render ──
+    // renderPrototypeTokenConfig(app, html, data) est le hook natif Foundry v13
+    let hookResolve;
+    const hookPromise = new Promise(r => { hookResolve = r; });
+    const hookId = Hooks.once("renderPrototypeTokenConfig", app => hookResolve(app));
+
+    // ── Ouvrir la fenêtre ────────────────────────────────────────────────
+    let opened = false;
+
+    // Méthode 1 : bouton dans la fiche acteur (si elle est déjà ouverte dans le DOM)
+    const sheetEl = (() => {
+        if (actor.sheet.element instanceof HTMLElement) return actor.sheet.element;
+        if (actor.sheet.element?.[0] instanceof HTMLElement) return actor.sheet.element[0];
+        const appId = actor.sheet.appId;
+        if (appId) return document.querySelector(`[data-appid="${appId}"]`);
+        const id = actor.sheet.id;
+        if (id) return document.getElementById(id);
+        return null;
+    })();
+
+    const tokenBtn = sheetEl?.querySelector(
+        '[data-action="openTokenConfig"], [data-action="configureToken"]'
+    ) ?? [...(sheetEl?.querySelectorAll('[data-action]') ?? [])].find(b =>
+        /token/i.test(b.dataset.action ?? "")
+    );
+    if (tokenBtn) { tokenBtn.click(); opened = true; }
+
+    // Méthode 2 : API directe Foundry
     if (!opened) {
         try {
-            if (actor.prototypeToken?.sheet) {
-                actor.prototypeToken.sheet.render(true);
-            } else {
-                const TokenCfg = foundry.applications?.sheets?.PrototypeTokenConfig
-                    ?? globalThis.PrototypeTokenConfig;
-                if (TokenCfg) new TokenCfg(actor.prototypeToken).render(true);
-            }
-            opened = true;
-            await new Promise(r => setTimeout(r, 900));
-        } catch (err) {
-            console.warn("[Tutoriel] _openProtoTokenAppearance : fallback API échoué :", err);
+            const Cls = globalThis.PrototypeTokenConfig ?? globalThis.TokenConfig;
+            if (Cls) { new Cls(actor.prototypeToken).render(true); opened = true; }
+        } catch(e) { console.warn("[Tutoriel] PrototypeTokenConfig directe :", e); }
+    }
+
+    // Méthode 3 : ouvrir la fiche acteur puis cliquer le bouton
+    if (!opened) {
+        actor.sheet.render(true);
+        await new Promise(r => setTimeout(r, 800));
+        const sheetEl2 = actor.sheet.element instanceof HTMLElement
+            ? actor.sheet.element
+            : document.querySelector(`[data-appid="${actor.sheet.appId}"]`) ?? actor.sheet.element?.[0];
+        const btn2 = sheetEl2?.querySelector('[data-action="openTokenConfig"], [data-action="configureToken"]')
+            ?? [...(sheetEl2?.querySelectorAll('[data-action]') ?? [])].find(b =>
+                /token/i.test(b.dataset.action ?? ""));
+        if (btn2) { btn2.click(); opened = true; }
+    }
+
+    if (!opened) {
+        Hooks.off("renderPrototypeTokenConfig", hookId);
+        hookResolve(null);
+        console.warn("[Tutoriel] _openProtoTokenAppearance : impossible d'ouvrir la config token.");
+        return;
+    }
+
+    // ── Attendre le hook renderPrototypeTokenConfig (max 5 s) ───────────
+    const tokenApp = await Promise.race([
+        hookPromise,
+        new Promise(r => setTimeout(() => r(null), 5000))
+    ]);
+
+    let tcEl = null;
+
+    if (tokenApp?.element) {
+        // Le hook a fourni l'app directement
+        tcEl = tokenApp.element instanceof HTMLElement
+            ? tokenApp.element
+            : tokenApp.element?.[0] ?? null;
+    }
+
+    // Fallback si le hook n'a pas tiré dans le délai (config déjà ouverte avant le hook ?)
+    if (!tcEl) {
+        Hooks.off("renderPrototypeTokenConfig", hookId);
+        const fallbackApp = Object.values(ui.windows ?? {}).find(app =>
+            /token/i.test(app.constructor?.name ?? "") && app.element
+        );
+        if (fallbackApp) {
+            tcEl = fallbackApp.element instanceof HTMLElement
+                ? fallbackApp.element
+                : fallbackApp.element?.[0] ?? null;
         }
     }
 
-    if (!opened) return;
+    if (!tcEl) {
+        console.warn("[Tutoriel] _openProtoTokenAppearance : fenêtre introuvable après ouverture.");
+        return;
+    }
 
-    // 5. Localiser la fenêtre token-config (différente de la fiche acteur)
-    const allApps = [...document.querySelectorAll(".application, .app, .window-app")];
-    const tcEl = allApps.find(el => el !== sheetEl && (
-        el.querySelector('[data-tab="appearance"]') ||
-        el.querySelector('button[data-tab="appearance"]')
-    ));
-    if (!tcEl) return;
-
-    // Marquer la fenêtre pour que les étapes suivantes la retrouvent sans la rouvrir
     tcEl.classList.add('tuto-proto-token');
+    _clickAppearanceTab(tcEl);
+}
 
-    // 6. Naviguer vers l'onglet Apparence
-    const tabBtn = tcEl.querySelector(
-        'nav [data-tab="appearance"], .tab-strip [data-tab="appearance"], button[data-tab="appearance"]'
+function _clickAppearanceTab(el) {
+    const btn = el.querySelector(
+        'nav [data-tab="appearance"], button[data-tab="appearance"], a[data-tab="appearance"]'
     );
-    if (tabBtn) { tabBtn.click(); await new Promise(r => setTimeout(r, 400)); }
+    if (btn) btn.click();
 }
 
 // ================================================================
