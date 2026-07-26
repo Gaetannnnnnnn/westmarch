@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.1.2
+Version : 1.1.3
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -114,6 +114,12 @@ INSTALLATION
 ================================================================================
                     TOOLKIT — MISES À JOUR
 ================================================================================
+
+v1.1.3 | 2026-07-26
+   export-dialog.js — Fix icône "Fiche originale dnd5e" : fa-d-and-d-beyond est une
+   icône de marque (FontAwesome Brands), inutilisable avec la classe fas. Remplacée
+   par fa-dice-d20.
+   module.json — Bump 1.1.2 → 1.1.3.
 
 v1.1.2 | 2026-07-26
    character.css — Refonte visuelle du dialog Export : thème D&D parchemin/or.

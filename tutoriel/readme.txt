@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.2.4
+Version : 1.2.5
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -158,6 +158,14 @@ INSTALLATION
 ================================================================================
                     TUTORIEL — MISES À JOUR
 ================================================================================
+
+v1.2.5 | 2026-07-26
+   tutorial.js — Fix étape "Exporter un personnage" (outilsGm) : target changé de
+   ".directory-list .actor" à null (position: center). Le sélecteur pointait un
+   élément absent quand la sidebar acteurs n'est pas visible, ce qui envoyait la
+   bulle en (0,0) dans le coin haut gauche.
+   module.json — Bump 1.2.4 → 1.2.5.
+   toolkit — Fix icône fa-d-and-d-beyond → fa-dice-d20 (brands inutilisable en fas).
 
 v1.2.4 | 2026-07-26
    tutorial.js — Ajout étape "Exporter un personnage" dans la section Outils GM (gmOnly).
