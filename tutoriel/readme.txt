@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.2.0
+Version : 1.2.1
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -114,8 +114,9 @@ Temps morts  (contenu différencié GM/joueur)
 
 Apparence des tokens  (tous)
   → Portrait grand format (HUD)
-  → Changer l'image du token / Cycle d'apparences (prototype token → Apparence)
-  → Wild Shape / Polymorph (prototype token → Apparence)
+  → Accéder au Prototype Token (bouton dans l'en-tête de la fiche)
+  → Cycle d'apparences (ouvre prototype token → onglet Apparence, pointe la fenêtre)
+  → Wild Shape / Polymorph (même fenêtre, même onglet)
 
 Outils GM  (GM uniquement)
   → Faux message de maintenance
@@ -157,6 +158,31 @@ INSTALLATION
 ================================================================================
                     TUTORIEL — MISES À JOUR
 ================================================================================
+
+v1.2.1 | 2026-07-26
+   tutorial.js — Refonte section Apparence des tokens : 3 → 4 étapes.
+   Cause des bugs : (1) le target ".tab[data-tab='appearance']" pointait sur le
+   panneau de contenu de l'onglet (getBoundingClientRect=0 si inactif) ; (2) la
+   détection de la fenêtre token-config via ".application, .app" + querySelector
+   pouvait rater en Foundry v13 ApplicationV2 ; (3) aucune étape n'expliquait où
+   cliquer pour accéder au Prototype Token.
+   _openProtoTokenAppearance() réécrit :
+   · Idempotent : si la fenêtre porte déjà .tuto-proto-token et est dans le DOM,
+     juste naviguer vers Apparence sans la rouvrir (évite double-ouverture au step 4).
+   · Ouverture : clic sur [data-action="openTokenConfig"] dans la fiche (priorité),
+     ou fallback actor.prototypeToken.sheet.render() / PrototypeTokenConfig API.
+   · Détection de la fenêtre token-config : cherche dans ".application, .app,
+     .window-app" celle qui contient [data-tab="appearance"] et n'est pas la fiche.
+   · Marquage : ajoute la classe .tuto-proto-token sur la fenêtre trouvée pour que
+     les étapes 3 et 4 la retrouvent sans nouvelle recherche.
+   Nouvelle étape 2 "Ouvrir le Prototype Token" : beforeShow rend juste la fiche,
+   target: '[data-action="openTokenConfig"]' — spotlight sur le bouton de la fiche,
+   texte qui explique le chemin d'accès + annonce l'ouverture automatique au Suivant.
+   Étapes 3 "Cycle d'apparences" et 4 "Wild Shape / Polymorph" : beforeShow:
+   _openProtoTokenAppearance, target: ".tuto-proto-token" (spotlight sur toute la
+   fenêtre token-config ouverte), position: "left". Textes enrichis expliquant
+   chaque section de l'onglet Apparence et le bouton HUD correspondant.
+   module.json — Bump 1.2.0 → 1.2.1.
 
 v1.2.0 | 2026-07-26
    tutorial.js — Section Apparence des tokens : ajout de _openProtoTokenAppearance()

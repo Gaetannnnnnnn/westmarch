@@ -136,39 +136,76 @@ async function _openProtoTokenAppearance() {
         ?? (game.user.isGM ? game.actors.find(a => a.type === "character" && a.hasPlayerOwner) : null);
     if (!actor) return;
 
+    // Si la fenêtre est déjà ouverte depuis une étape précédente, juste naviguer vers Apparence
+    const existing = document.querySelector('.tuto-proto-token');
+    if (existing && document.contains(existing)) {
+        const tabBtn = existing.querySelector(
+            'nav [data-tab="appearance"], .tab-strip [data-tab="appearance"], button[data-tab="appearance"]'
+        );
+        if (tabBtn) { tabBtn.click(); await new Promise(r => setTimeout(r, 300)); }
+        return;
+    }
+
+    // 1. Ouvrir (ou faire passer au premier plan) la fiche acteur
     actor.sheet.render(true);
-    await new Promise(r => setTimeout(r, 500));
+    await new Promise(r => setTimeout(r, 600));
 
-    const appId   = actor.sheet.appId;
-    const sheetEl = document.querySelector(`[data-appid="${appId}"]`)
-        ?? (actor.sheet.element instanceof HTMLElement
-            ? actor.sheet.element
-            : actor.sheet.element?.[0]);
+    // 2. Récupérer l'élément de la fiche (ApplicationV2 : .element est un HTMLElement direct)
+    const sheetEl = actor.sheet.element instanceof HTMLElement
+        ? actor.sheet.element
+        : document.querySelector(`[data-appid="${actor.sheet.appId}"]`)
+          ?? actor.sheet.element?.[0];
 
-    // Clique le bouton "Prototype Token" dans l'en-tête de la fiche
+    // 3. Cliquer le bouton "Prototype Token" dans l'en-tête de la fiche
+    let opened = false;
     if (sheetEl) {
         const tokenBtn = sheetEl.querySelector(
             '[data-action="openTokenConfig"], [data-action="configureToken"], .configure-token'
-        ) ?? [...(sheetEl.querySelectorAll("button") ?? [])].find(b =>
-            /token/i.test(b.title ?? "") || /token/i.test(b.getAttribute("aria-label") ?? "")
+        ) ?? [...sheetEl.querySelectorAll("button[data-action], a[data-action]")].find(b =>
+            /token/i.test(b.dataset.action ?? "")
         );
         if (tokenBtn) {
             tokenBtn.click();
-            await new Promise(r => setTimeout(r, 700));
+            opened = true;
+            await new Promise(r => setTimeout(r, 900));
         }
     }
 
-    // Cherche la fenêtre token-config (différente de la fiche acteur)
-    const tcEl = [...document.querySelectorAll(".application, .app")]
-        .find(el => el !== sheetEl && el.querySelector('[data-tab="appearance"]'));
-
-    if (tcEl) {
-        const tabBtn = tcEl.querySelector('nav [data-tab="appearance"], .tab-strip [data-tab="appearance"]');
-        if (tabBtn) {
-            tabBtn.click();
-            await new Promise(r => setTimeout(r, 400));
+    // 4. Fallback : ouvrir directement via l'API Foundry si le clic n'a rien donné
+    if (!opened) {
+        try {
+            if (actor.prototypeToken?.sheet) {
+                actor.prototypeToken.sheet.render(true);
+            } else {
+                const TokenCfg = foundry.applications?.sheets?.PrototypeTokenConfig
+                    ?? globalThis.PrototypeTokenConfig;
+                if (TokenCfg) new TokenCfg(actor.prototypeToken).render(true);
+            }
+            opened = true;
+            await new Promise(r => setTimeout(r, 900));
+        } catch (err) {
+            console.warn("[Tutoriel] _openProtoTokenAppearance : fallback API échoué :", err);
         }
     }
+
+    if (!opened) return;
+
+    // 5. Localiser la fenêtre token-config (différente de la fiche acteur)
+    const allApps = [...document.querySelectorAll(".application, .app, .window-app")];
+    const tcEl = allApps.find(el => el !== sheetEl && (
+        el.querySelector('[data-tab="appearance"]') ||
+        el.querySelector('button[data-tab="appearance"]')
+    ));
+    if (!tcEl) return;
+
+    // Marquer la fenêtre pour que les étapes suivantes la retrouvent sans la rouvrir
+    tcEl.classList.add('tuto-proto-token');
+
+    // 6. Naviguer vers l'onglet Apparence
+    const tabBtn = tcEl.querySelector(
+        'nav [data-tab="appearance"], .tab-strip [data-tab="appearance"], button[data-tab="appearance"]'
+    );
+    if (tabBtn) { tabBtn.click(); await new Promise(r => setTimeout(r, 400)); }
 }
 
 // ================================================================
@@ -421,21 +458,35 @@ const STEPS_BY_FEATURE = {
             text:     "<strong>Clic droit</strong> sur un token → HUD → bouton portrait <i class='fas fa-image'></i> : affiche en grand l'image de la fiche du personnage.",
             position: "center"
         },
-        // ── Changer l'image / cycle (prototype token → Apparence) ─
+        // ── Accéder au Prototype Token ────────────────────────────
         {
-            beforeShow: _openProtoTokenAppearance,
-            target:     ".tab[data-tab='appearance']",
-            title:      "Changer l'image du token",
-            text:       "L'onglet <strong>Apparence</strong> du prototype token définit l'image de base du token. Vous pouvez aussi y ajouter des images alternatives — un bouton cycle dans le HUD permettra ensuite de basculer entre elles en jeu, utile pour les tenues ou états alternatifs d'un même personnage.",
-            position:   "right"
+            beforeShow: async () => {
+                const actor = game.user.character
+                    ?? (game.user.isGM ? game.actors.find(a => a.type === "character" && a.hasPlayerOwner) : null);
+                if (!actor) return;
+                actor.sheet.render(true);
+                await new Promise(r => setTimeout(r, 600));
+            },
+            target:   '[data-action="openTokenConfig"]',
+            title:    "Ouvrir le Prototype Token",
+            text:     "Ce bouton dans l'en-tête de la fiche ouvre la configuration du <strong>Prototype Token</strong> — le token tel qu'il apparaît par défaut sur la carte. L'onglet <strong>Apparence</strong> donne accès à deux fonctions avancées : le <em>Cycle d'apparences</em> et le <em>Wild Shape / Polymorph</em>. Cliquez <strong>Suivant</strong> pour l'ouvrir automatiquement.",
+            position: "bottom"
         },
-        // ── Polymorph / Wild Shape (même onglet Apparence) ───────
+        // ── Cycle d'apparences (prototype token → Apparence) ─────
         {
             beforeShow: _openProtoTokenAppearance,
-            target:     ".tab[data-tab='appearance']",
+            target:     ".tuto-proto-token",
+            title:      "Cycle d'apparences",
+            text:       "La fenêtre ouverte est le <strong>Prototype Token</strong>, onglet <strong>Apparence</strong>. La section <strong>Cycle d'apparences</strong> permet d'ajouter plusieurs images alternatives pour le token. En jeu, le bouton <i class='fas fa-images'></i> dans le HUD (clic droit sur le token) bascule entre ces images — utile pour les tenues, les états visuels ou les formes mineures.",
+            position:   "left"
+        },
+        // ── Wild Shape / Polymorph (même onglet Apparence) ───────
+        {
+            beforeShow: _openProtoTokenAppearance,
+            target:     ".tuto-proto-token",
             title:      "Wild Shape / Polymorph",
-            text:       "Dans le même onglet, configurez des <strong>formes de transformation</strong> pour ce token. Une fois configurées, le bouton <i class='fas fa-dragon'></i> dans le HUD permet au GM et aux propriétaires de transformer le token en un clic et de le rétablir à son apparence normale.",
-            position:   "right"
+            text:       "La section <strong>Wild Shape / Polymorph</strong> du même onglet configure des formes de transformation complètes. Le bouton <i class='fas fa-dragon'></i> dans le HUD (clic droit sur le token) applique la transformation en un clic — et la rétablit en re-cliquant. Accessible au GM et aux propriétaires du token.",
+            position:   "left"
         },
     ],
 

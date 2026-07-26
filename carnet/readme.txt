@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.3.0
+Version : 1.3.1
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -105,6 +105,26 @@ INSTALLATION
 ================================================================================
                     CARNET D'EXPÉDITIONS — MISES À JOUR
 ================================================================================
+
+v1.3.1 | 2026-07-26
+   carnet.js — Fix glisser-déposer (poignée inopérante).
+   Cause racine : la technique mousedown → item.draggable=true est trop tardive
+   dans l'environnement Foundry v13 : le navigateur évalue draggable avant que
+   le handler mousedown ne s'exécute, et les attributs data-item-id sur les items
+   peuvent être interceptés par le DnD natif de Foundry.
+   Correctif en trois volets :
+   (1) draggable="true" placé directement dans le HTML (buildJournalHtml) sur les
+   .carnet-item quand canEdit — évaluation statique, plus de course condition.
+   (2) Flag _handleDown (local à _wireDragDrop) : posé à true sur mousedown de la
+   poignée, réinitialisé sur mouseup (carnet-body) et sur dragend. dragstart vérifie
+   le flag : e.preventDefault() si _handleDown=false (clic sur titre, bouton, etc.).
+   (3) e.stopPropagation() dans dragstart (quand drag valide) : empêche Foundry de
+   capter l'événement via ses handlers sur la fiche (data-item-id sur .carnet-item
+   pouvait déclencher une résolution d'item actor incorrecte).
+   Résultat : sections ET notes sont draggables depuis leur poignée uniquement.
+   Placer une note dans une section = la déposer sous l'en-tête de section
+   (indicateur doré en bas de l'en-tête → note insérée juste après).
+   module.json — Bump 1.3.0 → 1.3.1.
 
 v1.3.0 | 2026-07-25
    carnet.js — Ajout des sections et du réordonnement par glisser-déposer.

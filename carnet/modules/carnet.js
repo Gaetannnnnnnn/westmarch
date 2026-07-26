@@ -542,7 +542,7 @@ export function buildJournalHtml(actor) {
             const chevron = currentSectionCollapsed ? "fa-chevron-right" : "fa-chevron-down";
             const titleEsc = (item.title ?? "").replace(/"/g, "&quot;");
             return `
-        <div class="carnet-section-header carnet-item" data-item-id="${item.id}" data-item-type="section">
+        <div class="carnet-section-header carnet-item"${canEdit ? ' draggable="true"' : ''} data-item-id="${item.id}" data-item-type="section">
             ${canEdit ? `<div class="carnet-drag-handle" title="Déplacer"><i class="fas fa-grip-vertical"></i></div>` : ""}
             <button type="button" class="carnet-toggle-section" data-section-id="${item.id}"
                     title="${currentSectionCollapsed ? "Déplier" : "Replier"}">
@@ -589,7 +589,7 @@ export function buildJournalHtml(actor) {
             : `<p class="carnet-note-placeholder"><em>Note vide. Cliquez sur Modifier pour rédiger.</em></p>`;
 
         return `
-        <div class="carnet-note-card carnet-item" data-item-id="${note.id}" data-item-type="note"
+        <div class="carnet-note-card carnet-item"${canEdit ? ' draggable="true"' : ''} data-item-id="${note.id}" data-item-type="note"
              data-note-id="${note.id}"${hidden ? ' style="display:none;"' : ''}>
             ${canEdit ? `<div class="carnet-drag-handle" title="Déplacer"><i class="fas fa-grip-vertical"></i></div>` : ""}
             <div class="carnet-note-inner">
@@ -778,18 +778,21 @@ function _applySectionCollapse(element, sectionId, collapsed) {
  */
 function _wireDragDrop(actor, element) {
     let _dragOverEl = null;
+    let _handleDown = false; // true si le mousedown courant vient d'une poignée
 
     const clearDragOver = () => {
         _dragOverEl?.classList.remove('carnet-drag-over-top', 'carnet-drag-over-bottom');
         _dragOverEl = null;
     };
 
+    // Réinitialise le flag si le bouton est relâché sans déclencher de drag
+    element.addEventListener('mouseup', () => { _handleDown = false; });
+
     element.querySelectorAll('.carnet-item').forEach(item => {
         // La poignée active le drag ; les autres interactions ne le font pas
         const handle = item.querySelector('.carnet-drag-handle');
         if (handle) {
-            handle.addEventListener('mousedown', () => { item.draggable = true; });
-            item.addEventListener('dragend', () => { item.draggable = false; });
+            handle.addEventListener('mousedown', () => { _handleDown = true; });
             // Empêche les champs texte et boutons de déclencher le drag accidentellement
             item.querySelectorAll('input, button, a').forEach(el => {
                 el.addEventListener('mousedown', e => e.stopPropagation());
@@ -797,11 +800,14 @@ function _wireDragDrop(actor, element) {
         }
 
         item.addEventListener('dragstart', e => {
+            // Annule le drag si le geste n'a pas commencé sur une poignée
+            if (!_handleDown) { e.preventDefault(); return; }
+            // Empêche Foundry d'intercepter ce drag (data-item-id sur l'élément)
+            e.stopPropagation();
             _draggedItemId = item.dataset.itemId;
             item.classList.add('carnet-dragging');
             e.dataTransfer.effectAllowed = 'move';
-            // nécessaire pour Firefox
-            e.dataTransfer.setData('text/plain', _draggedItemId);
+            e.dataTransfer.setData('text/plain', _draggedItemId); // requis Firefox
         });
 
         item.addEventListener('dragover', e => {
@@ -810,8 +816,8 @@ function _wireDragDrop(actor, element) {
             e.dataTransfer.dropEffect = 'move';
             clearDragOver();
             _dragOverEl = item;
-            const rect   = item.getBoundingClientRect();
-            const isTop  = e.clientY < rect.top + rect.height / 2;
+            const rect  = item.getBoundingClientRect();
+            const isTop = e.clientY < rect.top + rect.height / 2;
             item.classList.add(isTop ? 'carnet-drag-over-top' : 'carnet-drag-over-bottom');
         });
 
@@ -825,18 +831,17 @@ function _wireDragDrop(actor, element) {
                 clearDragOver();
                 return;
             }
-            const rect     = item.getBoundingClientRect();
+            const rect         = item.getBoundingClientRect();
             const insertBefore = e.clientY < rect.top + rect.height / 2;
             clearDragOver();
 
-            const notes   = getCarnetNotes(actor);
-            const fromIdx = notes.findIndex(n => n.id === _draggedItemId);
-            const toIdx   = notes.findIndex(n => n.id === item.dataset.itemId);
-            if (fromIdx === -1 || toIdx === -1) return;
-
-            const moved   = notes[fromIdx];
-            const without = notes.filter((_, i) => i !== fromIdx);
+            const notes     = getCarnetNotes(actor);
+            const fromIdx   = notes.findIndex(n => n.id === _draggedItemId);
+            if (fromIdx === -1) return;
+            const moved     = notes[fromIdx];
+            const without   = notes.filter((_, i) => i !== fromIdx);
             const targetIdx = without.findIndex(n => n.id === item.dataset.itemId);
+            if (targetIdx === -1) return;
             const insertAt  = insertBefore ? targetIdx : targetIdx + 1;
             without.splice(insertAt, 0, moved);
             await actor.setFlag(MODULE, "carnetNotes", without);
@@ -845,6 +850,7 @@ function _wireDragDrop(actor, element) {
 
     element.addEventListener('dragend', () => {
         _draggedItemId = null;
+        _handleDown    = false;
         element.querySelectorAll('.carnet-dragging').forEach(el => el.classList.remove('carnet-dragging'));
         clearDragOver();
     });

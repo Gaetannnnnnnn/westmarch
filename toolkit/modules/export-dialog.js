@@ -19,10 +19,15 @@ export function ExportDialogHooks() {
         CONFIG.asharaSheetsModules.push("toolkit");
 
     Hooks.on("getActorDirectoryEntryContext", (_html, options) => {
-        const idx = options.findIndex(o => o.name === "SIDEBAR.Export");
-        if (idx === -1) return;
+        // Foundry v13 peut utiliser une clé différente selon la version ;
+        // on cherche aussi par icône en fallback.
+        const idx = options.findIndex(o =>
+            o.name === "SIDEBAR.Export"
+            || o.name === "DOCUMENT.Export"
+            || (typeof o.icon === "string" && o.icon.includes("file-export"))
+        );
 
-        options.splice(idx, 1, {
+        const entry = {
             name:      "SIDEBAR.Export",
             icon:      '<i class="fas fa-file-export"></i>',
             condition: (li) => {
@@ -34,7 +39,14 @@ export function ExportDialogHooks() {
                 if (!actor) return;
                 await _exportWithChoice(actor);
             }
-        });
+        };
+
+        if (idx !== -1) {
+            options.splice(idx, 1, entry);
+        } else {
+            // Option export absente du menu — on l'ajoute quand même
+            options.push(entry);
+        }
     });
 }
 
@@ -190,7 +202,29 @@ function _exportOriginal(actor) {
 // ================================================================
 
 function _getActor(li) {
-    // Foundry v13 : data-document-id ; fallback v11/v12 : data-entity-id
-    const id = li.dataset?.documentId ?? li.dataset?.entryId ?? li.data?.("document-id");
-    return id ? game.actors.get(id) : null;
+    // Normalise : jQuery element → native HTMLElement
+    const el = (li instanceof Element) ? li : (li?.[0] instanceof Element ? li[0] : null);
+    if (!el) return null;
+
+    // 1. Foundry v13 : data-uuid (ex : "Actor.aBcD1234")
+    const uuid = el.dataset?.uuid ?? el.getAttribute?.("data-uuid");
+    if (uuid?.startsWith("Actor.")) {
+        const id = uuid.split(".")[1];
+        if (id) return game.actors.get(id) ?? null;
+    }
+
+    // 2. Foundry v12/v13 : data-document-id ou data-entity-id
+    const docId = el.dataset?.documentId
+        ?? el.getAttribute?.("data-document-id")
+        ?? el.dataset?.entryId
+        ?? el.getAttribute?.("data-entity-id");
+    if (docId) return game.actors.get(docId) ?? null;
+
+    // 3. Fallback jQuery .data()
+    if (typeof li?.data === "function") {
+        const jid = li.data("document-id") ?? li.data("entity-id");
+        if (jid) return game.actors.get(jid) ?? null;
+    }
+
+    return null;
 }

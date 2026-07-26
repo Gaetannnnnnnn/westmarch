@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé Ashara
 ================================================================================
 
-Version : 1.0.8
+Version : 1.0.9
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -74,15 +74,30 @@ fake-warning.js
 tm.js
    Système de temps morts en deux temps :
    Côté joueur — bouton sablier ⏳ dans le header de la fiche personnage.
-   Déclare une activité de temps mort : compétence, proficiency (Maîtrise,
-   Expertise, ou Tools), dates de début/fin, test optionnel (≥5 jours).
-   Prévisualisation du gain en temps réel.
-   Côté GM — bouton ⏳ dans la barre WestMarch de gauche. Liste les
-   déclarations des joueurs. Le GM corrige si besoin et applique les gains.
+   Couleur dynamique : gris = rien, orange = activité ajoutée non soumise,
+   vert = déclaration envoyée. Deux types d'activités disponibles :
+
+   Gain de compétence — choisit une compétence ou maîtrise (Maîtrise,
+   Expertise, Tools), dates de début/fin, test de compétence optionnel
+   (≥5 jours). Prévisualisation du taux journalier en temps réel.
    Formule : (1 + modif_carac + 2 si maîtrise + 2 si expertise OU +4 tools)
    × jours, puis modificateur d20 optionnel.
-   À l'application : PO créditées sur la fiche, whisper au joueur, résumé
-   dans le chat GM, et envoi sur le webhook Discord "temps morts".
+
+   Artisanat — choisit le type d'objet (arme, armure, parchemin, baguette…),
+   sa rareté, son prix de base ou niveau de sort, les dates. Calcule le coût
+   en PO, les jours nécessaires et la progression. Prise en charge de la
+   réduction de coût si fabrication partielle (daysAlready).
+
+   Système panier : le joueur peut ajouter plusieurs activités (Gain et/ou
+   Craft) dans une même déclaration avant de soumettre. Chaque activité est
+   résumée dans le panier avec possibilité de retrait individuel.
+   Toutes les fenêtres utilisent foundry.applications.api.DialogV2.
+
+   Côté GM — bouton ⏳ dans la barre WestMarch de gauche. Affiche toutes
+   les déclarations reçues. Vue multi-items (read-only) par joueur. Le GM
+   peut corriger et applique les gains en un clic. À l'application : XP de
+   compétence et/ou PO créditées sur la fiche, whisper au joueur, résumé
+   dans le chat GM, envoi sur le webhook Discord "temps morts".
 
 
 --------------------------------------------------------------------------------
@@ -113,6 +128,37 @@ INSTALLATION
 ================================================================================
                     WESTMARCH-ASHARA — MISES À JOUR
 ================================================================================
+
+v1.0.9 | 2026-07-26
+   tm.js — Documentation des fonctionnalités présentes depuis v1.0.2–1.0.3
+   mais jamais consignées dans le changelog :
+
+   Artisanat (Craft) : nouveau type d'activité de temps mort parallèle au
+   Gain de compétence. craftDeclFormHtml() génère le formulaire : type d'objet
+   (arme, armure, parchemin, baguette, anneau, autre), rareté, prix de base
+   ou niveau de sort, option "usage unique", dates de début/fin. getCraftStats()
+   calcule le coût en PO, les jours nécessaires et la progression.
+   wireCraftControls() câble les événements (rafraîchissement en temps réel
+   du coût, de la progression et des champs conditionnels selon le type).
+   deductGoldCost() déduit les PO directement sur la fiche (via item "Currency").
+
+   Système panier : openDeclarationDialog() réécrit avec un panier multi-items.
+   Le joueur peut ajouter autant d'activités que souhaité (Gain et/ou Craft) avant
+   de déclarer. cartHtml() génère le résumé du panier. Le flag "tm" passe de
+   {type, ...} (ancien format plat) à {items: [...], declared: bool} (nouveau).
+   tmFlagItems() normalise l'un ou l'autre format pour compatibilité ascendante.
+
+   Vue GM multi-items : buildActorRow() réécrit pour afficher toutes les activités
+   d'un joueur en read-only (type, dates, gains calculés). applyDowntimeGains()
+   réécrit pour itérer sur items[], appliquer chaque gain (compétence ou craft),
+   envoyer un whisper et un embed Discord par joueur.
+
+   DialogV2 : openDeclarationDialog() et openDowntimeDialog() migrés vers
+   foundry.applications.api.DialogV2 (avec fallback DialogV2 direct).
+
+   Bouton sablier : couleur dynamique gris/orange/vert selon l'état du flag.
+   Tooltip indique le nombre d'activités et leur résumé. Craft → bleu.
+   module.json — Bump 1.0.8 → 1.0.9.
 
 v1.0.8 | 2026-07-25
    fake-warning.js — Refonte du dialog de sélection des destinataires.

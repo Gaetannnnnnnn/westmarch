@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.0.7
+Version : 1.0.8
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -114,6 +114,24 @@ INSTALLATION
 ================================================================================
                     TOOLKIT — MISES À JOUR
 ================================================================================
+
+v1.0.8 | 2026-07-26
+   export-dialog.js — Fix menu contextuel "Export" invisible / dialog absent.
+   Deux causes racines corrigées :
+   (1) _getActor(li) échouait en Foundry v13 : la fonction supposait que li était
+   un élément jQuery (li.data("document-id")) alors que v13 passe un HTMLElement
+   natif. De plus, v13 ajoute data-uuid sur les entrées de sidebar (format
+   "Actor.<id>") là où v12 utilisait data-document-id. Résultat : _getActor
+   retournait null → condition() retournait false → l'option Export était masquée
+   du menu contextuel ("ne propose rien").
+   Correctif : normalisation jQuery→HTMLElement, lecture prioritaire de data-uuid
+   (split sur "."), fallback data-document-id / data-entity-id, puis jQuery.data()
+   en dernier recours.
+   (2) Recherche de l'option existante élargie : en plus de "SIDEBAR.Export",
+   la recherche tente "DOCUMENT.Export" et une correspondance par icône
+   ("file-export") pour couvrir les variations de clés i18n entre versions.
+   Si aucune option export n'est trouvée, on l'ajoute quand même en fin de liste.
+   module.json — Bump 1.0.7 → 1.0.8.
 
 v1.0.7 | 2026-07-24
    token.js — Fix fuite mémoire : les listeners window "pointermove" et "pointerup"
