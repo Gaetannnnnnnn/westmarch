@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.0.9
+Version : 1.1.0
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -114,6 +114,18 @@ INSTALLATION
 ================================================================================
                     TOOLKIT — MISES À JOUR
 ================================================================================
+
+v1.1.0 | 2026-07-26
+   export-dialog.js — Diagnostic + robustesse du remplacement de l'option Export.
+   Le remplacement de l'option Foundry native échouait silencieusement si son nom
+   ou son icône ne correspondait pas exactement à nos critères (idx === -1) → la
+   Foundry native restait dans le menu et téléchargeait directement sans dialog.
+   Correctifs : (1) détection élargie à "DOCUMENT.ExportData" et aux labels
+   localisés contenant "export" (insensible à la casse) ; (2) suppression de
+   TOUTES les options correspondantes (boucle inverse) avant d'insérer la nôtre,
+   pour éviter les doublons même si plusieurs options matchent ; (3) logs console
+   "[Toolkit Export]" à chaque étape pour diagnostiquer en cas de nouvel échec.
+   module.json — Bump 1.0.9 → 1.1.0.
 
 v1.0.9 | 2026-07-26
    export-dialog.js — Fix dialog de choix absent : la fonction _exportWithChoice

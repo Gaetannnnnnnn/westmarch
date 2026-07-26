@@ -501,10 +501,42 @@ async function _closeExpDialog(members) {
 // BUILDER HTML — Onglet Carnet (notes indépendantes)
 // ================================================================
 
-// État de repliage des notes (en mémoire, réinitialisé si la page est rechargée)
-const _collapsedNotes    = new Set(); // notes individuellement repliées
-const _collapsedSections = new Set(); // sections repliées (cache leurs notes)
-let   _draggedItemId     = null;      // id de l'item en cours de drag
+// État de repliage persisté par acteur via localStorage
+// Structure : Map<actorId, { notes: Set<id>, sections: Set<id> }>
+const _collapseByActor = new Map();
+let   _draggedItemId   = null;
+
+/**
+ * Retourne (et crée si besoin) l'état de repliage d'un acteur.
+ * Charge depuis localStorage au premier accès pour cet acteur.
+ */
+function _getCollapse(actorId) {
+    if (!_collapseByActor.has(actorId)) {
+        let notes = new Set(), sections = new Set();
+        try {
+            const raw = localStorage.getItem(`carnet-collapse-${actorId}`);
+            if (raw) {
+                const p  = JSON.parse(raw);
+                notes    = new Set(p.notes    ?? []);
+                sections = new Set(p.sections ?? []);
+            }
+        } catch {}
+        _collapseByActor.set(actorId, { notes, sections });
+    }
+    return _collapseByActor.get(actorId);
+}
+
+/** Sauvegarde l'état de repliage d'un acteur dans localStorage. */
+function _saveCollapse(actorId) {
+    try {
+        const state = _collapseByActor.get(actorId);
+        if (!state) return;
+        localStorage.setItem(`carnet-collapse-${actorId}`, JSON.stringify({
+            notes:    [...state.notes],
+            sections: [...state.sections]
+        }));
+    } catch {}
+}
 
 export function buildJournalHtml(actor) {
     const items   = getCarnetNotes(actor); // peut contenir notes ET sections
@@ -533,12 +565,14 @@ export function buildJournalHtml(actor) {
         </div>`;
     }
 
+    const collapse = _getCollapse(actor.id);
+
     // Calcule si une note est sous une section repliée
     let currentSectionCollapsed = false;
     const rendered = items.map(item => {
         // ── SECTION ─────────────────────────────────────────────
         if (item.type === "section") {
-            currentSectionCollapsed = _collapsedSections.has(item.id);
+            currentSectionCollapsed = collapse.sections.has(item.id);
             const chevron = currentSectionCollapsed ? "fa-chevron-right" : "fa-chevron-down";
             const titleEsc = (item.title ?? "").replace(/"/g, "&quot;");
             return `
@@ -563,7 +597,7 @@ export function buildJournalHtml(actor) {
 
         // ── NOTE ─────────────────────────────────────────────────
         const note        = item;
-        const isCollapsed = _collapsedNotes.has(note.id);
+        const isCollapsed = collapse.notes.has(note.id);
         const hidden      = currentSectionCollapsed;
         const linkedExp   = note.linkedExpId ? exps.find(e => e.id === note.linkedExpId) : null;
 
@@ -932,13 +966,15 @@ export function wireJournalTab(actor, element, sheet) {
     // ── Replier / déplier une section ────────────────────────────
     element.querySelectorAll('.carnet-toggle-section').forEach(btn => {
         btn.addEventListener('click', () => {
-            const sectionId   = btn.dataset.sectionId;
-            const wasCollapsed = _collapsedSections.has(sectionId);
+            const sectionId    = btn.dataset.sectionId;
+            const collapse     = _getCollapse(actor.id);
+            const wasCollapsed = collapse.sections.has(sectionId);
             if (wasCollapsed) {
-                _collapsedSections.delete(sectionId);
+                collapse.sections.delete(sectionId);
             } else {
-                _collapsedSections.add(sectionId);
+                collapse.sections.add(sectionId);
             }
+            _saveCollapse(actor.id);
             _applySectionCollapse(element, sectionId, !wasCollapsed);
             const icon = btn.querySelector('i');
             icon?.classList.replace(
@@ -977,21 +1013,23 @@ export function wireJournalTab(actor, element, sheet) {
     // ── Replier / déplier une note individuelle ──────────────────
     element.querySelectorAll('.carnet-toggle-note').forEach(btn => {
         btn.addEventListener('click', () => {
-            const noteId = btn.dataset.noteId;
-            const card   = element.querySelector(`.carnet-note-card[data-note-id="${noteId}"]`);
-            const body   = card?.querySelector('.carnet-note-body');
-            const icon   = btn.querySelector('i');
-            if (_collapsedNotes.has(noteId)) {
-                _collapsedNotes.delete(noteId);
+            const noteId   = btn.dataset.noteId;
+            const collapse = _getCollapse(actor.id);
+            const card     = element.querySelector(`.carnet-note-card[data-note-id="${noteId}"]`);
+            const body     = card?.querySelector('.carnet-note-body');
+            const icon     = btn.querySelector('i');
+            if (collapse.notes.has(noteId)) {
+                collapse.notes.delete(noteId);
                 if (body) body.style.display = '';
                 btn.title = 'Replier';
                 icon?.classList.replace('fa-chevron-right', 'fa-chevron-down');
             } else {
-                _collapsedNotes.add(noteId);
+                collapse.notes.add(noteId);
                 if (body) body.style.display = 'none';
                 btn.title = 'Déplier';
                 icon?.classList.replace('fa-chevron-down', 'fa-chevron-right');
             }
+            _saveCollapse(actor.id);
         });
     });
 

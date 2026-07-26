@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.3.3
+Version : 1.3.4
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -105,6 +105,20 @@ INSTALLATION
 ================================================================================
                     CARNET D'EXPÉDITIONS — MISES À JOUR
 ================================================================================
+
+v1.3.4 | 2026-07-26
+   carnet.js — Persistance de l'état de repliage des notes et sections.
+   Avant : _collapsedNotes et _collapsedSections étaient des Set module-level
+   réinitialisés à chaque rechargement de page → toutes les notes se retrouvaient
+   dépliées à la reconnexion.
+   Après : état persisté par acteur dans localStorage (clé "carnet-collapse-<actorId>")
+   sous la forme { notes: [...ids], sections: [...ids] }. La structure est un
+   Map<actorId, {notes, sections}> côté JS, chargé depuis localStorage au premier
+   accès pour chaque acteur. buildJournalHtml() lit l'état persisté pour produire
+   le HTML initial avec le bon état de repliage. Les handlers toggle section et
+   toggle note sauvegardent dans localStorage à chaque changement. Plusieurs fiches
+   ouvertes simultanément sont gérées indépendamment (pas de cross-contamination).
+   module.json — Bump 1.3.3 → 1.3.4.
 
 v1.3.3 | 2026-07-26
    carnet.js — Fix glisser-déposer (toujours inopérant en Foundry v13 / dnd5e v3).

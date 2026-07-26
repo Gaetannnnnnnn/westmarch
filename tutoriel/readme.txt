@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.2.2
+Version : 1.2.3
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -158,6 +158,16 @@ INSTALLATION
 ================================================================================
                     TUTORIEL — MISES À JOUR
 ================================================================================
+
+v1.2.3 | 2026-07-26
+   tutorial.js — Ajout des étapes "bouton Retirer" dans les sections Bestiaire et Relations.
+   Bestiaire : nouvelle étape ciblant .bst-delete (icône poubelle sur chaque entrée) —
+   explique la suppression d'une entrée et la possibilité de ré-ajout automatique.
+   Relations : deux nouvelles étapes :
+     · .rel-delete — suppression d'une relation individuelle (avec textGM)
+     · .ashara-exclude-btn — bouton <ban> dans l'en-tête de fiche, retire le personnage
+       des Relations et du Bestiaire de tous les joueurs et bloque les ajouts futurs (GM)
+   module.json — Bump 1.2.2 → 1.2.3.
 
 v1.2.2 | 2026-07-26
    tutorial.js — Fix _openProtoTokenAppearance : la fenêtre Prototype Token

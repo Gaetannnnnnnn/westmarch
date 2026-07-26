@@ -320,6 +320,14 @@ const STEPS_BY_FEATURE = {
             textGM:   "Cliquez sur la flèche d'une entrée pour la déplier. Vous pouvez y renseigner la scène de première rencontre et ajouter des notes visibles par le joueur.",
             position: "center"
         },
+        {
+            beforeShow: _toSheet("bestiary"),
+            target:     ".bst-delete",
+            title:      "Retirer une entrée",
+            text:       "L'icône <i class='fas fa-trash'></i> à droite d'une entrée retire définitivement cette créature de votre bestiaire. Une confirmation est demandée avant la suppression.",
+            textGM:     "L'icône <i class='fas fa-trash'></i> retire la créature du bestiaire du joueur. Elle pourra être ré-ajoutée automatiquement si le joueur la recroise en scène.",
+            position:   "left"
+        },
     ],
 
     // ---- Relations ----
@@ -339,6 +347,22 @@ const STEPS_BY_FEATURE = {
             text:       "Chaque relation a un type (allié, ennemi, neutre…) et un espace de notes libre. Elle n'est visible que par vous et le GM.",
             textGM:     "Chaque relation a un type et un espace de notes. Elle est visible par le joueur et par vous. Vous pouvez modifier ou supprimer n'importe quelle entrée.",
             position:   "right"
+        },
+        {
+            beforeShow: _toSheet("relations"),
+            target:     ".rel-delete",
+            title:      "Supprimer une relation",
+            text:       "L'icône <i class='fas fa-trash'></i> à droite d'une relation la supprime. Elle pourra être recréée automatiquement si vous recroisez ce personnage en scène.",
+            textGM:     "L'icône <i class='fas fa-trash'></i> supprime la relation du joueur. Elle sera recréée automatiquement si le joueur recroise ce personnage en scène.",
+            position:   "left"
+        },
+        {
+            beforeShow: _toSheet("relations"),
+            target:     ".ashara-exclude-btn",
+            title:      "Retirer des listes",
+            text:       "Le bouton <i class='fas fa-ban'></i> dans l'en-tête de la fiche <strong>retire ce personnage de toutes les Relations et du Bestiaire</strong> et bloque les ajouts automatiques futurs. Pratique pour les figurants ou les doublons.",
+            textGM:     "Le bouton <i class='fas fa-ban'></i> dans l'en-tête d'une fiche retire ce personnage des Relations et du Bestiaire de <strong>tous les joueurs</strong> et empêche tout ajout automatique futur. Cliquez à nouveau pour réactiver. S'applique à n'importe quelle fiche PJ ou PNJ.",
+            position:   "bottom"
         },
     ],
 
