@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.1.3
+Version : 1.1.4
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -114,6 +114,12 @@ INSTALLATION
 ================================================================================
                     TOOLKIT — MISES À JOUR
 ================================================================================
+
+v1.1.4 | 2026-07-26
+   character.css — Style des boutons du dialog Export : bouton Exporter en dégradé
+   or (#c9a84c → #9e7c2a) sur fond sombre, texte brun foncé, hover lumineux.
+   Bouton Annuler en gris-parchemin discret avec bordure or subtile.
+   module.json — Bump 1.1.3 → 1.1.4.
 
 v1.1.3 | 2026-07-26
    export-dialog.js — Fix icône "Fiche originale dnd5e" : fa-d-and-d-beyond est une
