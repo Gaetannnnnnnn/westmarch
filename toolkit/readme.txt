@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.1.0
+Version : 1.1.1
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -114,6 +114,18 @@ INSTALLATION
 ================================================================================
                     TOOLKIT — MISES À JOUR
 ================================================================================
+
+v1.1.1 | 2026-07-26
+   export-dialog.js — Fix hook nom v13 : en Foundry v13, ui.actors est ApplicationV2.
+   L'ancien hook "getActorDirectoryEntryContext" (ContextMenu.create, déprécié v13) ne
+   fire plus jamais. Le nouveau système (_createContextMenu → _doEvent → #callHooks)
+   construit le menu contextuel UNE FOIS au render de la sidebar avec le hook
+   "getActorContextOptions" (= get${documentName}ContextOptions). Ce hook reçoit
+   (actorDirectoryInstance, menuItems[]) et les modifications sur menuItems sont
+   appliquées en place avant la création du ContextMenu.implementation.
+   Ajout de Hooks.on("getActorContextOptions", handler) en priorité.
+   Les anciens hooks restent enregistrés (inoffensifs, ignorés en v13).
+   module.json — Bump 1.1.0 → 1.1.1.
 
 v1.1.0 | 2026-07-26
    export-dialog.js — Diagnostic + robustesse du remplacement de l'option Export.

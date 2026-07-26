@@ -65,7 +65,10 @@ export function ExportDialogHooks() {
         console.log("[Toolkit Export] menu final :", options.map(o => o.name ?? o.label));
     };
 
-    // En Foundry v13 le nom du hook peut varier — on écoute les deux
+    // Foundry v13 ApplicationV2 : le hook fire au render de la sidebar, pas au clic droit.
+    // Le nom est construit par #callHooks → `get${documentName}ContextOptions` = "getActorContextOptions".
+    Hooks.on("getActorContextOptions", handler);
+    // Foundry v12 / fallback (ignorés en v13 ApplicationV2 mais inoffensifs)
     Hooks.on("getActorDirectoryEntryContext", handler);
     Hooks.on("getActorEntryContext", handler);
 }
