@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.1.1
+Version : 1.1.2
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -114,6 +114,13 @@ INSTALLATION
 ================================================================================
                     TOOLKIT — MISES À JOUR
 ================================================================================
+
+v1.1.2 | 2026-07-26
+   character.css — Refonte visuelle du dialog Export : thème D&D parchemin/or.
+   Fond brun sombre (#1a1008), accent or (#c9a84c), texte parchemin (#f0e6cc).
+   Intro avec bordure gauche or sur fond ambre. Options : bordure or, hover doré,
+   sélection encadrée or. Descriptions en brun-parchemin (#a89070) lisible.
+   module.json — Bump 1.1.1 → 1.1.2.
 
 v1.1.1 | 2026-07-26
    export-dialog.js — Fix hook nom v13 : en Foundry v13, ui.actors est ApplicationV2.
