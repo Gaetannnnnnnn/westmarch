@@ -1,6 +1,15 @@
-// ============================================================
-// settings.js — Paramètres + explication dans la config
-// ============================================================
+/**
+ * @file        modules/settings.js
+ * @module      midi-range-fix
+ * @version     1.3.3
+ * @author      Soruta (Discord : s0ruta)
+ * @license     © 2026 Soruta — Tous droits réservés.
+ *              Usage personnel autorisé. Toute redistribution, modification
+ *              ou usage commercial est strictement interdit sans autorisation écrite.
+ *
+ * @description Enregistrement des settings du module et injection du bloc
+ *              explicatif dans la page de configuration Foundry.
+ */
 
 const MODULE = "midi-range-fix";
 

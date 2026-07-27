@@ -1,44 +1,61 @@
-// © 2026 Soruta — Tous droits réservés. Usage personnel autorisé. Redistribution et modification interdites.
 /**
- * midi-range-fix | range-fix.js
- * v1.2.0
+ * @file        modules/range-fix.js
+ * @module      midi-range-fix
+ * @version     1.3.3
+ * @author      Soruta (Discord : s0ruta)
+ * @license     © 2026 Soruta — Tous droits réservés.
+ *              Usage personnel autorisé. Toute redistribution, modification
+ *              ou usage commercial est strictement interdit sans autorisation écrite.
  *
- * Corrige le calcul de portée midi-qol pour les tokens Large/Huge/Gargantuan.
+ * @description Patch de canvas.grid.measurePath pour corriger les portées midi-qol.
  *
- * Problème : midi-qol mesure de plusieurs coins de l'attaquant vers plusieurs
- * coins du token cible, puis prend la distance minimale. Cette approche donne
- * des distances trop grandes pour les tokens Large+ positionnés hors-grille,
- * ou pour des combinaisons Medium attaquant vs Large cible (le demi-espace de
- * l'attaquant n'est pas pris en compte — ex. PJ Medium vs Brown Bear Large
- * donnait 6.9ft au lieu de 1.6ft, bloquant l'attaque à tort).
+ *   PROBLÈME
+ *   --------
+ *   Midi-qol mesure la portée depuis plusieurs coins de l'attaquant vers plusieurs
+ *   coins de la cible, puis prend la distance minimale. Cette approche surestime
+ *   la distance pour les tokens Large+ hors-grille : ex. PJ Medium vs Brown Bear
+ *   Large donnait 6.9 ft au lieu de ~0 ft bord→bord, bloquant des attaques valides.
  *
- * Correction : mesure bord→bord.
- *   - On trouve le point le plus proche sur la bounding box de l'ATTAQUANT
- *     depuis le centre de la CIBLE.
- *   - On trouve le point le plus proche sur la bounding box de la CIBLE
- *     depuis le centre de l'ATTAQUANT.
- *   - La distance entre ces deux points de bord est la portée effective D&D 5e.
+ *   SOLUTION : mesure bord→bord
+ *   ---------------------------
+ *   1. Calculer le centre géométrique de chaque token (_boundsCenter).
+ *   2. Trouver le point le plus proche sur la bounding box de l'attaquant depuis
+ *      le centre de la cible (_nearestBorderPoint) → "bord attaquant".
+ *   3. Trouver le point le plus proche sur la bounding box de la cible depuis
+ *      le centre de l'attaquant (_nearestBorderPoint) → "bord cible".
+ *   4. Mesurer la distance entre ces deux points via le prototype Foundry
+ *      (_protoCall) sans passer par le getter de l'instance (évite la récursion).
+ *   5. Ajouter rangeAdjust (défaut 2.5 ft) à cette distance bord→bord.
+ *      Midi-qol compare ensuite result.distance ≤ weapon_range, ce qui revient à :
+ *        bord→bord ≤ weapon_range − rangeAdjust
+ *      Exemple (adjust = 2.5) :
+ *        arme  5 ft → portée depuis bord ≤  2.5 ft (demi-case Medium)
+ *        arme 10 ft → portée depuis bord ≤  7.5 ft
+ *        arme 15 ft → portée depuis bord ≤ 12.5 ft
  *
- * La correction n'est appliquée que si l'un des deux tokens est Large+ (≥ 2 cases).
- * Pour Medium vs Medium, la mesure native midi-qol est conservée (elle est correcte
- * pour les tokens alignés sur la grille).
+ *   DÉTECTION DES TOKENS
+ *   ---------------------
+ *   Double méthode, dans l'ordre :
+ *   1. Bounds-check avec PAD 8 px sur les waypoints passés par midi-qol.
+ *   2. Fallback : token contrôlé (canvas.tokens.controlled[0]) + cible désignée
+ *      (game.user.targets) — couvre les cas où midi-qol passe des coordonnées
+ *      hors-bounds (coin de token, unités de grille vs pixels, token hors-grille).
  *
- * Persistance du patch — triple couche (v1.2.0) :
+ *   PERSISTANCE DU PATCH — triple couche
+ *   --------------------------------------
+ *   Midi-qol ou libWrapper peut appeler Object.defineProperty(canvas.grid,
+ *   'measurePath', { value: fn }) pendant le workflow d'attaque, détruisant
+ *   notre getter/setter. Trois couches de défense :
+ *   1. _ourPatch en portée MODULE (référence stable, marquée par Symbol _PATCH_MARK).
+ *   2. Object.defineProperty getter/setter (résiste aux assignments simples =).
+ *   3. Hook dnd5e.preUseItem : réinstalle avant chaque attaque.
+ *   4. Polling setInterval 2s : détecte et réinstalle si le descripteur est écrasé.
  *
- *   Problème v1.1.3 : midi-qol (ou libWrapper) peut appeler Object.defineProperty
- *   sur canvas.grid.measurePath PENDANT le workflow d'attaque. Cela remplace notre
- *   getter/setter par un value descriptor — notre setter n'est jamais déclenché,
- *   notre getter est détruit. L'attaque 1 fonctionnait (getter encore en place) ;
- *   l'attaque 2 échouait (le getter avait été écrasé).
- *
- *   Solution :
- *     1. _ourPatch est en portée MODULE (référence stable, identifiable par ===
- *        et par le Symbol _PATCH_MARK).
- *     2. Object.defineProperty getter/setter (résiste aux assignments simples).
- *     3. Hook dnd5e.preUseItem : réinstalle le getter/setter avant chaque item use,
- *        avant que midi-qol ne fasse quoi que ce soit.
- *     4. Polling 250ms : détecte si le descripteur est devenu un value descriptor
- *        (Object.defineProperty tiers) et réinstalle.
+ *   ANTI-RÉCURSION
+ *   --------------
+ *   _trueOriginal (midi-qol) rappelle canvas.grid.measurePath en interne → notre
+ *   getter → _ourPatch → boucle infinie. Garde _reentering + _protoCall (prototype
+ *   direct) court-circuitent immédiatement tout appel rentrant.
  */
 
 const _MODULE     = "midi-range-fix";
@@ -75,23 +92,32 @@ function _ourPatch(waypoints, options) {
 
         const [src, tgt] = waypoints;
 
-        // Identifier l'attaquant : src est dans ses bounds.
-        const attacker = canvas.tokens.placeables.find(t => {
-            if (!t.actor || !t.bounds) return false;
-            const b = t.bounds;
-            return src.x >= b.x && src.x <= b.x + b.width
-                && src.y >= b.y && src.y <= b.y + b.height;
-        });
-        if (!attacker) return _protoCall(waypoints, options);
+        // Méthode 1 : identifier les tokens depuis les coordonnées des waypoints.
+        // PAD = 8 px de tolérance pour les points de bord ou les systèmes de
+        // coordonnées légèrement décalés (ex. midi-qol passant le coin du token).
+        const PAD = 8;
+        function _tokenAtPt(pt, exclude) {
+            return canvas.tokens.placeables.find(t => {
+                if (!t.actor || !t.bounds || t === exclude) return false;
+                const b = t.bounds;
+                return pt.x >= b.x - PAD && pt.x <= b.x + b.width  + PAD
+                    && pt.y >= b.y - PAD && pt.y <= b.y + b.height + PAD;
+            }) ?? null;
+        }
 
-        // Identifier la cible : tgt est dans ses bounds.
-        const target = canvas.tokens.placeables.find(t => {
-            if (!t.actor || t === attacker || !t.bounds) return false;
-            const b = t.bounds;
-            return tgt.x >= b.x && tgt.x <= b.x + b.width
-                && tgt.y >= b.y && tgt.y <= b.y + b.height;
-        });
-        if (!target) return _protoCall(waypoints, options);
+        let attacker = _tokenAtPt(src, null);
+        let target   = attacker ? _tokenAtPt(tgt, attacker) : null;
+
+        // Méthode 2 : fallback sur le token contrôlé + la cible désignée.
+        // Couvre les cas où midi-qol passe des coordonnées hors-bounds
+        // (ex. coin du token, système de coordonnées différent, token hors-grille).
+        if (!attacker || !target) {
+            attacker = canvas.tokens.controlled[0] ?? null;
+            target   = [...(game.user?.targets ?? [])][0] ?? null;
+            if (!attacker || !target || attacker === target) {
+                return _protoCall(waypoints, options);
+            }
+        }
 
         // Mesure bord→bord via le PROTOTYPE (stable, sans re-call midi-qol).
         // On n'utilise pas _trueOriginal ici : midi-qol rappelle canvas.grid.measurePath
@@ -105,7 +131,10 @@ function _ourPatch(waypoints, options) {
         _reentering = true;
         let result;
         try {
-            result = _protoCall([attackerBorder, targetBorder], options);
+            // Options vides : identique à _patchRulerLabel, pour que les deux
+            // calculs donnent exactement la même distance (évite les modificateurs
+            // de coût midi-qol qui pourraient décaler la valeur).
+            result = _protoCall([attackerBorder, targetBorder], {});
         } finally {
             _reentering = false;
         }
@@ -118,6 +147,7 @@ function _ourPatch(waypoints, options) {
         if (result && typeof result.distance === "number") {
             const adjust = game.settings.get(_MODULE, "rangeAdjust") ?? 2.5;
             result.distance = result.distance + adjust;
+            console.log(`[midi-range-fix] bord→bord=${(result.distance - adjust).toFixed(2)} + ${adjust} = ${result.distance.toFixed(2)} ft`);
         }
         return result;
 
