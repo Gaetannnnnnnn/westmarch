@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.2.7
+Version : 1.2.9
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -64,6 +64,25 @@ INSTALLATION
 ================================================================================
                     MIDI-RANGE-FIX — MISES À JOUR
 ================================================================================
+
+v1.2.9 | 2026-07-27
+   range-fix.js — La règle (ruler) affiche maintenant la même distance que midi-qol
+   utilise pour les attaques : bord→bord + ajustement. Suppression du guard
+   ruler._state > 0 qui laissait Foundry mesurer sans correction. Les joueurs
+   voient désormais 5 ft quand ils sont à la limite de portée (bord→bord = 2.5 ft
+   avec l'ajustement par défaut), cohérent avec ce que le jeu autorise.
+   module.json — Bump 1.2.8 → 1.2.9.
+
+v1.2.8 | 2026-07-27
+   range-fix.js — Fix distances incohérentes (6/10/11 ft en se déplaçant légèrement).
+   Cause : _trueOriginal (midi-qol) rappelle canvas.grid.measurePath en interne avec
+   SES propres points (coins des tokens), ce qui produisait un mélange de notre mesure
+   bord→bord et de la mesure native midi-qol. Résultat : distances aléatoires selon
+   la position exacte des tokens. Correction : utilisation du PROTOTYPE Foundry
+   directement (_protoCall) pour le calcul bord→bord. Le prototype ne rappelle pas
+   canvas.grid.measurePath, la mesure est stable et prévisible.
+   Toutes les sorties de secours (fallback) utilisent aussi _protoCall au lieu de
+   _trueOriginal. module.json — Bump 1.2.7 → 1.2.8.
 
 v1.2.7 | 2026-07-27
    range-fix.js — Fix récursion infinie (InternalError: too much recursion).

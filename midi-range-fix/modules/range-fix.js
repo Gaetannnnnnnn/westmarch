@@ -64,17 +64,13 @@ function _protoCall(waypoints, options) {
 // Ne pas déplacer à l'intérieur d'une fonction — les comparaisons === en dépendent.
 // ─────────────────────────────────────────────────────────────────────────────
 function _ourPatch(waypoints, options) {
-    // Appel ré-entrant (depuis _trueOriginal) → prototype direct, sans passer par le getter.
+    // Garde de ré-entrance : si _protoCall déclenche canvas.grid.measurePath en interne,
+    // on court-circuite immédiatement vers le prototype pour éviter toute boucle.
     if (_reentering) return _protoCall(waypoints, options);
 
     try {
         if (!waypoints || waypoints.length !== 2) {
-            return _trueOriginal(waypoints, options);
-        }
-
-        // Ne pas intercepter les mesures de la règle manuelle (glissée par l'utilisateur).
-        if (canvas?.controls?.ruler?._state > 0) {
-            return _trueOriginal(waypoints, options);
+            return _protoCall(waypoints, options);
         }
 
         const [src, tgt] = waypoints;
@@ -86,7 +82,7 @@ function _ourPatch(waypoints, options) {
             return src.x >= b.x && src.x <= b.x + b.width
                 && src.y >= b.y && src.y <= b.y + b.height;
         });
-        if (!attacker) return _trueOriginal(waypoints, options);
+        if (!attacker) return _protoCall(waypoints, options);
 
         // Identifier la cible : tgt est dans ses bounds.
         const target = canvas.tokens.placeables.find(t => {
@@ -95,29 +91,30 @@ function _ourPatch(waypoints, options) {
             return tgt.x >= b.x && tgt.x <= b.x + b.width
                 && tgt.y >= b.y && tgt.y <= b.y + b.height;
         });
-        if (!target) return _trueOriginal(waypoints, options);
+        if (!target) return _protoCall(waypoints, options);
 
-        // Mesure bord→bord pour TOUS les tokens (Medium inclus).
+        // Mesure bord→bord via le PROTOTYPE (stable, sans re-call midi-qol).
+        // On n'utilise pas _trueOriginal ici : midi-qol rappelle canvas.grid.measurePath
+        // en interne avec ses propres points (coins), ce qui produisait des distances
+        // incohérentes (6/10/11 ft en se déplaçant légèrement).
         const attackerCenter = _boundsCenter(attacker);
         const targetCenter   = _boundsCenter(target);
         const attackerBorder = _nearestBorderPoint(targetCenter,   attacker);
         const targetBorder   = _nearestBorderPoint(attackerCenter, target);
 
-        // _reentering = true : les appels internes de _trueOriginal à canvas.grid.measurePath
-        // seront redirigés vers le prototype sans repasser par _ourPatch.
         _reentering = true;
         let result;
         try {
-            result = _trueOriginal([attackerBorder, targetBorder], options);
+            result = _protoCall([attackerBorder, targetBorder], options);
         } finally {
             _reentering = false;
         }
 
         // On ajoute l'ajustement à la distance bord→bord.
-        // Midi-qol compare ensuite result.distance ≤ weapon_range, ce qui revient à :
+        // Midi-qol compare result.distance ≤ weapon_range, soit :
         //   bord→bord ≤ weapon_range − adjust
-        // Ex. (adjust=2.5) : arme 5ft → portée bord jusqu'à 2.5ft
-        //                     arme 10ft → portée bord jusqu'à 7.5ft
+        // Ex. (adjust=2.5) : arme 5ft → portée depuis bord ≤ 2.5ft
+        //                     arme 10ft → portée depuis bord ≤ 7.5ft
         if (result && typeof result.distance === "number") {
             const adjust = game.settings.get(_MODULE, "rangeAdjust") ?? 2.5;
             result.distance = result.distance + adjust;
@@ -126,7 +123,7 @@ function _ourPatch(waypoints, options) {
 
     } catch(err) {
         _reentering = false;
-        console.warn("[midi-range-fix] Erreur dans measurePath, fallback midi-qol :", err);
+        console.warn("[midi-range-fix] Erreur dans measurePath, fallback proto :", err);
         return _protoCall(waypoints, options);
     }
 }
