@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.2.6
+Version : 1.2.7
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -64,6 +64,15 @@ INSTALLATION
 ================================================================================
                     MIDI-RANGE-FIX — MISES À JOUR
 ================================================================================
+
+v1.2.7 | 2026-07-27
+   range-fix.js — Fix récursion infinie (InternalError: too much recursion).
+   Cause : _trueOriginal (midi-qol) appelle canvas.grid.measurePath en interne,
+   ce qui déclenche notre getter → _ourPatch → _trueOriginal → ... à l'infini.
+   Correction : garde de ré-entrance (_reentering). Quand _reentering = true,
+   les appels internes sont redirigés vers Object.getPrototypeOf(canvas.grid)
+   .measurePath directement, sans passer par le getter de l'instance.
+   module.json — Bump 1.2.6 → 1.2.7.
 
 v1.2.6 | 2026-07-27
    range-fix.js — Fix sens de l'ajustement (soustrait → ajouté) + patch universel.

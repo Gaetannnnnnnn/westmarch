@@ -49,19 +49,30 @@ const _PATCH_MARK = Symbol("midiRangeFix"); // identifie _ourPatch sans comparer
 let _trueOriginal = null;
 let _pollInterval = null;
 
+// Garde de ré-entrance : _trueOriginal (midi-qol) appelle canvas.grid.measurePath
+// en interne, ce qui déclenche à nouveau notre getter → récursion infinie.
+// Quand _reentering = true, on court-circuite vers le prototype directement
+// (qui ne passe PAS par le getter de l'instance).
+let _reentering = false;
+
+function _protoCall(waypoints, options) {
+    return Object.getPrototypeOf(canvas.grid)?.measurePath?.call(canvas.grid, waypoints, options);
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // _ourPatch : portée MODULE obligatoire pour que la référence soit stable.
 // Ne pas déplacer à l'intérieur d'une fonction — les comparaisons === en dépendent.
 // ─────────────────────────────────────────────────────────────────────────────
 function _ourPatch(waypoints, options) {
+    // Appel ré-entrant (depuis _trueOriginal) → prototype direct, sans passer par le getter.
+    if (_reentering) return _protoCall(waypoints, options);
+
     try {
         if (!waypoints || waypoints.length !== 2) {
             return _trueOriginal(waypoints, options);
         }
 
         // Ne pas intercepter les mesures de la règle manuelle (glissée par l'utilisateur).
-        // Quand la règle est active (_state > 0), on laisse Foundry mesurer normalement.
-        // Le correctif bord→bord ne s'applique qu'aux appels midi-qol (règle inactive).
         if (canvas?.controls?.ruler?._state > 0) {
             return _trueOriginal(waypoints, options);
         }
@@ -92,7 +103,15 @@ function _ourPatch(waypoints, options) {
         const attackerBorder = _nearestBorderPoint(targetCenter,   attacker);
         const targetBorder   = _nearestBorderPoint(attackerCenter, target);
 
-        const result = _trueOriginal([attackerBorder, targetBorder], options);
+        // _reentering = true : les appels internes de _trueOriginal à canvas.grid.measurePath
+        // seront redirigés vers le prototype sans repasser par _ourPatch.
+        _reentering = true;
+        let result;
+        try {
+            result = _trueOriginal([attackerBorder, targetBorder], options);
+        } finally {
+            _reentering = false;
+        }
 
         // On ajoute l'ajustement à la distance bord→bord.
         // Midi-qol compare ensuite result.distance ≤ weapon_range, ce qui revient à :
@@ -106,8 +125,9 @@ function _ourPatch(waypoints, options) {
         return result;
 
     } catch(err) {
+        _reentering = false;
         console.warn("[midi-range-fix] Erreur dans measurePath, fallback midi-qol :", err);
-        return _trueOriginal?.(waypoints, options);
+        return _protoCall(waypoints, options);
     }
 }
 _ourPatch[_PATCH_MARK] = true; // marque pour identification fiable
