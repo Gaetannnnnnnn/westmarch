@@ -86,21 +86,22 @@ function _ourPatch(waypoints, options) {
         });
         if (!target) return _trueOriginal(waypoints, options);
 
-        // Aucune correction pour Medium vs Medium.
-        const attackerWidth = attacker.document?.width ?? 1;
-        const targetWidth   = target.document?.width   ?? 1;
-        if (attackerWidth <= 1 && targetWidth <= 1) return _trueOriginal(waypoints, options);
-
-        // Mesure bord→bord.
+        // Mesure bord→bord pour TOUS les tokens (Medium inclus).
         const attackerCenter = _boundsCenter(attacker);
         const targetCenter   = _boundsCenter(target);
         const attackerBorder = _nearestBorderPoint(targetCenter,   attacker);
         const targetBorder   = _nearestBorderPoint(attackerCenter, target);
 
         const result = _trueOriginal([attackerBorder, targetBorder], options);
+
+        // On ajoute l'ajustement à la distance bord→bord.
+        // Midi-qol compare ensuite result.distance ≤ weapon_range, ce qui revient à :
+        //   bord→bord ≤ weapon_range − adjust
+        // Ex. (adjust=2.5) : arme 5ft → portée bord jusqu'à 2.5ft
+        //                     arme 10ft → portée bord jusqu'à 7.5ft
         if (result && typeof result.distance === "number") {
             const adjust = game.settings.get(_MODULE, "rangeAdjust") ?? 2.5;
-            result.distance = Math.max(0, result.distance - adjust);
+            result.distance = result.distance + adjust;
         }
         return result;
 

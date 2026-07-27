@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.2.4
+Version : 1.2.6
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -64,6 +64,30 @@ INSTALLATION
 ================================================================================
                     MIDI-RANGE-FIX — MISES À JOUR
 ================================================================================
+
+v1.2.6 | 2026-07-27
+   range-fix.js — Fix sens de l'ajustement (soustrait → ajouté) + patch universel.
+   L'ajustement rangeAdjust doit être AJOUTÉ à la distance bord→bord (pas soustrait).
+   Midi-qol vérifie ensuite result.distance ≤ weapon_range, ce qui donne :
+   bord→bord ≤ weapon_range − adjust. Ex. (adjust=2.5) : arme 5ft atteint jusqu'à
+   2.5ft depuis le bord ; arme 10ft jusqu'à 7.5ft. La version précédente soustrayait,
+   ce qui donnait bord→bord ≤ weapon_range + 2.5 (2.5ft de portée bonus incorrect).
+   Suppression du court-circuit Medium vs Medium : le patch s'applique désormais à
+   tous les tokens.
+   settings.js — Restauration du setting rangeAdjust avec hint corrigé.
+   Tableau d'exemples recalculé avec la bonne formule.
+   module.json — Bump 1.2.5 → 1.2.6.
+
+v1.2.5 | 2026-07-27
+   range-fix.js — Suppression de la soustraction rangeAdjust (overcorrection).
+   Le module mesurait correctement bord→bord des DEUX côtés (bord attaquant +
+   bord cible), puis soustrayait encore 2.5 ft, donnant 2.5 ft de portée bonus
+   gratuite. Conséquence : des tokens à 7.4 ft bord→bord passaient comme étant
+   à portée 5 ft. Correction : la distance bord→bord est la portée effective,
+   aucun ajustement supplémentaire n'est nécessaire.
+   settings.js — Suppression du setting "rangeAdjust" (plus pertinent).
+   Tableau d'exemples corrigé : "1 case de gap = ✗ hors portée 5 ft".
+   module.json — Bump 1.2.4 → 1.2.5.
 
 v1.2.4 | 2026-07-24
    range-fix.js — Optimisation perf : polling de vérification du patch réduit
