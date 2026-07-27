@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.3.1
+Version : 1.3.2
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -64,6 +64,18 @@ INSTALLATION
 ================================================================================
                     MIDI-RANGE-FIX — MISES À JOUR
 ================================================================================
+
+v1.3.2 | 2026-07-27
+   range-fix.js — Fix affichage règle incohérent avec midi-qol. La règle Foundry
+   part de l'endroit où l'utilisateur clique (souvent le centre du token), pas du
+   bord. Ajouter 2.5 à measurement.distance donnait donc centre→bord + 2.5, qui
+   ne correspondait pas à ce que midi-qol voyait (bord→bord + 2.5). Résultat :
+   la règle affichait 5.21 ft alors que midi-qol autorisait l'attaque (bord→bord
+   = 0.21 ft). Correction : recalcul bord→bord dans _getWaypointLabelContext
+   exactement comme dans _ourPatch (_boundsCenter + _nearestBorderPoint + _protoCall),
+   avec _reentering = true pendant l'appel pour éviter toute récursion. La règle
+   affiche maintenant la même valeur que midi-qol utilise pour la décision d'attaque.
+   module.json — Bump 1.3.1 → 1.3.2.
 
 v1.3.1 | 2026-07-27
    range-fix.js — Fix condition du patch ruler : l'ajustement s'affichait en

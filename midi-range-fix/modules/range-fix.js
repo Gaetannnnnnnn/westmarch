@@ -157,9 +157,8 @@ function _patchRulerLabel() {
         const context = orig.call(this, waypoint, state);
         if (!context?.distance) return context;
 
-        // N'ajuster que si les deux extrémités du segment sont dans les bounds
-        // d'un token distinct. On vérifie les coords pixel du ray (ray.A = départ,
-        // ray.B = arrivée). Tolérance de 8 px pour les points de bord.
+        // Vérifier que les deux extrémités du ray tombent dans les bounds d'un token.
+        // Tolérance 8 px pour les points de bord.
         const ray = waypoint.ray;
         if (!ray?.A || !ray?.B) return context;
 
@@ -178,11 +177,27 @@ function _patchRulerLabel() {
         const tgtToken = _tokenAt(ray.B);
         if (!tgtToken || tgtToken === srcToken) return context;
 
-        const adjust  = game.settings.get(_MODULE, "rangeAdjust") ?? 2.5;
-        const rawDist = waypoint.measurement?.distance;
-        if (typeof rawDist !== "number") return context;
+        // Recalculer bord→bord exactement comme _ourPatch le fait pour midi-qol,
+        // indépendamment de l'endroit où l'utilisateur a commencé à tirer la règle
+        // (centre, bord, n'importe où dans le token).
+        const srcCenter = _boundsCenter(srcToken);
+        const tgtCenter = _boundsCenter(tgtToken);
+        const srcBorder = _nearestBorderPoint(tgtCenter, srcToken);
+        const tgtBorder = _nearestBorderPoint(srcCenter, tgtToken);
 
-        const adjusted = rawDist + adjust;
+        // _reentering = true pour court-circuiter _ourPatch si le prototype
+        // rappelle canvas.grid.measurePath en interne.
+        _reentering = true;
+        let bordResult;
+        try {
+            bordResult = _protoCall([srcBorder, tgtBorder], {});
+        } finally {
+            _reentering = false;
+        }
+        if (!bordResult || typeof bordResult.distance !== "number") return context;
+
+        const adjust   = game.settings.get(_MODULE, "rangeAdjust") ?? 2.5;
+        const adjusted = bordResult.distance + adjust;
         // toNearest est une extension Number de Foundry (toujours présente en v13).
         context.distance.total = (typeof adjusted.toNearest === "function")
             ? adjusted.toNearest(0.01).toLocaleString(game.i18n.lang)
