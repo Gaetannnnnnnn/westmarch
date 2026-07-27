@@ -14,7 +14,7 @@ Modules Foundry VTT v13 / D&D 5e v3 pour les serveurs WestMarch.
 | Bestiaire | `ashara-bestiary` | 1.3.4 | Onglet Bestiaire sur la fiche PJ |
 | Carnet d'Expéditions | `carnet` | 1.3.4 | Onglets Carnet & Expéditions sur la fiche PJ |
 | Map Ouvert Systèmes | `carte-expeditions` | 1.0.2 | Gestion fog of war par personnage/groupe |
-| Midi Range Fix | `midi-range-fix` | 1.2.9 | Corrige la portée midi-qol pour les grands tokens |
+| Midi Range Fix | `midi-range-fix` | 1.3.0 | Corrige la portée midi-qol pour les grands tokens |
 | Toolkit | `toolkit` | 1.1.4 | Outils GM — polymorph, boutiques MEJ, export fiches |
 | Tutoriel | `tutoriel` | 1.2.5 | Guide interactif pour les joueurs et le GM |
 

@@ -130,6 +130,55 @@ function _ourPatch(waypoints, options) {
 _ourPatch[_PATCH_MARK] = true; // marque pour identification fiable
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Patch de l'affichage de la règle (ruler label)
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Patche Ruler.prototype._getWaypointLabelContext pour afficher
+ * bord→bord + rangeAdjust dans l'étiquette de la règle.
+ *
+ * La règle calcule waypoint.measurement.distance indépendamment de measurePath.
+ * Le patch s'applique uniquement quand un token est contrôlé ET une cible est
+ * désignée — pour ne pas altérer les mesures génériques sur la carte.
+ *
+ * Ce patch est posé sur le PROTOTYPE (une seule fois par session), pas sur
+ * l'instance : pas besoin de le réinstaller après un changement de scène.
+ */
+function _patchRulerLabel() {
+    const ruler = canvas.controls?.ruler;
+    if (!ruler) return;
+    const RulerClass = ruler.constructor;
+    if (!RulerClass?.prototype?._getWaypointLabelContext) return;
+    // Éviter le double-patch (canvasReady peut se déclencher plusieurs fois).
+    if (RulerClass.prototype._getWaypointLabelContext[_PATCH_MARK]) return;
+
+    const orig = RulerClass.prototype._getWaypointLabelContext;
+    RulerClass.prototype._getWaypointLabelContext = function(waypoint, state) {
+        const context = orig.call(this, waypoint, state);
+        if (!context?.distance) return context;
+
+        // N'ajuster que si un token est contrôlé et une cible est désignée.
+        const controlled = canvas.tokens?.controlled?.[0];
+        const targeted   = [...(game.user?.targets ?? [])][0];
+        if (!controlled || !targeted || controlled === targeted) return context;
+
+        const adjust  = game.settings.get(_MODULE, "rangeAdjust") ?? 2.5;
+        const rawDist = waypoint.measurement?.distance;
+        if (typeof rawDist !== "number") return context;
+
+        const adjusted = rawDist + adjust;
+        // toNearest est une extension Number de Foundry (toujours présente en v13).
+        context.distance.total = (typeof adjusted.toNearest === "function")
+            ? adjusted.toNearest(0.01).toLocaleString(game.i18n.lang)
+            : adjusted.toFixed(2);
+
+        return context;
+    };
+    RulerClass.prototype._getWaypointLabelContext[_PATCH_MARK] = true;
+    console.log("[midi-range-fix] Patch ruler label actif.");
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Hooks publics
 // ─────────────────────────────────────────────────────────────────────────────
 export function RangeFixHooks() {
@@ -142,6 +191,7 @@ export function RangeFixHooks() {
         setTimeout(() => {
             _installPatch();
             _startPoll();
+            _patchRulerLabel(); // prototype patch, idempotent grâce au _PATCH_MARK
         }, 0);
     });
 

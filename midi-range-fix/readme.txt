@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.2.9
+Version : 1.3.0
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -64,6 +64,17 @@ INSTALLATION
 ================================================================================
                     MIDI-RANGE-FIX — MISES À JOUR
 ================================================================================
+
+v1.3.0 | 2026-07-27
+   range-fix.js — La règle Foundry affiche maintenant la distance D&D effective
+   (bord→bord + ajustement) quand un token est contrôlé et une cible est désignée.
+   Patch de Ruler.prototype._getWaypointLabelContext : ajoute rangeAdjust à
+   waypoint.measurement.distance avant le formatage de l'étiquette. Le patch est
+   posé sur le prototype (idempotent, survit aux changements de scène sans
+   réinstallation). Les mesures sans token contrôlé/cible restent inchangées.
+   Ex. avec adjust=2.5 : règle à 2,5 ft de bord → affiche « 5 ft », cohérent
+   avec ce que midi-qol autorise.
+   module.json — Bump 1.2.9 → 1.3.0.
 
 v1.2.9 | 2026-07-27
    range-fix.js — La règle (ruler) affiche maintenant la même distance que midi-qol
