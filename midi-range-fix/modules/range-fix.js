@@ -157,10 +157,26 @@ function _patchRulerLabel() {
         const context = orig.call(this, waypoint, state);
         if (!context?.distance) return context;
 
-        // N'ajuster que si un token est contrôlé et une cible est désignée.
-        const controlled = canvas.tokens?.controlled?.[0];
-        const targeted   = [...(game.user?.targets ?? [])][0];
-        if (!controlled || !targeted || controlled === targeted) return context;
+        // N'ajuster que si les deux extrémités du segment sont dans les bounds
+        // d'un token distinct. On vérifie les coords pixel du ray (ray.A = départ,
+        // ray.B = arrivée). Tolérance de 8 px pour les points de bord.
+        const ray = waypoint.ray;
+        if (!ray?.A || !ray?.B) return context;
+
+        const PAD = 8;
+        function _tokenAt(pt) {
+            return (canvas.tokens?.placeables ?? []).find(t => {
+                if (!t.actor || !t.bounds) return false;
+                const b = t.bounds;
+                return pt.x >= b.x - PAD && pt.x <= b.x + b.width  + PAD
+                    && pt.y >= b.y - PAD && pt.y <= b.y + b.height + PAD;
+            }) ?? null;
+        }
+
+        const srcToken = _tokenAt(ray.A);
+        if (!srcToken) return context;
+        const tgtToken = _tokenAt(ray.B);
+        if (!tgtToken || tgtToken === srcToken) return context;
 
         const adjust  = game.settings.get(_MODULE, "rangeAdjust") ?? 2.5;
         const rawDist = waypoint.measurement?.distance;
