@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.3.0
+Version : 1.3.1
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -64,6 +64,16 @@ INSTALLATION
 ================================================================================
                     MIDI-RANGE-FIX — MISES À JOUR
 ================================================================================
+
+v1.3.1 | 2026-07-27
+   range-fix.js — Fix condition du patch ruler : l'ajustement s'affichait en
+   permanence (h24) dès qu'un token était contrôlé et une cible désignée, même
+   pour des mesures sans rapport avec ces tokens. Remplacement de la condition
+   controlled/targeted par une vérification des coords pixel : on cherche si
+   ray.A (départ de la règle) et ray.B (arrivée) tombent dans les bounds d'un
+   token distinct (tolérance 8 px pour les points de bord). Le +adjust n'apparaît
+   désormais que pour une mesure effectivement token→token.
+   module.json — Bump 1.3.0 → 1.3.1.
 
 v1.3.0 | 2026-07-27
    range-fix.js — La règle Foundry affiche maintenant la distance D&D effective
