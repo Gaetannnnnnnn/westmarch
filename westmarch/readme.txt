@@ -3,7 +3,7 @@
                       Module Foundry VTT — Open Source
 ================================================================================
 
-Version : 2.1.7
+Version : 2.1.8
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : Open source — redistribution autorisée avec attribution
@@ -108,6 +108,14 @@ INSTALLATION
 ================================================================================
                     WESTMARCH — MISES À JOUR
 ================================================================================
+
+v2.1.8 | 2026-07-28
+   chat.js — Fix boutons GM qui disparaissent après re-render de la Sidebar :
+   _injectPartyChatButtons est maintenant appelé à chaque renderChatLog (pas
+   seulement au ready). Guard remplacé par remove+re-inject : on supprime les
+   anciens boutons [data-wm-action] avant de ré-injecter, ce qui préserve aussi
+   le capture listener sur le bouton export natif (le listener était perdu quand
+   le DOM était recréé).
 
 v2.1.7 | 2026-07-28
    chat.js — Interception du bouton export natif (floppy disk) : capture listener

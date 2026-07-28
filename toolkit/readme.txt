@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.1.6
+Version : 1.1.8
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -120,6 +120,21 @@ INSTALLATION
 ================================================================================
                     TOOLKIT — MISES À JOUR
 ================================================================================
+
+v1.1.8 | 2026-07-28
+   mejshop.js — Fix 1 (bouton "Groupe uniquement") : les flags de party
+   sont sur le module "westmarch", pas "toolkit". getFlag("toolkit", "partyId")
+   retournait toujours undefined → "Aucun membre connecté".
+   Corrigé en getFlag("westmarch", "partyId") pour le GM et les joueurs.
+
+v1.1.7 | 2026-07-28
+   mejshop.js — Fix 2 (cacher items joueur) : deux corrections.
+   (1) MEJ stocke les items en tableau [{id, hidden, ...}] — l'ancien code
+   faisait items[id] sur un tableau (toujours undefined). On convertit
+   maintenant en objet keyed avant la recherche.
+   (2) Si MEJ n'a pas migré vers ApplicationV2, renderApplicationV2 ne
+   fire jamais pour la boutique. Ajout d'un hook renderApplication (v1)
+   en parallèle, avec conversion jQuery → Element.
 
 v1.1.6 | 2026-07-28
    template.js — Fix snap live : le wrap sur TemplateLayer._onDragLeftMove

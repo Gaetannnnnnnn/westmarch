@@ -48,11 +48,11 @@ export function MejShopHooks() {
         btn.style.marginLeft = "4px";
         btn.textContent = "Groupe uniquement";
         btn.addEventListener("click", () => {
-            const myPartyId = game.user.getFlag("toolkit", "partyId");
+            const myPartyId = game.user.getFlag("westmarch", "partyId");
             let matched = 0;
             checkboxes.forEach(cb => {
                 const user = game.users.get(cb.value);
-                const inMyParty = !!(user && myPartyId && user.getFlag("toolkit", "partyId") === myPartyId);
+                const inMyParty = !!(user && myPartyId && user.getFlag("westmarch", "partyId") === myPartyId);
                 cb.checked = inMyParty;
                 if (inMyParty) matched++;
             });
@@ -81,12 +81,19 @@ export function MejShopHooks() {
     // (le champ réellement utilisé par la coche "cacher l'objet"),
     // donc son propre filtre ne retire jamais rien. On corrige ça
     // uniquement côté affichage joueur, sans toucher à MEJ.
+    //
+    // Deux hooks : renderApplicationV2 (MEJ migré v2) et
+    // renderApplication (MEJ encore sur ApplicationV1).
+    // MEJ stocke les items en tableau [{id, hidden, ...}] — on
+    // convertit en Map avant de chercher par id.
     // ------------------------------------------------------------
-    Hooks.on("renderApplicationV2", (application, element) => {
+    const _hideMejItems = (application, element) => {
         if (game.user.isGM) return;
         if (!game.settings.get("toolkit", "enableMejShopFix")) return;
 
-        const pageId = application.options?.pageId;
+        // pageId : options (v2) ou object si l'app EST une page (v1)
+        const pageId = application.options?.pageId
+            ?? (application.object instanceof JournalEntryPage ? application.object.id : null);
         if (!pageId) return;
 
         let shopPage = null;
@@ -94,17 +101,31 @@ export function MejShopHooks() {
             const p = journal.pages.get(pageId);
             if (p) { shopPage = p; break; }
         }
-        if (!shopPage) return;
-        if (shopPage.isOwner) return;
+        if (!shopPage || shopPage.isOwner) return;
 
         const mejType = foundry.utils.getProperty(shopPage, "flags.monks-enhanced-journal.type");
         if (mejType !== "shop") return;
 
-        const items = shopPage.getFlag("monks-enhanced-journal", "items") || {};
+        // MEJ stocke les items comme tableau — on indexe par id
+        const rawItems = shopPage.getFlag("monks-enhanced-journal", "items") ?? [];
+        const itemsById = Array.isArray(rawItems)
+            ? Object.fromEntries(rawItems.filter(i => i?.id).map(i => [i.id, i]))
+            : (rawItems ?? {});
 
         element.querySelectorAll("[data-id]").forEach(row => {
-            const item = items[row.dataset.id];
+            const item = itemsById[row.dataset.id];
             if (item?.hidden) row.remove();
         });
+    };
+
+    // MEJ ApplicationV2
+    Hooks.on("renderApplicationV2", (application, element) => {
+        _hideMejItems(application, element);
+    });
+
+    // MEJ ApplicationV1 (html = jQuery)
+    Hooks.on("renderApplication", (application, html, _data) => {
+        const element = html instanceof jQuery ? html[0] : (html instanceof Element ? html : null);
+        if (element) _hideMejItems(application, element);
     });
 }

@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.3.4
+Version : 1.3.5
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -105,6 +105,10 @@ INSTALLATION
 ================================================================================
                     CARNET D'EXPÉDITIONS — MISES À JOUR
 ================================================================================
+
+v1.3.5 | 2026-07-28
+   carnet.js — Bouton "Créer une note" dans l'onglet Expéditions disponible
+   pour les joueurs (pas seulement le GM). Condition isGM → canEdit (actor.isOwner).
 
 v1.3.4 | 2026-07-26
    carnet.js — Persistance de l'état de repliage des notes et sections.

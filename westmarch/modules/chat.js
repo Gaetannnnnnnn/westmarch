@@ -10,11 +10,12 @@ export function ChatHooks() {
     Hooks.on("renderSceneConfig", (app, html, data) => renderSceneConfig(app, html, data));
     Hooks.on("chatMessage", (chatLog, message, chatData) => chatMessage(chatLog, message, chatData));
 
-    // Injection des boutons GM une fois que tout est chargé.
-    // renderChatLog fire avant que la Sidebar ait rendu #chat-controls,
-    // donc on injecte dans ready (Sidebar garantie présente).
+    // Injection des boutons GM au chargement initial (ready garantit que
+    // #chat-controls est dans le DOM) ET à chaque re-render du ChatLog
+    // (renderChatLog efface les boutons injectés → il faut réinjecter).
+    // Le guard dans _injectPartyChatButtons évite le double-inject.
     if (game.user?.isGM) {
-        Hooks.once("ready", () => setTimeout(_injectPartyChatButtons, 200));
+        Hooks.once("ready", () => setTimeout(_injectPartyChatButtons, 300));
     }
 
     // ============================================================
@@ -88,6 +89,13 @@ async function renderChatLog(log, html, data) {
 
         changeTab("IC");
     }
+
+    // Réinjecter les boutons GM à chaque re-render (la sidebar efface les
+    // éléments injectés, y compris le capture listener sur le bouton export).
+    // Délai 300ms : #chat-controls est rendu par la Sidebar après le ChatLog.
+    if (game.user?.isGM) {
+        setTimeout(_injectPartyChatButtons, 300);
+    }
 }
 
 // ============================================================
@@ -97,7 +105,9 @@ async function renderChatLog(log, html, data) {
 // ============================================================
 
 function _injectPartyChatButtons() {
-    if (document.querySelector('[data-wm-action]')) return;
+    // Supprimer les anciens boutons (re-render peut avoir effacé le container
+    // mais pas les boutons flottants, ou inversement). On repart de zéro.
+    document.querySelectorAll('[data-wm-action]').forEach(el => el.remove());
 
     // En v13, les contrôles sont dans .control-buttons (dans #chat-controls).
     // On cherche depuis document car le footer est rendu par la Sidebar parente,

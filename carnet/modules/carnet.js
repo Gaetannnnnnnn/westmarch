@@ -731,7 +731,7 @@ export function buildDowntimeHtml(actor) {
                    <i class="fas fa-book-open"></i>
                    ${linkedNotes.length === 1 ? "Note liée" : `${linkedNotes.length} notes liées`}
                </a>`
-            : (isGM
+            : (canEdit
                 ? `<a class="carnet-create-note" data-exp-id="${exp.id}" data-exp-name="${(exp.name ?? "").replace(/"/g, "&quot;")}"
                       title="Créer une note liée dans le Carnet"
                       style="font-size:11px;color:#666;text-decoration:none;white-space:nowrap;cursor:pointer;">
