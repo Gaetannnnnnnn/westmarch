@@ -3,7 +3,7 @@
                       Module Foundry VTT — Open Source
 ================================================================================
 
-Version : 2.1.0
+Version : 2.1.2
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : Open source — redistribution autorisée avec attribution
@@ -108,6 +108,21 @@ INSTALLATION
 ================================================================================
                     WESTMARCH — MISES À JOUR
 ================================================================================
+
+v2.1.2 | 2026-07-28
+   chat.js — Fix injection boutons party : en v13, l'icône est une classe
+   sur le bouton lui-même (pas de <i> enfant), et les contrôles sont dans
+   .control-buttons (pas via i.fa-trash-can). Nouveau sélecteur :
+   button[data-action="flush"] dans .control-buttons. makePartyBtn adapté
+   au style ui-control v13 (icône FA directement sur le bouton).
+   chat.css — CSS simplifié pour hériter de ui-control Foundry v13.
+
+v2.1.1 | 2026-07-28
+   chat.js — Fix parser import .txt : le format natif Foundry est
+   "[timestamp] Nom GM\ncontenu\n---------------------------"
+   (pas "[timestamp] Auteur: contenu" sur une ligne). Nouveau parser
+   découpe sur les séparateurs "---", extrait le nom en strippant le
+   suffixe de rôle (GM, Trusted…) et reconstitue le contenu multi-lignes.
 
 v2.1.0 | 2026-07-28
    chat.js — Fix injection boutons party GM : en Foundry v13, renderChatLog passe

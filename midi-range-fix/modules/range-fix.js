@@ -1,7 +1,7 @@
 /**
  * @file        modules/range-fix.js
  * @module      midi-range-fix
- * @version     1.4.1
+ * @version     1.4.3
  * @author      Soruta (Discord : s0ruta)
  * @license     © 2026 Soruta — Tous droits réservés.
  *              Usage personnel autorisé. Toute redistribution, modification
@@ -226,23 +226,25 @@ function _patchRulerLabel() {
         // _reentering = true pour court-circuiter _ourPatch si le prototype
         // rappelle canvas.grid.measurePath en interne.
         _reentering = true;
-        let bordResult;
+        let bordResult, nativeResult;
         try {
-            bordResult = _protoCall([srcBorder, tgtBorder], {});
+            // Mesure bord→bord (s'arrête à 0 quand les tokens se touchent)
+            bordResult   = _protoCall([srcBorder, tgtBorder], {});
+            // Mesure native Foundry curseur→curseur (règle classique, toujours croissante)
+            nativeResult = _protoCall([ray.A, ray.B], {});
         } finally {
             _reentering = false;
         }
         if (!bordResult || typeof bordResult.distance !== "number") return context;
 
-        const adjust   = game.settings.get(_MODULE, "rangeAdjust") ?? 2.5;
-        const adjusted = bordResult.distance + adjust;
-        // Snap uniquement quand adjusted est dans [gridDist, gridDist + 0.5].
-        // Ex. : 5.26 ft → 5 ft. Les autres distances s'affichent normalement.
-        const gridDist = canvas.grid.distance ?? 5;
-        const display  = (adjusted >= gridDist && adjusted <= gridDist + 0.5)
-            ? gridDist
-            : (typeof adjusted.toNearest === "function" ? adjusted.toNearest(0.01) : adjusted);
-        context.distance.total = display.toLocaleString(game.i18n.lang);
+        const rawDist   = bordResult.distance;
+        const nativeDist = typeof nativeResult?.distance === "number" ? nativeResult.distance : rawDist;
+
+        // Affiche : "bord→bord — natif ft"
+        // → ex : "0,00 — 7,50 ft" quand les tokens se touchent
+        // Foundry ajoute l'unité (ft) après context.distance.total
+        const fmt = (n) => parseFloat(n.toFixed(2)).toLocaleString(game.i18n.lang);
+        context.distance.total = `${fmt(rawDist)} — ${fmt(nativeDist)}`;
 
         return context;
     };

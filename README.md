@@ -8,13 +8,13 @@ Modules Foundry VTT v13 / D&D 5e v3 pour les serveurs WestMarch.
 
 | Module | ID | Version | Description |
 |--------|----|---------|-------------|
-| WestMarch Système | `westmarch` | 2.1.0 | Socle core — sessions, party, chat, combat, audio |
+| WestMarch Système | `westmarch` | 2.1.2 | Socle core — sessions, party, chat, combat, audio |
 | WestMarch Ashara | `westmarch-ashara` | 1.0.9 | Extensions serveur — temps morts, XP, Discord log |
 | Relations | `ashara-relations` | 1.6.3 | Onglet Relations sur la fiche PJ |
 | Bestiaire | `ashara-bestiary` | 1.3.4 | Onglet Bestiaire sur la fiche PJ |
 | Carnet d'Expéditions | `carnet` | 1.3.4 | Onglets Carnet & Expéditions sur la fiche PJ |
 | Map Ouvert Systèmes | `carte-expeditions` | 1.0.2 | Gestion fog of war par personnage/groupe |
-| Midi Range Fix | `midi-range-fix` | 1.4.1 | Corrige la portée midi-qol pour les grands tokens |
+| Midi Range Fix | `midi-range-fix` | 1.4.3 | Corrige la portée midi-qol pour les grands tokens |
 | Toolkit | `toolkit` | 1.1.6 | Outils GM — polymorph, boutiques MEJ, export fiches |
 | Tutoriel | `tutoriel` | 1.2.7 | Guide interactif pour les joueurs et le GM |
 

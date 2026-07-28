@@ -96,52 +96,40 @@ async function renderChatLog(log, html, data) {
 // ============================================================
 
 function _injectPartyChatButtons($html) {
-    // Ne pas injecter deux fois
     if ($html.find('[data-wm-action]').length) return;
 
-    // Diagnostic : liste tous les data-action + icônes présentes
-    const _dbgActions = [...($html[0]?.querySelectorAll('[data-action]') ?? [])].map(el => el.dataset.action);
-    const _dbgIcons   = [...($html[0]?.querySelectorAll('i[class*="fa-"]') ?? [])].map(el => [...el.classList].find(c => c.startsWith('fa-')));
-    console.log("[westmarch] chat data-actions :", _dbgActions);
-    console.log("[westmarch] chat fa-icons      :", _dbgIcons);
-
-    // Essai 1 — data-action connus pour le bouton "vider le chat"
-    let $anchor = $html.find(
-        '[data-action="clearLog"], [data-action="flush"], ' +
-        '[data-action="deleteChatLog"], [data-action="deleteAll"]'
-    ).first();
-
-    // Essai 2 — icône poubelle (FA5 : fa-trash / FA6 : fa-trash-can)
-    if (!$anchor.length) {
-        $anchor = $html
-            .find('i.fa-trash-can, i.fa-trash, i.fa-trash-alt')
-            .closest('button, a')
-            .last(); // last() = le bouton poubelle est généralement le dernier
-    }
-
-    if (!$anchor.length) {
-        console.warn("[westmarch] Boutons party chat : ancre poubelle introuvable — vérifie le log ci-dessus.");
+    // En v13, les contrôles sont dans .control-buttons (dans #chat-controls).
+    // L'icône est une classe sur le bouton lui-même (pas de <i> enfant).
+    // ex: <button class="ui-control icon fa-solid fa-trash" data-action="flush">
+    const $controlButtons = $html.find('.control-buttons');
+    if (!$controlButtons.length) {
+        console.warn("[westmarch] Boutons party chat : .control-buttons introuvable.");
         return;
     }
 
-    const $btnClear  = _makePartyBtn("clearParty",  "fas fa-users-slash", "Effacer les messages de ma party uniquement");
-    const $btnImport = _makePartyBtn("importParty", "fas fa-file-import",  "Importer des messages (JSON / .txt)");
+    // Trouver le bouton poubelle dans ce container
+    const $trash = $controlButtons
+        .find('button[data-action="flush"], button.fa-trash, button[aria-label*="Clear"]')
+        .first();
 
-    // Ordre : [import][clear-party][poubelle-native]
-    $anchor.before($btnImport);
-    $btnImport.after($btnClear);
+    const $btnClear  = _makePartyBtn("clearParty",  "fa-users-slash", "Effacer les messages de ma party uniquement");
+    const $btnImport = _makePartyBtn("importParty", "fa-file-import",  "Importer des messages (JSON / .txt)");
+
+    if ($trash.length) {
+        // Ordre final dans .control-buttons : [import][clear][poubelle-native]
+        $trash.before($btnImport);
+        $btnImport.after($btnClear);
+    } else {
+        $controlButtons.append($btnImport).append($btnClear);
+    }
 
     $btnClear.on("click",  () => _clearPartyMessages());
     $btnImport.on("click", () => _importPartyChatJSON());
-    console.log("[westmarch] Boutons party chat injectés avant :", $anchor[0]);
 }
 
 function _makePartyBtn(action, iconClass, title) {
-    return $(`
-        <button type="button" class="wm-party-btn" data-wm-action="${action}"
-                title="${title}" aria-label="${title}">
-            <i class="${iconClass}"></i>
-        </button>`);
+    // Style v13 : icône FA directement comme classe sur le bouton (comme fa-trash, fa-filter…)
+    return $(`<button type="button" class="ui-control icon fa-solid ${iconClass} wm-party-btn" data-wm-action="${action}" data-tooltip="${title}" aria-label="${title}"></button>`);
 }
 
 async function _clearPartyMessages() {
@@ -217,40 +205,37 @@ async function _importPartyChatJSON() {
 }
 
 // Parse le fichier .txt produit par l'export natif Foundry.
-// Format HTML : <ol><li class="chat-message">...</li></ol>
-// Format texte brut (fallback) : [timestamp] Auteur: contenu
+// Format réel :
+//   [7/27/2026, 6:14:19 PM] Nom GM
+//   contenu ligne 1
+//   contenu ligne 2
+//   ---------------------------
 function _parseFoundryExport(text) {
     const messages = [];
 
-    // -- Tentative 1 : HTML (DOMParser) --
-    const doc = new DOMParser().parseFromString(text, "text/html");
-    const items = doc.querySelectorAll("li.chat-message, .message");
+    // Séparateur : ligne de tirets (au moins 3)
+    const blocks = text.split(/\n-{3,}\n?/).map(b => b.trim()).filter(Boolean);
 
-    if (items.length) {
-        for (const item of items) {
-            const alias   = item.querySelector(".message-sender, .chat-author")?.textContent?.trim() ?? "Inconnu";
-            const timeStr = item.querySelector(".message-timestamp, time")?.textContent?.trim() ?? "";
-            const content = item.querySelector(".message-content, .chat-message-content")?.innerHTML?.trim() ?? "";
-            if (!content) continue;
-            const user = game.users.find(u => u.name === alias);
-            messages.push({
-                content,
-                speaker:   { alias },
-                user:      user?.id ?? game.user.id,
-                timestamp: timeStr ? (new Date(timeStr).getTime() || Date.now()) : Date.now(),
-                style:     CONST.CHAT_MESSAGE_STYLES.IC,
-            });
-        }
-        if (messages.length) return messages;
-    }
+    for (const block of blocks) {
+        const lines = block.split("\n");
+        if (!lines.length) continue;
 
-    // -- Fallback : texte brut "[timestamp] Auteur: contenu" --
-    const lineRe = /^\[(.+?)\]\s+(.+?):\s+(.+)$/;
-    for (const line of text.split("\n")) {
-        const m = line.match(lineRe);
-        if (!m) continue;
-        const [, timeStr, alias, content] = m;
-        const user = game.users.find(u => u.name === alias);
+        // Première ligne : [timestamp] Nom [role optionnel]
+        const headerMatch = lines[0].match(/^\[(.+?)\]\s+(.+)$/);
+        if (!headerMatch) continue;
+
+        const [, timeStr, authorRaw] = headerMatch;
+        // Supprimer le suffixe de rôle Foundry (GM, Trusted, Assistant GM…)
+        const alias = authorRaw.replace(/\s+(GM|Trusted|Player|Assistant\s+GM)$/i, "").trim() || authorRaw.trim();
+
+        // Contenu = toutes les lignes suivantes
+        const content = lines.slice(1).join("\n").trim();
+        if (!content) continue;
+
+        // Chercher l'utilisateur par nom exact, puis par préfixe du champ brut
+        const user = game.users.find(u => u.name === alias)
+                  ?? game.users.find(u => authorRaw.toLowerCase().startsWith(u.name.toLowerCase()));
+
         messages.push({
             content,
             speaker:   { alias },

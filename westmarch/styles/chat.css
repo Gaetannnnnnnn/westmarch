@@ -52,34 +52,16 @@
 }
 
 /* ============================================================
-   Boutons gestion party (GM) — vider / export / import JSON
+   Boutons gestion party (GM) — vider / import
+   Héritent du style ui-control de Foundry v13 (icône sur le bouton).
+   On se contente d'overrider les couleurs de hover.
    ============================================================ */
-.wm-party-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    width: 24px;
-    height: 24px;
-    padding: 0;
-    background: transparent;
-    border: 1px solid transparent;
-    border-radius: 3px;
-    color: var(--color-text-secondary, #999);
-    cursor: pointer;
-    font-size: 0.8rem;
-    transition: color 0.15s, border-color 0.15s, background 0.15s;
-}
-
-.wm-party-btn:hover {
-    color: var(--color-text-primary, #eee);
-    border-color: var(--color-border-highlight, #ff6400);
-    background: rgba(255, 100, 0, 0.1);
-}
-
 .wm-party-btn[data-wm-action="clearParty"]:hover {
-    color: #e74c3c;
-    border-color: #e74c3c;
-    background: rgba(231, 76, 60, 0.1);
+    color: #e74c3c !important;
+}
+
+.wm-party-btn[data-wm-action="importParty"]:hover {
+    color: #3498db !important;
 }
 
 .westmarch-close-session-wrap {

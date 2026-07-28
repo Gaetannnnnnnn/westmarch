@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.4.1
+Version : 1.4.3
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -64,6 +64,20 @@ INSTALLATION
 ================================================================================
                     MIDI-RANGE-FIX — MISES À JOUR
 ================================================================================
+
+v1.4.3 | 2026-07-28
+   range-fix.js — Double mesure dans la règle :
+   "bord→bord — natif ft"
+   La première valeur est la distance bord→bord (s'arrête à 0 quand les
+   tokens se touchent). La seconde est la mesure native Foundry curseur→
+   curseur (identique à la règle standard, toujours croissante).
+
+v1.4.2 | 2026-07-28
+   range-fix.js — La règle affiche désormais les deux valeurs :
+   "bord→bord — ajusté ft" (ex : "6,83 — 9,33 ft").
+   La première valeur est la distance brute entre les bords des tokens ;
+   la seconde est la valeur que midi-qol compare à la portée de l'arme.
+   Suppression du snap à la case (devenu inutile avec les deux valeurs visibles).
 
 v1.4.1 | 2026-07-28
    range-fix.js — Arrondi de la règle (ruler label) à la case grille.
