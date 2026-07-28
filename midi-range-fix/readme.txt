@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.4.0
+Version : 1.4.1
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -64,6 +64,13 @@ INSTALLATION
 ================================================================================
                     MIDI-RANGE-FIX — MISES À JOUR
 ================================================================================
+
+v1.4.1 | 2026-07-28
+   range-fix.js — Arrondi de la règle (ruler label) à la case grille.
+   _patchRulerLabel utilisait adjusted.toNearest(0.01) qui affichait "5.26 ft".
+   Désormais toNearest(canvas.grid.distance) arrondit à la case entière :
+   5.26 → 5 ft, 7.8 → 10 ft, cohérent avec l'affichage du message jaune midi-qol.
+   module.json — Bump 1.4.0 → 1.4.1.
 
 v1.4.0 | 2026-07-28
    range-fix.js — Revert du Number object (v1.3.9). typeof new Number() === "object"

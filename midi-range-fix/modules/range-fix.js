@@ -1,7 +1,7 @@
 /**
  * @file        modules/range-fix.js
  * @module      midi-range-fix
- * @version     1.4.0
+ * @version     1.4.1
  * @author      Soruta (Discord : s0ruta)
  * @license     © 2026 Soruta — Tous droits réservés.
  *              Usage personnel autorisé. Toute redistribution, modification
@@ -236,10 +236,13 @@ function _patchRulerLabel() {
 
         const adjust   = game.settings.get(_MODULE, "rangeAdjust") ?? 2.5;
         const adjusted = bordResult.distance + adjust;
-        // toNearest est une extension Number de Foundry (toujours présente en v13).
-        context.distance.total = (typeof adjusted.toNearest === "function")
-            ? adjusted.toNearest(0.01).toLocaleString(game.i18n.lang)
-            : adjusted.toFixed(2);
+        // Snap uniquement quand adjusted est dans [gridDist, gridDist + 0.5].
+        // Ex. : 5.26 ft → 5 ft. Les autres distances s'affichent normalement.
+        const gridDist = canvas.grid.distance ?? 5;
+        const display  = (adjusted >= gridDist && adjusted <= gridDist + 0.5)
+            ? gridDist
+            : (typeof adjusted.toNearest === "function" ? adjusted.toNearest(0.01) : adjusted);
+        context.distance.total = display.toLocaleString(game.i18n.lang);
 
         return context;
     };

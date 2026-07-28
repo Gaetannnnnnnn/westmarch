@@ -96,40 +96,44 @@ async function renderChatLog(log, html, data) {
 // ============================================================
 
 function _injectPartyChatButtons($html) {
-    // Diagnostic : affiche ce qu'on trouve dans $html pour debugger les sélecteurs
-    const allActions = [...$html[0]?.querySelectorAll?.('[data-action]') ?? []].map(el => el.dataset.action);
-    console.log("[westmarch] _injectPartyChatButtons — data-actions trouvés :", allActions);
-    console.log("[westmarch] _injectPartyChatButtons — $html :", $html[0]);
+    // Ne pas injecter deux fois
+    if ($html.find('[data-wm-action]').length) return;
 
-    // Foundry v13 : boutons en bas du chat — plusieurs noms possibles selon la version
-    const $clearBtn = $html.find(
+    // Diagnostic : liste tous les data-action + icônes présentes
+    const _dbgActions = [...($html[0]?.querySelectorAll('[data-action]') ?? [])].map(el => el.dataset.action);
+    const _dbgIcons   = [...($html[0]?.querySelectorAll('i[class*="fa-"]') ?? [])].map(el => [...el.classList].find(c => c.startsWith('fa-')));
+    console.log("[westmarch] chat data-actions :", _dbgActions);
+    console.log("[westmarch] chat fa-icons      :", _dbgIcons);
+
+    // Essai 1 — data-action connus pour le bouton "vider le chat"
+    let $anchor = $html.find(
         '[data-action="clearLog"], [data-action="flush"], ' +
-        '[data-action="deleteChatLog"], [data-action="deleteAll"], ' +
-        'button i.fa-trash, button i.fa-times-circle'
-    ).first().closest('button, a');
+        '[data-action="deleteChatLog"], [data-action="deleteAll"]'
+    ).first();
 
-    if (!$clearBtn.length) {
-        // Dernier recours : coller en fin de la zone de contrôles du chat
-        const $footer = $html.find('.chat-controls, #chat-controls, footer, .control-buttons, form.chat-form').last();
-        if (!$footer.length) return;
-        const $btnClear  = _makePartyBtn("clearParty",  "fas fa-users-slash", "Effacer les messages de ma party uniquement");
-        const $btnImport = _makePartyBtn("importParty", "fas fa-file-import",  "Importer des messages (JSON / .txt)");
-        $footer.append($btnImport, $btnClear);
-        $btnClear.on("click",  () => _clearPartyMessages());
-        $btnImport.on("click", () => _importPartyChatJSON());
-        console.log("[westmarch] Boutons party chat injectés (fallback footer).");
+    // Essai 2 — icône poubelle (FA5 : fa-trash / FA6 : fa-trash-can)
+    if (!$anchor.length) {
+        $anchor = $html
+            .find('i.fa-trash-can, i.fa-trash, i.fa-trash-alt')
+            .closest('button, a')
+            .last(); // last() = le bouton poubelle est généralement le dernier
+    }
+
+    if (!$anchor.length) {
+        console.warn("[westmarch] Boutons party chat : ancre poubelle introuvable — vérifie le log ci-dessus.");
         return;
     }
 
     const $btnClear  = _makePartyBtn("clearParty",  "fas fa-users-slash", "Effacer les messages de ma party uniquement");
     const $btnImport = _makePartyBtn("importParty", "fas fa-file-import",  "Importer des messages (JSON / .txt)");
 
-    // Ordre affiché : [import][clear-party] puis le [clear-all] natif
-    $clearBtn.before($btnClear).before($btnImport);
+    // Ordre : [import][clear-party][poubelle-native]
+    $anchor.before($btnImport);
+    $btnImport.after($btnClear);
 
     $btnClear.on("click",  () => _clearPartyMessages());
     $btnImport.on("click", () => _importPartyChatJSON());
-    console.log("[westmarch] Boutons party chat injectés (ancre clearLog).");
+    console.log("[westmarch] Boutons party chat injectés avant :", $anchor[0]);
 }
 
 function _makePartyBtn(action, iconClass, title) {
