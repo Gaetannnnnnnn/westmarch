@@ -3,7 +3,7 @@
                       Module Foundry VTT — Open Source
 ================================================================================
 
-Version : 2.1.2
+Version : 2.1.7
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : Open source — redistribution autorisée avec attribution
@@ -108,6 +108,35 @@ INSTALLATION
 ================================================================================
                     WESTMARCH — MISES À JOUR
 ================================================================================
+
+v2.1.7 | 2026-07-28
+   chat.js — Interception du bouton export natif (floppy disk) : capture listener
+   sur .control-buttons → dialog "Texte (.txt) / JSON / Annuler". Le txt re-déclenche
+   le comportement Foundry natif ; le JSON exporte les messages avec leur HTML complet
+   (mise en forme préservée à la réimportation). Import JSON : pas de dialog de tab,
+   le style est déjà dans le JSON. Nouvelle fonction _exportPartyChatJSON.
+
+v2.1.6 | 2026-07-28
+   chat.js — Import : dialog de choix de tab (Personnages / Rolls / Joueurs / Annuler)
+   au lieu du confirm simple. Le style est appliqué à tous les messages importés.
+
+v2.1.5 | 2026-07-28
+   chat.js — Fix duplication des tabs : guard document.querySelector('.tabbed-controls')
+   avant le prepend pour éviter le doublement quand renderChatLog fire plusieurs fois.
+   chat.css — margin-left: 4px sur .wm-party-btn pour espacer les boutons custom.
+
+v2.1.4 | 2026-07-28
+   chat.js — Injection boutons GM via Hooks.once("ready") + setTimeout(200ms)
+   pour garantir que #chat-controls est dans le DOM (renderChatLog fire trop tôt).
+   Fix renderTemplate déprécié v13 → foundry.applications.handlebars.renderTemplate
+   avec fallback pour compatibilité v12.
+
+v2.1.3 | 2026-07-28
+   chat.js — Fix injection boutons : le footer #chat-controls est rendu par
+   la Sidebar parente et n'est pas dans log.element au moment du hook.
+   On utilise désormais setTimeout(fn, 0) + document.querySelector depuis
+   le document global au lieu de $html.find(). Suppression du paramètre
+   $html dans _injectPartyChatButtons.
 
 v2.1.2 | 2026-07-28
    chat.js — Fix injection boutons party : en v13, l'icône est une classe

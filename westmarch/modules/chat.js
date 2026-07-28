@@ -10,6 +10,13 @@ export function ChatHooks() {
     Hooks.on("renderSceneConfig", (app, html, data) => renderSceneConfig(app, html, data));
     Hooks.on("chatMessage", (chatLog, message, chatData) => chatMessage(chatLog, message, chatData));
 
+    // Injection des boutons GM une fois que tout est chargé.
+    // renderChatLog fire avant que la Sidebar ait rendu #chat-controls,
+    // donc on injecte dans ready (Sidebar garantie présente).
+    if (game.user?.isGM) {
+        Hooks.once("ready", () => setTimeout(_injectPartyChatButtons, 200));
+    }
+
     // ============================================================
     // Coupe le son de jet de dés (audio.js) quand il provient d'un
     // message dont l'auteur n'est pas de notre party — voir audio.js
@@ -67,25 +74,19 @@ function renderChatMessageHTML(message, html, messageData) {
 }
 
 async function renderChatLog(log, html, data) {
-    const htmlContent = await renderTemplate("modules/westmarch/templates/chat/tabbedchatlog-nav.hbs", {
-        activetab: tabSelected
+    // Éviter la duplication des tabs si renderChatLog fire plusieurs fois
+    if (!document.querySelector('.tabbed-controls')) {
+        const _rt = foundry.applications?.handlebars?.renderTemplate ?? renderTemplate;
+        const htmlContent = await _rt("modules/westmarch/templates/chat/tabbedchatlog-nav.hbs", {
+            activetab: tabSelected
         });
-    $(html).prepend(htmlContent);
+        $(html).prepend(htmlContent);
 
-    $('.tabbed-controls').on('click', '.ui-control', function() {
-        changeTab($(this).data('tab'));
-    });
+        $('.tabbed-controls').on('click', '.ui-control', function() {
+            changeTab($(this).data('tab'));
+        });
 
-    changeTab("IC");
-
-    if (game.user.isGM) {
-        // En v13, html = zone messages seulement.
-        // Les contrôles du bas (filter/save/trash) sont dans log.element (racine de l'app).
-        const rootEl = (log.element instanceof HTMLElement)
-            ? log.element
-            : (log.element?.[0] instanceof HTMLElement ? log.element[0] : null)
-            ?? document.querySelector("#chat, #sidebar");
-        _injectPartyChatButtons($(rootEl));
+        changeTab("IC");
     }
 }
 
@@ -95,17 +96,18 @@ async function renderChatLog(log, html, data) {
 // - Export / Import JSON pour sauvegarde/restauration
 // ============================================================
 
-function _injectPartyChatButtons($html) {
-    if ($html.find('[data-wm-action]').length) return;
+function _injectPartyChatButtons() {
+    if (document.querySelector('[data-wm-action]')) return;
 
     // En v13, les contrôles sont dans .control-buttons (dans #chat-controls).
-    // L'icône est une classe sur le bouton lui-même (pas de <i> enfant).
-    // ex: <button class="ui-control icon fa-solid fa-trash" data-action="flush">
-    const $controlButtons = $html.find('.control-buttons');
-    if (!$controlButtons.length) {
+    // On cherche depuis document car le footer est rendu par la Sidebar parente,
+    // pas par le ChatLog — il n'est pas dans log.element au moment du hook.
+    const controlButtons = document.querySelector('#chat-controls .control-buttons, .control-buttons');
+    if (!controlButtons) {
         console.warn("[westmarch] Boutons party chat : .control-buttons introuvable.");
         return;
     }
+    const $controlButtons = $(controlButtons);
 
     // Trouver le bouton poubelle dans ce container
     const $trash = $controlButtons
@@ -125,6 +127,37 @@ function _injectPartyChatButtons($html) {
 
     $btnClear.on("click",  () => _clearPartyMessages());
     $btnImport.on("click", () => _importPartyChatJSON());
+
+    // Intercepter le bouton export natif (floppy disk) pour proposer txt ou JSON.
+    // Listener en capture sur le conteneur parent → priorité sur le handler Foundry.
+    let _skipExport = false;
+    controlButtons.addEventListener("click", async (e) => {
+        const btn = e.target.closest('button[data-action="export"]');
+        if (!btn || _skipExport) return;
+        e.stopPropagation();
+        e.preventDefault();
+
+        const choice = await foundry.applications.api.DialogV2.wait({
+            window: { title: "Exporter le chat" },
+            content: `<p>Choisir le format d'export :</p>`,
+            buttons: [
+                { label: "Texte (.txt)",              action: "txt",  default: true },
+                { label: "JSON (mise en forme complète)", action: "json" },
+                { label: "Annuler",                   action: "cancel" },
+            ],
+            rejectClose: false,
+        });
+
+        if (!choice || choice === "cancel") return;
+        if (choice === "txt") {
+            // Relancer le clic natif en court-circuitant notre intercepteur
+            _skipExport = true;
+            btn.click();
+            _skipExport = false;
+        } else {
+            await _exportPartyChatJSON();
+        }
+    }, { capture: true });
 }
 
 function _makePartyBtn(action, iconClass, title) {
@@ -171,29 +204,45 @@ async function _importPartyChatJSON() {
                 let data;
 
                 if (file.name.endsWith(".json")) {
-                    // Format JSON (potentiellement produit par un autre outil)
+                    // JSON exporté par notre outil → style et mise en forme préservés
                     const raw = JSON.parse(text);
                     if (!Array.isArray(raw)) throw new Error("Le fichier JSON ne contient pas un tableau de messages.");
                     data = raw.map(({ _id, ...rest }) => rest);
-                } else {
-                    // Format export natif Foundry (.txt)
-                    data = _parseFoundryExport(text);
+
+                    if (!data.length) { ui.notifications.warn("Aucun message trouvé."); return resolve(); }
+                    await ChatMessage.createDocuments(data);
+                    ui.notifications.info(`${data.length} message(s) importé(s).`);
+                    return resolve();
                 }
 
+                // Format export natif Foundry (.txt) — texte brut, style à choisir
+                data = _parseFoundryExport(text);
                 if (!data.length) {
                     ui.notifications.warn("Aucun message trouvé dans le fichier.");
                     return resolve();
                 }
 
-                const confirmed = await foundry.applications.api.DialogV2.confirm({
-                    window: { title: "Importer des messages" },
-                    content: `<p>Importer <strong>${data.length} message(s)</strong> dans le chat ?</p>
-                              <p><em>Les messages seront ajoutés au chat existant (sans écraser l'existant).</em></p>`,
+                const tab = await foundry.applications.api.DialogV2.wait({
+                    window: { title: `Importer ${data.length} message(s)` },
+                    content: `<p>Dans quel onglet importer les messages ?</p>`,
+                    buttons: [
+                        { label: "Personnages", action: "ic"    },
+                        { label: "Rolls",       action: "other", default: true },
+                        { label: "Joueurs",     action: "ooc"   },
+                        { label: "Annuler",     action: "cancel" },
+                    ],
+                    rejectClose: false,
                 });
-                if (!confirmed) return resolve();
+                if (!tab || tab === "cancel") return resolve();
 
-                await ChatMessage.createDocuments(data);
-                ui.notifications.info(`${data.length} message(s) importé(s).`);
+                const styleMap = {
+                    ic:    CONST.CHAT_MESSAGE_STYLES.IC,
+                    other: CONST.CHAT_MESSAGE_STYLES.OTHER,
+                    ooc:   CONST.CHAT_MESSAGE_STYLES.OOC,
+                };
+                const toCreate = data.map(m => ({ ...m, style: styleMap[tab] ?? CONST.CHAT_MESSAGE_STYLES.OTHER }));
+                await ChatMessage.createDocuments(toCreate);
+                ui.notifications.info(`${toCreate.length} message(s) importé(s).`);
             } catch (err) {
                 ui.notifications.error(`Erreur d'import : ${err.message}`);
                 console.error("[westmarch] Import chat :", err);
@@ -202,6 +251,30 @@ async function _importPartyChatJSON() {
         };
         input.click();
     });
+}
+
+// Export JSON des messages de la party (mise en forme complète préservée).
+async function _exportPartyChatJSON() {
+    const myPartyId = game.user.getFlag("westmarch", "partyId");
+    const messages  = myPartyId
+        ? game.messages.filter(m => m.author?.getFlag("westmarch", "partyId") === myPartyId)
+        : [...game.messages];
+
+    if (!messages.length) {
+        ui.notifications.warn("Aucun message à exporter.");
+        return;
+    }
+
+    const data = messages.map(m => m.toObject());
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const url  = URL.createObjectURL(blob);
+    const date = new Date().toISOString().slice(0, 10);
+    const a    = document.createElement("a");
+    a.href     = url;
+    a.download = `chat-${game.world?.id ?? "world"}-${date}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    ui.notifications.info(`${messages.length} message(s) exporté(s) en JSON.`);
 }
 
 // Parse le fichier .txt produit par l'export natif Foundry.

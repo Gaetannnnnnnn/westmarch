@@ -8,7 +8,7 @@ Modules Foundry VTT v13 / D&D 5e v3 pour les serveurs WestMarch.
 
 | Module | ID | Version | Description |
 |--------|----|---------|-------------|
-| WestMarch Système | `westmarch` | 2.1.2 | Socle core — sessions, party, chat, combat, audio |
+| WestMarch Système | `westmarch` | 2.1.7 | Socle core — sessions, party, chat, combat, audio |
 | WestMarch Ashara | `westmarch-ashara` | 1.0.9 | Extensions serveur — temps morts, XP, Discord log |
 | Relations | `ashara-relations` | 1.6.3 | Onglet Relations sur la fiche PJ |
 | Bestiaire | `ashara-bestiary` | 1.3.4 | Onglet Bestiaire sur la fiche PJ |
