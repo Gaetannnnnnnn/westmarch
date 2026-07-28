@@ -258,6 +258,21 @@ function _clickAppearanceTab(el) {
 }
 
 // ================================================================
+// NAVIGATION : ouvrir l'onglet Chat dans la sidebar
+// ================================================================
+
+async function _openChatTab() {
+    const btn = document.querySelector(
+        '[data-action="changeSidebarTab"][data-tab="chat"], ' +
+        'a[data-tab="chat"], ' +
+        '#sidebar-tabs [data-tab="chat"], ' +
+        '.tabs a[data-tab="chat"]'
+    );
+    btn?.click();
+    await new Promise(r => setTimeout(r, 350));
+}
+
+// ================================================================
 // NAVIGATION : ouvrir / activer le groupe WestMarch dans la barre
 // ================================================================
 
@@ -571,6 +586,22 @@ const STEPS_BY_FEATURE = {
             title:      "Faux message de maintenance",
             text:       "Ce bouton <i class='fas fa-triangle-exclamation'></i> envoie une fausse notification jaune à un joueur précis — pour lui faire croire qu'un problème technique a été résolu.",
             position:   "right",
+            gmOnly:     true
+        },
+        {
+            beforeShow: _openChatTab,
+            target:     "[data-wm-action='clearParty']",
+            title:      "Vider les messages de ma party",
+            text:       "Ce bouton <i class='fas fa-users-slash'></i> supprime uniquement les messages du chat dont l'auteur appartient à <strong>votre party</strong>. Les messages des autres GMs et de leurs joueurs ne sont pas touchés. Une confirmation est demandée avant la suppression.",
+            position:   "top",
+            gmOnly:     true
+        },
+        {
+            beforeShow: _openChatTab,
+            target:     "[data-wm-action='importParty']",
+            title:      "Importer des messages de chat",
+            text:       "Ce bouton <i class='fas fa-file-import'></i> permet de réimporter un export de chat Foundry (<code>.txt</code>) ou JSON. Les messages sont recréés dans le chat en conservant leur timestamp d'origine — ils apparaîtront dans le bon ordre chronologique. Pratique pour restaurer un historique après un clear accidentel.",
+            position:   "top",
             gmOnly:     true
         },
         {

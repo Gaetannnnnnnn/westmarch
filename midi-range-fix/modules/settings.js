@@ -1,7 +1,7 @@
 /**
  * @file        modules/settings.js
  * @module      midi-range-fix
- * @version     1.3.6
+ * @version     1.3.9
  * @author      Soruta (Discord : s0ruta)
  * @license     © 2026 Soruta — Tous droits réservés.
  *              Usage personnel autorisé. Toute redistribution, modification

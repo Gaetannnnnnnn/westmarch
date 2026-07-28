@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.3.6
+Version : 1.3.9
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -64,6 +64,37 @@ INSTALLATION
 ================================================================================
                     MIDI-RANGE-FIX — MISES À JOUR
 ================================================================================
+
+v1.3.9 | 2026-07-28
+   range-fix.js — Court-circuit du .toNearest() de midi-qol via Number object.
+   Midi-qol appelle result.distance.toNearest(canvas.grid.distance) sur notre
+   valeur retournée, ce qui arrondit 5.26 → 5 ft et laisse passer une attaque
+   hors-portée (bug v1.3.8). Solution : on retourne un Number OBJECT (new Number)
+   au lieu d'un primitif, avec un .toNearest personnalisé qui retourne la valeur
+   exacte sans arrondir. Les opérateurs de comparaison (<, <=, >) font la
+   coercition automatique → la valeur exacte (5.26) est bien comparée à la portée.
+   Le message affiche ainsi "5.26 away" au lieu de "5 away" ou "10 away".
+   module.json — Bump 1.3.8 → 1.3.9.
+
+v1.3.8 | 2026-07-28
+   range-fix.js — Suppression du snap sur la distance renvoyée à midi-qol.
+   Les versions 1.3.5–1.3.7 snappaient la distance (×5 puis ×2.5) pour éviter
+   que midi-qol ne l'arrondisse à la case inférieure. Cela faisait afficher
+   "10 away" ou "7.5 away" alors que la distance réelle était ex. 5.26 ft.
+   On retourne maintenant la valeur brute bord→bord + adjust directement.
+   Le message affiche ainsi la distance exacte calculée par le module.
+   ⚠️  Si une future version de midi-qol arrondit la valeur à la case
+   inférieure et laisse passer une attaque hors-portée, remettre le snap.
+   module.json — Bump 1.3.7 → 1.3.8.
+
+v1.3.7 | 2026-07-28
+   range-fix.js — Snap demi-case au lieu de case entière. Le message jaune
+   midi-qol affichait "10 away" (arrondi à 10 ft) alors que la distance réelle
+   était 7.5 ft. Cause : le snap ceil(raw/5)×5 montait systématiquement à 10.
+   Nouveau snap ceil(raw/2.5)×2.5 : 5.26 → 7.5 (non 10), 7.5 → 7.5, 2.5 → 2.5.
+   Le message affiche désormais "7.5 away" pour un gap d'une case — plus lisible.
+   Le blocage reste fiable car 7.5 > 5 (portée arme).
+   module.json — Bump 1.3.6 → 1.3.7.
 
 v1.3.6 | 2026-07-28
    settings.js — Bandeau version + explication GM dans la page de paramètres.

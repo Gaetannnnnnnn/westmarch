@@ -3,7 +3,7 @@
                       Module Foundry VTT — Open Source
 ================================================================================
 
-Version : 2.0.8
+Version : 2.0.9
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : Open source — redistribution autorisée avec attribution
@@ -108,6 +108,19 @@ INSTALLATION
 ================================================================================
                     WESTMARCH — MISES À JOUR
 ================================================================================
+
+v2.0.9 | 2026-07-28
+   chat.js — Trois nouveaux boutons GM dans le chat (visibles uniquement pour les GMs) :
+     • Effacer ma party (fa-users-slash) — supprime uniquement les messages dont
+       l'auteur partage le même partyId que le GM courant. Les autres parties
+       ne sont pas impactées.
+     • Exporter JSON (fa-file-export) — télécharge les messages de la party en JSON.
+     • Importer JSON (fa-file-import) — réimporte un JSON exporté précédemment ;
+       les messages sont recréés en conservant leur timestamp d'origine pour
+       garder l'ordre chronologique, mais avec de nouveaux _id pour éviter
+       les conflits.
+   chat.css — styles des trois boutons (.wm-party-btn).
+   module.json — Bump 2.0.8 → 2.0.9.
 
 v2.0.8 | 2026-07-23
    Synchronisation module.json / readme.txt sur la même version.

@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.2.6
+Version : 1.2.7
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -158,6 +158,15 @@ INSTALLATION
 ================================================================================
                     TUTORIEL — MISES À JOUR
 ================================================================================
+
+v1.2.7 | 2026-07-28
+   tutorial.js — Ajout de la fonction _openChatTab() pour naviguer vers
+   l'onglet chat avant d'afficher les étapes chat. Deux nouvelles étapes
+   GM-only dans la section "Outils GM" : bouton Vider ma party
+   ([data-wm-action="clearParty"]) et bouton Importer des messages
+   ([data-wm-action="importParty"]), avec spotlight sur les boutons injectés
+   par westmarch v2.0.9 dans le chat log.
+   module.json — Bump 1.2.6 → 1.2.7.
 
 v1.2.6 | 2026-07-28
    settings.js — Fix sélecteur pour Foundry v13 : data-setting-id peut être absent

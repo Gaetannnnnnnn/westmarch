@@ -77,6 +77,175 @@ async function renderChatLog(log, html, data) {
     });
 
     changeTab("IC");
+
+    if (game.user.isGM) {
+        _injectPartyChatButtons($(html));
+    }
+}
+
+// ============================================================
+// SECTION : Gestion des messages de party (GM)
+// - Vider uniquement les messages de la party courante
+// - Export / Import JSON pour sauvegarde/restauration
+// ============================================================
+
+function _injectPartyChatButtons($html) {
+    // Foundry v13 : boutons en bas du chat — plusieurs noms possibles selon la version
+    const $clearBtn = $html.find(
+        '[data-action="clearLog"], [data-action="flush"], ' +
+        '[data-action="deleteChatLog"], [data-action="deleteAll"], ' +
+        'button i.fa-trash, button i.fa-times-circle'
+    ).first().closest('button, a');
+
+    if (!$clearBtn.length) {
+        // Dernier recours : coller en fin de la zone de contrôles du chat
+        const $footer = $html.find('.chat-controls, #chat-controls, footer, .control-buttons, form.chat-form').last();
+        if (!$footer.length) return;
+        const $btnClear  = _makePartyBtn("clearParty",  "fas fa-users-slash", "Effacer les messages de ma party uniquement");
+        const $btnImport = _makePartyBtn("importParty", "fas fa-file-import",  "Importer des messages (JSON / .txt)");
+        $footer.append($btnImport, $btnClear);
+        $btnClear.on("click",  () => _clearPartyMessages());
+        $btnImport.on("click", () => _importPartyChatJSON());
+        console.log("[westmarch] Boutons party chat injectés (fallback footer).");
+        return;
+    }
+
+    const $btnClear  = _makePartyBtn("clearParty",  "fas fa-users-slash", "Effacer les messages de ma party uniquement");
+    const $btnImport = _makePartyBtn("importParty", "fas fa-file-import",  "Importer des messages (JSON / .txt)");
+
+    // Ordre affiché : [import][clear-party] puis le [clear-all] natif
+    $clearBtn.before($btnClear).before($btnImport);
+
+    $btnClear.on("click",  () => _clearPartyMessages());
+    $btnImport.on("click", () => _importPartyChatJSON());
+    console.log("[westmarch] Boutons party chat injectés (ancre clearLog).");
+}
+
+function _makePartyBtn(action, iconClass, title) {
+    return $(`
+        <button type="button" class="wm-party-btn" data-wm-action="${action}"
+                title="${title}" aria-label="${title}">
+            <i class="${iconClass}"></i>
+        </button>`);
+}
+
+async function _clearPartyMessages() {
+    const myPartyId = game.user.getFlag("westmarch", "partyId");
+    if (!myPartyId) {
+        ui.notifications.warn("Tu n'as pas de party configurée. Utilise le bouton de suppression standard.");
+        return;
+    }
+
+    const toDelete = game.messages
+        .filter(m => m.author?.getFlag("westmarch", "partyId") === myPartyId)
+        .map(m => m.id);
+
+    if (!toDelete.length) {
+        ui.notifications.info("Aucun message de ta party à effacer.");
+        return;
+    }
+
+    const confirmed = await foundry.applications.api.DialogV2.confirm({
+        window: { title: "Effacer les messages de ma party" },
+        content: `<p>Supprimer <strong>${toDelete.length} message(s)</strong> de ta party uniquement ?</p>
+                  <p><em>Les messages des autres parties resteront intacts.</em></p>`,
+    });
+    if (!confirmed) return;
+
+    await ChatMessage.deleteDocuments(toDelete);
+}
+
+async function _importPartyChatJSON() {
+    return new Promise((resolve) => {
+        const input = document.createElement("input");
+        input.type = "file";
+        input.accept = ".txt,.json";
+        input.onchange = async (e) => {
+            const file = e.target.files[0];
+            if (!file) return resolve();
+            try {
+                const text = await file.text();
+                let data;
+
+                if (file.name.endsWith(".json")) {
+                    // Format JSON (potentiellement produit par un autre outil)
+                    const raw = JSON.parse(text);
+                    if (!Array.isArray(raw)) throw new Error("Le fichier JSON ne contient pas un tableau de messages.");
+                    data = raw.map(({ _id, ...rest }) => rest);
+                } else {
+                    // Format export natif Foundry (.txt)
+                    data = _parseFoundryExport(text);
+                }
+
+                if (!data.length) {
+                    ui.notifications.warn("Aucun message trouvé dans le fichier.");
+                    return resolve();
+                }
+
+                const confirmed = await foundry.applications.api.DialogV2.confirm({
+                    window: { title: "Importer des messages" },
+                    content: `<p>Importer <strong>${data.length} message(s)</strong> dans le chat ?</p>
+                              <p><em>Les messages seront ajoutés au chat existant (sans écraser l'existant).</em></p>`,
+                });
+                if (!confirmed) return resolve();
+
+                await ChatMessage.createDocuments(data);
+                ui.notifications.info(`${data.length} message(s) importé(s).`);
+            } catch (err) {
+                ui.notifications.error(`Erreur d'import : ${err.message}`);
+                console.error("[westmarch] Import chat :", err);
+            }
+            resolve();
+        };
+        input.click();
+    });
+}
+
+// Parse le fichier .txt produit par l'export natif Foundry.
+// Format HTML : <ol><li class="chat-message">...</li></ol>
+// Format texte brut (fallback) : [timestamp] Auteur: contenu
+function _parseFoundryExport(text) {
+    const messages = [];
+
+    // -- Tentative 1 : HTML (DOMParser) --
+    const doc = new DOMParser().parseFromString(text, "text/html");
+    const items = doc.querySelectorAll("li.chat-message, .message");
+
+    if (items.length) {
+        for (const item of items) {
+            const alias   = item.querySelector(".message-sender, .chat-author")?.textContent?.trim() ?? "Inconnu";
+            const timeStr = item.querySelector(".message-timestamp, time")?.textContent?.trim() ?? "";
+            const content = item.querySelector(".message-content, .chat-message-content")?.innerHTML?.trim() ?? "";
+            if (!content) continue;
+            const user = game.users.find(u => u.name === alias);
+            messages.push({
+                content,
+                speaker:   { alias },
+                user:      user?.id ?? game.user.id,
+                timestamp: timeStr ? (new Date(timeStr).getTime() || Date.now()) : Date.now(),
+                style:     CONST.CHAT_MESSAGE_STYLES.IC,
+            });
+        }
+        if (messages.length) return messages;
+    }
+
+    // -- Fallback : texte brut "[timestamp] Auteur: contenu" --
+    const lineRe = /^\[(.+?)\]\s+(.+?):\s+(.+)$/;
+    for (const line of text.split("\n")) {
+        const m = line.match(lineRe);
+        if (!m) continue;
+        const [, timeStr, alias, content] = m;
+        const user = game.users.find(u => u.name === alias);
+        messages.push({
+            content,
+            speaker:   { alias },
+            user:      user?.id ?? game.user.id,
+            timestamp: new Date(timeStr).getTime() || Date.now(),
+            style:     CONST.CHAT_MESSAGE_STYLES.IC,
+        });
+    }
+
+    return messages;
 }
 
 function changeTab(tab) {

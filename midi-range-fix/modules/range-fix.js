@@ -1,7 +1,7 @@
 /**
  * @file        modules/range-fix.js
  * @module      midi-range-fix
- * @version     1.3.6
+ * @version     1.3.9
  * @author      Soruta (Discord : s0ruta)
  * @license     © 2026 Soruta — Tous droits réservés.
  *              Usage personnel autorisé. Toute redistribution, modification
@@ -144,15 +144,32 @@ function _ourPatch(waypoints, options) {
         //   bord→bord ≤ weapon_range − adjust
         // Ex. (adjust=2.5) : arme 5ft → portée depuis bord ≤ 2.5ft
         //                     arme 10ft → portée depuis bord ≤ 7.5ft
-        if (result && typeof result.distance === "number") {
+        if (result && (typeof result.distance === "number" || result.distance instanceof Number)) {
             const adjust = game.settings.get(_MODULE, "rangeAdjust") ?? 2.5;
-            const grid   = canvas.grid.distance ?? 5;
-            const raw    = result.distance + adjust;
-            // Snap à la case Foundry supérieure : évite que midi-qol arrondit 5.26 → 5 ft.
-            // Ex. 5.26 → ceil(5.26/5 − ε)×5 = 10 ft → bloqué.
-            //     2.50 → ceil(2.50/5 − ε)×5 =  5 ft → autorisé.
-            result.distance = Math.ceil(raw / grid - 1e-9) * grid;
-            console.log(`[midi-range-fix] bord→bord=${(raw - adjust).toFixed(2)} + ${adjust} = ${raw.toFixed(2)} ft → snap ${result.distance} ft`);
+            const raw    = +result.distance + adjust;
+
+            // midi-qol appelle .toNearest(canvas.grid.distance) sur result.distance
+            // après notre retour, ce qui arrondit 5.26 → 5 et laisse passer une attaque
+            // hors-portée. Solution : retourner un Number OBJECT (pas un primitif) avec
+            // un .toNearest personnalisé qui court-circuite l'arrondi.
+            //
+            // Comportement garanti :
+            //   • tous les opérateurs (<, <=, >, +, -, *) font la coercition automatique
+            //     → le Number objet se comporte comme un primitif pour les comparaisons.
+            //   • .toNearest() appelé par midi-qol retourne la valeur exacte (pas arrondie).
+            //   • .toFixed(), .toLocaleString() etc. fonctionnent normalement.
+            //
+            // Ex. bord→bord=2.76, adjust=2.5 → raw=5.26
+            //   midi-qol : (5.26).toNearest(5) serait 5 → passerait ✗
+            //   avec notre patch : (5.26).toNearest(5) → 5.26 → 5.26 > 5 → bloqué ✓
+            //   message : "5.26 away" ✓
+            const distObj = new Number(raw);
+            distObj.toNearest    = function(_interval) { return +this; };
+            distObj.toFixed      = function(d) { return raw.toFixed(d); };
+            distObj.toLocaleString = function(...a) { return raw.toLocaleString(...a); };
+            result.distance = distObj;
+
+            console.log(`[midi-range-fix] bord→bord=${(raw - adjust).toFixed(2)} + ${adjust} = ${raw.toFixed(2)} ft (sans arrondi midi-qol)`);
         }
         return result;
 

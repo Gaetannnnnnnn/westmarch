@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.1.5
+Version : 1.1.6
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -120,6 +120,15 @@ INSTALLATION
 ================================================================================
                     TOOLKIT — MISES À JOUR
 ================================================================================
+
+v1.1.6 | 2026-07-28
+   template.js — Fix snap live : le wrap sur TemplateLayer._onDragLeftMove
+   ne tirait pas en Foundry V13 (méthode absente du flux de placement V13).
+   Remplacement par un wrap sur MeasuredTemplate.prototype._refreshShape,
+   appelé directement dans la chaîne de rendu V13 avant que la forme et
+   l'étiquette ne soient dessinées. Le snap est appliqué AVANT l'appel
+   original → la valeur snappée est celle que Foundry dessine, sans double
+   render. module.json — Bump 1.1.5 → 1.1.6.
 
 v1.1.5 | 2026-07-28
    template.js (nouveau) — Snap des templates AoE (cercle, cône, rayon, rect)

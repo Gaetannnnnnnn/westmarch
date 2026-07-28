@@ -62,43 +62,43 @@ export function TemplateHooks() {
     });
 
     // ── 3. Snap live pendant le drag (preview saccadé) ────────────────────
-    // libWrapper wrape TemplateLayer._onDragLeftMove APRÈS l'original :
-    //   a) Foundry calcule distance = pixels → pieds (valeur brute).
-    //   b) On snape immédiatement sur le document de preview.
-    //   c) On pose le renderFlag refreshShape → la prochaine frame utilise
-    //      la valeur snappée. Les renderFlags étant asynchrones (batché par
-    //      frame), Foundry ne voit qu'un seul rendu avec la valeur finale.
-    // → Résultat visuel : le template "saute" de 0,1 ft en 0,1 ft.
+    // En Foundry V13, le point d'interception fiable N'EST PAS
+    // TemplateLayer._onDragLeftMove (méthode absente ou non appelée dans le
+    // flux V13). La bonne cible est MeasuredTemplate.prototype._refreshShape,
+    // défini directement sur la classe et appelé AVANT que Foundry ne dessine
+    // la forme (shape) et mette à jour l'étiquette de distance.
+    //
+    // Flux : drag souris → Foundry calcule distance brute → updateSource →
+    //        renderFlags.set({refreshShape}) → _refreshShape() [← on snape ici]
+    //        → dessin PIXI → _refreshText() [lit document.distance déjà snappé]
+    //
+    // On snape document.distance AVANT l'appel original : la forme ET le texte
+    // utilisent donc directement la valeur snappée, sans double render.
+    //
+    // Guard isPreview : on ne touche que les templates en cours de placement,
+    // pas les templates déjà posés sur la scène.
     if (game.modules.get("lib-wrapper")?.active) {
         try {
             libWrapper.register(
                 _MODULE,
-                "TemplateLayer.prototype._onDragLeftMove",
-                function (wrapped, event) {
-                    wrapped(event);
-                    if (!game.settings.get(_MODULE, "enableTemplateSnap")) return;
-
-                    // Le premier enfant de this.preview est le MeasuredTemplate
-                    // de prévisualisation (créé dans _onDragLeftStart).
-                    const preview = this.preview?.children?.[0];
-                    if (!preview?.document) return;
-
-                    const raw     = preview.document.distance;
-                    const snapped = _snapToTenth(raw);
-
-                    // Évite de relancer un refresh si la valeur n'a pas changé.
-                    if (Math.abs(snapped - raw) > 1e-9) {
-                        preview.document.updateSource({ distance: snapped });
-                        // refreshShape recalcule le PIXI.Graphics du template.
-                        // refreshText met à jour l'étiquette de distance.
-                        preview.renderFlags.set({ refreshShape: true, refreshText: true });
+                "MeasuredTemplate.prototype._refreshShape",
+                function (wrapped, ...args) {
+                    if (game.settings.get(_MODULE, "enableTemplateSnap") && this.isPreview) {
+                        const raw     = this.document.distance;
+                        const snapped = _snapToTenth(raw);
+                        if (Math.abs(snapped - raw) > 1e-9) {
+                            // updateSource : mise à jour synchrone en mémoire,
+                            // sans émettre d'événement ni déclencher de nouveau renderFlag.
+                            this.document.updateSource({ distance: snapped });
+                        }
                     }
+                    return wrapped(...args);
                 },
                 "WRAPPER"
             );
-            console.log("[toolkit] Snap template 0,1 ft — patch live actif.");
+            console.log("[toolkit] Snap template 0,1 ft — patch live actif (via _refreshShape).");
         } catch (e) {
-            console.warn("[toolkit] Impossible de patcher TemplateLayer._onDragLeftMove :", e);
+            console.warn("[toolkit] Impossible de patcher MeasuredTemplate._refreshShape :", e);
             console.warn("[toolkit] Le snap au dixième restera actif à la création/modification uniquement.");
         }
     } else {
