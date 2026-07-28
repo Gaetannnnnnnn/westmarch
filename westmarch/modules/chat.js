@@ -79,7 +79,13 @@ async function renderChatLog(log, html, data) {
     changeTab("IC");
 
     if (game.user.isGM) {
-        _injectPartyChatButtons($(html));
+        // En v13, html = zone messages seulement.
+        // Les contrôles du bas (filter/save/trash) sont dans log.element (racine de l'app).
+        const rootEl = (log.element instanceof HTMLElement)
+            ? log.element
+            : (log.element?.[0] instanceof HTMLElement ? log.element[0] : null)
+            ?? document.querySelector("#chat, #sidebar");
+        _injectPartyChatButtons($(rootEl));
     }
 }
 
@@ -90,6 +96,11 @@ async function renderChatLog(log, html, data) {
 // ============================================================
 
 function _injectPartyChatButtons($html) {
+    // Diagnostic : affiche ce qu'on trouve dans $html pour debugger les sélecteurs
+    const allActions = [...$html[0]?.querySelectorAll?.('[data-action]') ?? []].map(el => el.dataset.action);
+    console.log("[westmarch] _injectPartyChatButtons — data-actions trouvés :", allActions);
+    console.log("[westmarch] _injectPartyChatButtons — $html :", $html[0]);
+
     // Foundry v13 : boutons en bas du chat — plusieurs noms possibles selon la version
     const $clearBtn = $html.find(
         '[data-action="clearLog"], [data-action="flush"], ' +

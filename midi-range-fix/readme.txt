@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.3.9
+Version : 1.4.0
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -64,6 +64,16 @@ INSTALLATION
 ================================================================================
                     MIDI-RANGE-FIX — MISES À JOUR
 ================================================================================
+
+v1.4.0 | 2026-07-28
+   range-fix.js — Revert du Number object (v1.3.9). typeof new Number() === "object"
+   casse les guards internes de midi-qol qui font typeof distance !== "number",
+   court-circuitant le check de portée et laissant toutes les attaques passer.
+   Retour à un primitif number : result.distance = raw (bord→bord + adjust).
+   La comparaison midi-qol distance > weaponRange fonctionne correctement avec
+   un primitif (5.26 > 5 → bloqué). Le message jaune peut afficher la valeur
+   arrondie toNearest(grid) mais le blocage est correct.
+   module.json — Bump 1.3.9 → 1.4.0.
 
 v1.3.9 | 2026-07-28
    range-fix.js — Court-circuit du .toNearest() de midi-qol via Number object.

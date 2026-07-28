@@ -3,7 +3,7 @@
                       Module Foundry VTT — Open Source
 ================================================================================
 
-Version : 2.0.9
+Version : 2.1.0
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : Open source — redistribution autorisée avec attribution
@@ -108,6 +108,14 @@ INSTALLATION
 ================================================================================
                     WESTMARCH — MISES À JOUR
 ================================================================================
+
+v2.1.0 | 2026-07-28
+   chat.js — Fix injection boutons party GM : en Foundry v13, renderChatLog passe
+   html = zone messages seulement (pas les contrôles du bas). On utilise désormais
+   log.element (racine ApplicationV2 de la sidebar) pour trouver les boutons natifs
+   filter/save/trash. Ajout d'un console.log diagnostic qui liste les data-actions
+   trouvés dans l'élément racine, pour corriger l'ancrage si nécessaire.
+   module.json — Bump 2.0.9 → 2.1.0.
 
 v2.0.9 | 2026-07-28
    chat.js — Trois nouveaux boutons GM dans le chat (visibles uniquement pour les GMs) :

@@ -1,7 +1,7 @@
 /**
  * @file        modules/range-fix.js
  * @module      midi-range-fix
- * @version     1.3.9
+ * @version     1.4.0
  * @author      Soruta (Discord : s0ruta)
  * @license     © 2026 Soruta — Tous droits réservés.
  *              Usage personnel autorisé. Toute redistribution, modification
@@ -144,32 +144,18 @@ function _ourPatch(waypoints, options) {
         //   bord→bord ≤ weapon_range − adjust
         // Ex. (adjust=2.5) : arme 5ft → portée depuis bord ≤ 2.5ft
         //                     arme 10ft → portée depuis bord ≤ 7.5ft
-        if (result && (typeof result.distance === "number" || result.distance instanceof Number)) {
+        if (result && typeof result.distance === "number") {
             const adjust = game.settings.get(_MODULE, "rangeAdjust") ?? 2.5;
-            const raw    = +result.distance + adjust;
+            const raw    = result.distance + adjust;
 
-            // midi-qol appelle .toNearest(canvas.grid.distance) sur result.distance
-            // après notre retour, ce qui arrondit 5.26 → 5 et laisse passer une attaque
-            // hors-portée. Solution : retourner un Number OBJECT (pas un primitif) avec
-            // un .toNearest personnalisé qui court-circuite l'arrondi.
-            //
-            // Comportement garanti :
-            //   • tous les opérateurs (<, <=, >, +, -, *) font la coercition automatique
-            //     → le Number objet se comporte comme un primitif pour les comparaisons.
-            //   • .toNearest() appelé par midi-qol retourne la valeur exacte (pas arrondie).
-            //   • .toFixed(), .toLocaleString() etc. fonctionnent normalement.
-            //
-            // Ex. bord→bord=2.76, adjust=2.5 → raw=5.26
-            //   midi-qol : (5.26).toNearest(5) serait 5 → passerait ✗
-            //   avec notre patch : (5.26).toNearest(5) → 5.26 → 5.26 > 5 → bloqué ✓
-            //   message : "5.26 away" ✓
-            const distObj = new Number(raw);
-            distObj.toNearest    = function(_interval) { return +this; };
-            distObj.toFixed      = function(d) { return raw.toFixed(d); };
-            distObj.toLocaleString = function(...a) { return raw.toLocaleString(...a); };
-            result.distance = distObj;
+            // On retourne la valeur exacte bord→bord + adjust en primitif number.
+            // Note : midi-qol peut appeler .toNearest(grid) sur cette valeur pour
+            // l'affichage du message jaune, ce qui arrondit la valeur affichée.
+            // La comparaison de portée interne à midi-qol utilise le primitif brut,
+            // donc le blocage est correct (5.26 > 5 → bloqué).
+            result.distance = raw;
 
-            console.log(`[midi-range-fix] bord→bord=${(raw - adjust).toFixed(2)} + ${adjust} = ${raw.toFixed(2)} ft (sans arrondi midi-qol)`);
+            console.log(`[midi-range-fix] bord→bord=${result.distance.toFixed(2)} + ${adjust} = ${raw.toFixed(2)} ft`);
         }
         return result;
 
