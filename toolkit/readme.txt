@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.1.4
+Version : 1.1.5
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -79,6 +79,12 @@ mejrestock.js
    article. Quand un article tombe à 0, un timer en jours de calendrier démarre.
    À expiration, la quantité repasse à 1. Délai configurable par rareté.
 
+template.js
+   Snap des templates AoE au dixième de pied (0,1 ft). Pendant le placement,
+   la taille s'incrémente par paliers de 0,1 ft (saccadé) — pas de valeurs au
+   centième. Couvre cercle, cône, rayon et rect. Patch via lib-wrapper +
+   hooks preCreate/preUpdate.
+
 artbook.js
    Non implémenté.
 
@@ -114,6 +120,17 @@ INSTALLATION
 ================================================================================
                     TOOLKIT — MISES À JOUR
 ================================================================================
+
+v1.1.5 | 2026-07-28
+   template.js (nouveau) — Snap des templates AoE (cercle, cône, rayon, rect)
+   au dixième de pied. Pendant le drag la distance s'incrémente par paliers de
+   0,1 ft (effet saccadé) au lieu de suivre la souris pixel par pixel. Le snap
+   s'applique aussi à la création (preCreateMeasuredTemplate) et à toute
+   modification ultérieure (preUpdateMeasuredTemplate). Activable/désactivable
+   depuis les settings. Nécessite lib-wrapper pour le snap live.
+   settings.js — Nouveau setting "enableTemplateSnap" + séparateur "Templates AoE".
+   index.js — Branchement de TemplateHooks().
+   module.json — Bump 1.1.4 → 1.1.5.
 
 v1.1.4 | 2026-07-26
    character.css — Style des boutons du dialog Export : bouton Exporter en dégradé

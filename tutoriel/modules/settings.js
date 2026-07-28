@@ -79,13 +79,21 @@ export function registerSettings() {
         const $html = $(html);
 
         // Bandeau version / auteur avant le premier setting du module
-        const firstSetting = $html.find(`[data-setting-id^="${MODULE}."]`).first().closest(".form-group");
-        if (firstSetting.length) {
+        // Sélecteur robuste v12/v13 : data-setting-id (v12) ou name sur l'input (v13).
+        let allTutSettings = $html.find(`[data-setting-id^="${MODULE}."]`);
+        if (!allTutSettings.length) {
+            allTutSettings = $html.find(`[name^="${MODULE}."]`).map(function() {
+                return $(this).closest(".form-group")[0];
+            });
+        }
+        const firstSetting = allTutSettings.length ? $(allTutSettings[0]).closest(".form-group") : null;
+        if (firstSetting?.length) {
             const version = game.modules.get(MODULE)?.version ?? "?";
             firstSetting.before(`
                 <div style="margin-bottom:12px;padding:10px 14px;border:1px solid #2ecc71;border-radius:4px;background:rgba(46,204,113,0.08);">
                     <p style="margin:0 0 4px 0;"><strong>Soruta — Tutoriel</strong> — v${version}</p>
                     <p style="margin:0;font-size:0.9em;">Fenêtre de bienvenue et tutoriel interactif configurable par module.</p>
+                    <p style="margin:4px 0 0 0;font-size:0.8em;font-style:italic;color:#27ae60;">© 2026 Soruta — Tous droits réservés. Usage personnel autorisé.</p>
                 </div>
             `);
         }

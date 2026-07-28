@@ -104,6 +104,16 @@ export function registerSettings() {
         requiresReload: false
     });
 
+    game.settings.register("toolkit", "enableTemplateSnap", {
+        name: "Snap des templates AoE au dixième de pied",
+        hint: "Pendant le placement d'un template (cercle, cône, rayon…), la taille s'incrémente par paliers de 0,1 ft au lieu de suivre la souris en continu. L'étiquette n'affiche jamais plus d'un chiffre après la virgule. Nécessite lib-wrapper pour le snap live ; le snap à la création reste actif sans lui.",
+        scope: "world",
+        config: true,
+        type: Boolean,
+        default: true,
+        requiresReload: false
+    });
+
     game.settings.register("toolkit", "enableMejShopFix", {
         name: "Correctifs boutiques Monk's Enhanced Journal",
         hint: "Ajoute un bouton 'Groupe uniquement' dans la fenêtre 'Show to Players' de MEJ, et corrige côté joueur un bug qui rendait les objets cachés toujours visibles.",
@@ -189,6 +199,12 @@ export function registerSettings() {
     // ---- Groupement visuel des sections dans la page de settings ----
     Hooks.on("renderSettingsConfig", (app, html) => {
         const root = $(html);
+
+        // Séparateur "Templates AoE"
+        const templateGroup = root.find('[name="toolkit.enableTemplateSnap"]').closest('.form-group');
+        if (templateGroup.length) {
+            templateGroup.before(`<h3 style="border-bottom:1px solid #4db6ac; padding-bottom:4px; margin:16px 0 8px; color:#4db6ac; font-size:0.95em; text-transform:uppercase; letter-spacing:0.06em;">Templates AoE</h3>`);
+        }
 
         // Séparateur "Boutiques MEJ"
         const mejShopGroup = root.find('[name="toolkit.enableMejShopFix"]').closest('.form-group');

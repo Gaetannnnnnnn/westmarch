@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.2.5
+Version : 1.2.6
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -158,6 +158,13 @@ INSTALLATION
 ================================================================================
                     TUTORIEL — MISES À JOUR
 ================================================================================
+
+v1.2.6 | 2026-07-28
+   settings.js — Fix sélecteur pour Foundry v13 : data-setting-id peut être absent
+   en v13. Ajout d'un fallback sur l'attribut name de l'input pour trouver les
+   form-groups du module. Le bandeau version est désormais affiché de façon fiable
+   quel que soit la version de Foundry. Ajout mention licence dans le bandeau.
+   module.json — Bump 1.2.5 → 1.2.6.
 
 v1.2.5 | 2026-07-26
    tutorial.js — Fix étape "Exporter un personnage" (outilsGm) : target changé de

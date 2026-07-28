@@ -1,7 +1,7 @@
 /**
  * @file        modules/settings.js
  * @module      midi-range-fix
- * @version     1.3.4
+ * @version     1.3.6
  * @author      Soruta (Discord : s0ruta)
  * @license     © 2026 Soruta — Tous droits réservés.
  *              Usage personnel autorisé. Toute redistribution, modification
@@ -39,20 +39,36 @@ export function registerSettings() {
         // Foundry v13 passe un HTMLElement natif (pas jQuery) — on normalise.
         const $html = $(html);
 
-        // Chercher le premier et le dernier setting du module
-        const allSettings = $html.find(`[data-setting-id^="${MODULE}."]`);
+        // Sélecteur robuste v12/v13 : data-setting-id (v12) ou name sur l'input (v13).
+        let allSettings = $html.find(`[data-setting-id^="${MODULE}."]`);
+        if (!allSettings.length) {
+            allSettings = $html.find(`[name^="${MODULE}."]`).map(function() {
+                return $(this).closest(".form-group")[0];
+            });
+        }
         if (!allSettings.length) return;
-        const firstSetting = allSettings.first().closest(".form-group");
-        const lastSetting  = allSettings.last().closest(".form-group");
+
+        const firstSetting = $(allSettings[0]).closest(".form-group");
+        const lastSetting  = $(allSettings[allSettings.length - 1]).closest(".form-group");
 
         // Bandeau version / auteur avant le premier setting
-        const moduleData = game.modules.get(MODULE);
-        const version = moduleData?.version ?? "?";
+        const version = game.modules.get(MODULE)?.version ?? "?";
         firstSetting.before(`
             <div style="margin-bottom:12px;padding:10px 14px;border:1px solid #e67e22;border-radius:4px;background:rgba(230,126,34,0.08);">
-                <p style="margin:0 0 4px 0;"><strong>Soruta — Midi Range Fix</strong> — v${version}</p>
-                <p style="margin:0;font-size:0.9em;">Remplace la mesure midi-qol par une mesure bord→bord pour tous les tokens. La portée se calcule depuis le bord de l'attaquant, pas son centre.</p>
-                <p style="margin:6px 0 0 0;font-size:0.85em;font-style:italic;color:#e67e22;">© 2026 Soruta — Tous droits réservés. Usage personnel autorisé. Toute redistribution, modification ou usage commercial est strictement interdit sans autorisation écrite.</p>
+                <p style="margin:0 0 6px 0;font-size:1em;"><strong>Soruta — Midi Range Fix</strong> — v${version}</p>
+
+                <p style="margin:0 0 6px 0;font-size:0.9em;"><strong>Pourquoi ce module ?</strong><br>
+                Midi-qol mesure la portée depuis le <em>centre</em> de l'attaquant jusqu'aux <em>coins</em> du token cible.
+                Pour un PJ face à un Ours (Large), ça donne souvent 6–8 ft alors que les tokens se touchent — et l'attaque échoue à tort.</p>
+
+                <p style="margin:0 0 6px 0;font-size:0.9em;"><strong>Ce que fait le module :</strong><br>
+                Il mesure <strong>de bord à bord</strong> entre les deux tokens, puis ajoute un buffer (réglable ci-dessous).
+                Ce buffer correspond à la portée effective depuis le bord de l'attaquant :<br>
+                &bull; Arme 5 ft → touche jusqu'à <strong>2,5 ft</strong> depuis votre bord (tokens adjacents = toujours OK).<br>
+                &bull; Arme 10 ft → touche jusqu'à <strong>7,5 ft</strong> depuis votre bord.<br>
+                &bull; La règle Foundry affiche cette même distance corrigée quand vous tracez une ligne entre deux tokens.</p>
+
+                <p style="margin:0;font-size:0.8em;font-style:italic;color:#e67e22;">© 2026 Soruta — Tous droits réservés. Usage personnel autorisé. Toute redistribution, modification ou usage commercial est strictement interdit sans autorisation écrite.</p>
             </div>
         `);
 

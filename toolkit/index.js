@@ -9,6 +9,7 @@ import { FolderMoveHooks } from './modules/foldermove.js';
 import { MejShopHooks } from './modules/mejshop.js';
 import { MejRestockHooks } from './modules/mejrestock.js';
 import { ExportDialogHooks } from './modules/export-dialog.js';
+import { TemplateHooks }      from './modules/template.js';
 
 Hooks.on("init", async () => {
     registerSettings();
@@ -22,4 +23,5 @@ Hooks.on("init", async () => {
     MejShopHooks();
     MejRestockHooks();
     ExportDialogHooks();
+    TemplateHooks();
 });

@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.3.4
+Version : 1.3.6
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -64,6 +64,25 @@ INSTALLATION
 ================================================================================
                     MIDI-RANGE-FIX — MISES À JOUR
 ================================================================================
+
+v1.3.6 | 2026-07-28
+   settings.js — Bandeau version + explication GM dans la page de paramètres.
+   Sélecteur robuste v12/v13 : data-setting-id en premier, fallback sur l'attribut
+   name de l'input si absent (Foundry v13 ne génère plus data-setting-id dans
+   certaines vues). Le bandeau orange affiche la version courante et explique
+   le fonctionnement du fix (bord→bord + buffer, exemples 5ft/10ft).
+   tutoriel/settings.js — Même fix de sélecteur (dual-selector v12/v13) pour
+   le bandeau vert du module tutoriel. Bump tutoriel 1.2.5 → 1.2.6.
+   module.json — Bump 1.3.5 → 1.3.6.
+
+v1.3.5 | 2026-07-28
+   range-fix.js — Fix arrondi midi-qol : midi-qol arrondit probablement la
+   distance reçue à la case Foundry (ex. 5.26 ft → 5 ft → ≤ 5 ft arme →
+   attaque autorisée à tort). Correction : _ourPatch snappe lui-même le résultat
+   à la case supérieure avant de le renvoyer à midi-qol via Math.ceil(raw/grid − ε)×grid.
+   Ainsi 5.26 ft → 10 ft → bloqué ✓ ; 2.5 ft → 5 ft → autorisé ✓. Le console.log
+   affiche maintenant les deux valeurs : brute et snappée.
+   module.json — Bump 1.3.4 → 1.3.5.
 
 v1.3.4 | 2026-07-28
    index.js, range-fix.js, settings.js — Ajout des entêtes JSDoc complets sur
