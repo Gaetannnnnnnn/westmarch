@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.3.3
+Version : 1.3.4
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -64,6 +64,12 @@ INSTALLATION
 ================================================================================
                     MIDI-RANGE-FIX — MISES À JOUR
 ================================================================================
+
+v1.3.4 | 2026-07-28
+   index.js, range-fix.js, settings.js — Ajout des entêtes JSDoc complets sur
+   les trois fichiers du module : auteur, version, licence, description, architecture
+   technique (index.js + range-fix.js), compatibilité Foundry v13 / dnd5e v3.
+   module.json — Bump 1.3.3 → 1.3.4.
 
 v1.3.3 | 2026-07-27
    range-fix.js — Fix détection tokens dans _ourPatch : si les waypoints de
