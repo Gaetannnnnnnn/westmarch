@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.4.9
+Version : 1.5.1
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -64,6 +64,23 @@ INSTALLATION
 ================================================================================
                     MIDI-RANGE-FIX — MISES À JOUR
 ================================================================================
+
+v1.5.1 | 2026-07-29
+   range-fix.js — Fix affichage règle : la 1ère valeur affiche désormais
+   bord→bord + adjust (valeur comparée par midi-qol à la portée d'arme),
+   pas juste le bord→bord brut. Ex. tokens qui se touchent avec adjust=2.5 :
+   "2,50 ft — X ft" au lieu de "0,00 ft — X ft".
+   Cela permet de comparer directement la 1ère valeur à la portée de l'arme.
+
+v1.5.0 | 2026-07-29
+   range-fix.js — Fix règle : distance bord→bord calculée en euclidien direct
+   (pixels → ft via l'échelle de la grille) au lieu de _protoCall grille.
+   La mesure Chebyshev de Foundry arrondissait les coordonnées de l'ellipse et
+   annulait la différence vs le rectangle — l'affichage restait identique à 1.4.8.
+   Avec le calcul euclidien, la distance reflète exactement la séparation visuelle
+   entre les cercles des tokens.
+   Bonus v13 : nativeDist lit maintenant waypoint.measurement.distance si disponible
+   (évite le _protoCall pour la valeur native aussi).
 
 v1.4.9 | 2026-07-29
    range-fix.js — Remplacement de _nearestBorderPoint (rectangle) par

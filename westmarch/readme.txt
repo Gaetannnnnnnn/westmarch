@@ -109,6 +109,13 @@ INSTALLATION
                     WESTMARCH — MISES À JOUR
 ================================================================================
 
+v2.1.9 | 2026-07-29
+   chat.js + chat.css — Boutons party GM sur 2 lignes : les contrôles natifs
+   Foundry restent dans .control-buttons (ligne du haut), et les boutons
+   westmarch (import, effacer party) sont déplacés dans un nouveau div
+   .wm-party-controls inséré juste après (ligne du bas). Réduit le
+   surencombrement de la barre de contrôles du chat.
+
 v2.1.8 | 2026-07-28
    chat.js — Fix boutons GM qui disparaissent après re-render de la Sidebar :
    _injectPartyChatButtons est maintenant appelé à chaque renderChatLog (pas

@@ -52,13 +52,20 @@
 }
 
 /* ============================================================
-   Boutons gestion party (GM) — vider / import
-   Héritent du style ui-control de Foundry v13 (icône sur le bouton).
+   Boutons gestion party (GM) — 2e ligne sous les contrôles natifs Foundry
    ============================================================ */
-.wm-party-btn {
-    margin-left: 4px;
+
+/* Conteneur du 2e étage */
+.wm-party-controls {
+    display: flex;
+    flex-direction: row;
+    gap: 2px;
+    padding: 2px 0;
+    justify-content: flex-end;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
 }
 
+/* Boutons individuels — héritent du style ui-control Foundry v13 */
 .wm-party-btn[data-wm-action="clearParty"]:hover {
     color: #e74c3c !important;
 }

@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.2.1
+Version : 1.2.3
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -120,6 +120,17 @@ INSTALLATION
 ================================================================================
                     TOOLKIT — MISES À JOUR
 ================================================================================
+
+v1.2.3 | 2026-07-29
+   mejshop.js — Fix root cause du hide items : les items MEJ sont des objets
+   Foundry bruts avec _id (pas id). Notre check i?.id était toujours undefined
+   → rien n'était jamais ajouté à hiddenIds même quand hidden:true était présent.
+   Correction : const itemId = i._id ?? i.id.
+
+v1.2.2 | 2026-07-29
+   mejshop.js — Fix détection item caché : accepte i.hidden ET i.hide (MEJ
+   utilise l'un ou l'autre selon la version). Ajout log diagnostic qui affiche
+   la structure réelle du premier item MEJ pour identifier le champ utilisé.
 
 v1.2.1 | 2026-07-29
    mejshop.js — Bail silencieux si l'élément n'a pas de [data-id] (évite le

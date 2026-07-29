@@ -1,7 +1,7 @@
 /**
  * @file        modules/range-fix.js
  * @module      midi-range-fix
- * @version     1.4.9
+ * @version     1.5.1
  * @author      Soruta (Discord : s0ruta)
  * @license     © 2026 Soruta — Tous droits réservés.
  *              Usage personnel autorisé. Toute redistribution, modification
@@ -247,33 +247,44 @@ function _patchRulerLabel() {
         const srcBorder = _nearestEllipsePoint(tgtCenter, srcToken);
         const tgtBorder = _nearestEllipsePoint(srcCenter, tgtToken);
 
-        // _reentering = true pour court-circuiter _ourPatch si le prototype
-        // rappelle canvas.grid.measurePath en interne.
-        _reentering = true;
-        let bordResult, nativeResult;
-        try {
-            // Mesure bord→bord (s'arrête à 0 quand les tokens se touchent)
-            bordResult   = _protoCall([srcBorder, tgtBorder], {});
-            // Mesure native Foundry curseur→curseur (règle classique, toujours croissante)
-            nativeResult = _protoCall([ray.A, ray.B], {});
-        } finally {
-            _reentering = false;
+        // Distance bord→bord : calcul euclidien DIRECT en pixels converti en ft.
+        // On évite _protoCall ici : la mesure via grille (Chebyshev) arrondit les
+        // coordonnées de l'ellipse et annule la différence vs le rectangle.
+        // Le calcul euclidien reflète exactement la distance visuelle à l'écran.
+        const dx_px   = tgtBorder.x - srcBorder.x;
+        const dy_px   = tgtBorder.y - srcBorder.y;
+        const dist_px = Math.sqrt(dx_px * dx_px + dy_px * dy_px);
+        const gs      = canvas.scene?.grid?.size     ?? canvas.grid?.size     ?? 100;
+        const gd      = canvas.scene?.grid?.distance ?? canvas.grid?.distance ?? 5;
+        const rawDist = dist_px * (gd / gs);
+
+        // Distance native Foundry (curseur→curseur) : waypoint.measurement.distance
+        // est disponible en v13 ; fallback _protoCall pour compatibilité v12.
+        let nativeDist;
+        if (typeof waypoint.measurement?.distance === "number") {
+            nativeDist = waypoint.measurement.distance;
+        } else {
+            _reentering = true;
+            try {
+                nativeDist = _protoCall([ray.A, ray.B], {})?.distance ?? rawDist;
+            } finally {
+                _reentering = false;
+            }
         }
-        if (!bordResult || typeof bordResult.distance !== "number") return context;
 
-        const rawDist    = bordResult.distance;
-        const nativeDist = typeof nativeResult?.distance === "number" ? nativeResult.distance : rawDist;
-        const adjust     = game.settings.get(_MODULE, "rangeAdjust") ?? 2.5;
-
-        // Affiche : "bord→bord ft — natif ft"
-        // → ex : "0,00 ft — 7,50 ft" quand les tokens se touchent
-        // Foundry ajoute l'unité (ft) après context.distance.total.
+        // Affiche : "(bord→bord + adjust) ft — natif ft"
+        // La 1ère valeur est ce que midi-qol compare à la portée d'arme :
+        //   bord→bord + adjust ≤ portée → attaque valide
+        // Ex. tokens qui se touchent (bord=0, adjust=2.5) → "2,50 ft — X ft"
+        // Ex. à 2.5ft de bord (adjust=2.5) → "5,00 ft — X ft" (exactement à portée)
+        const adjust  = game.settings.get(_MODULE, "rangeAdjust") ?? 2.5;
+        const adjDist = rawDist + adjust;
         const fmt   = (n) => parseFloat(n.toFixed(2)).toLocaleString(game.i18n.lang);
         const units = context.distance.units ?? canvas.scene?.grid?.units ?? "ft";
         // Foundry ajoute `units` UNE FOIS après total → on insère l'unité sur la
-        // 1ère valeur (bord→bord) manuellement ; Foundry la rattachera au natif.
-        // Résultat : "3,76 ft — 16,40 ft"
-        context.distance.total = `${fmt(rawDist)} ${units} — ${fmt(nativeDist)}`;
+        // 1ère valeur manuellement ; Foundry la rattachera au natif.
+        // Résultat : "5,00 ft — 16,40 ft"
+        context.distance.total = `${fmt(adjDist)} ${units} — ${fmt(nativeDist)}`;
 
         return context;
     };

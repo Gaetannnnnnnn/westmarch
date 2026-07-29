@@ -105,9 +105,8 @@ async function renderChatLog(log, html, data) {
 // ============================================================
 
 function _injectPartyChatButtons() {
-    // Supprimer les anciens boutons (re-render peut avoir effacé le container
-    // mais pas les boutons flottants, ou inversement). On repart de zéro.
-    document.querySelectorAll('[data-wm-action]').forEach(el => el.remove());
+    // Supprimer les anciens boutons et la ligne westmarch (re-render repart de zéro).
+    document.querySelectorAll('[data-wm-action], .wm-party-controls').forEach(el => el.remove());
 
     // En v13, les contrôles sont dans .control-buttons (dans #chat-controls).
     // On cherche depuis document car le footer est rendu par la Sidebar parente,
@@ -117,23 +116,17 @@ function _injectPartyChatButtons() {
         console.warn("[westmarch] Boutons party chat : .control-buttons introuvable.");
         return;
     }
-    const $controlButtons = $(controlButtons);
-
-    // Trouver le bouton poubelle dans ce container
-    const $trash = $controlButtons
-        .find('button[data-action="flush"], button.fa-trash, button[aria-label*="Clear"]')
-        .first();
 
     const $btnClear  = _makePartyBtn("clearParty",  "fa-users-slash", "Effacer les messages de ma party uniquement");
     const $btnImport = _makePartyBtn("importParty", "fa-file-import",  "Importer des messages (JSON / .txt)");
 
-    if ($trash.length) {
-        // Ordre final dans .control-buttons : [import][clear][poubelle-native]
-        $trash.before($btnImport);
-        $btnImport.after($btnClear);
-    } else {
-        $controlButtons.append($btnImport).append($btnClear);
-    }
+    // Ligne 2 dédiée aux boutons westmarch party — insérée juste après
+    // .control-buttons pour former un 2e étage sous les contrôles natifs Foundry.
+    const wmRow = document.createElement('div');
+    wmRow.className = 'wm-party-controls';
+    controlButtons.insertAdjacentElement('afterend', wmRow);
+    wmRow.appendChild($btnImport[0]);
+    wmRow.appendChild($btnClear[0]);
 
     $btnClear.on("click",  () => _clearPartyMessages());
     $btnImport.on("click", () => _importPartyChatJSON());

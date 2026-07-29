@@ -160,13 +160,26 @@ export function MejShopHooks() {
         // ── Collecter tous les ids cachés des pages shop de ce journal.
         const hiddenIds = new Set();
         for (const page of journal.pages.contents) {
-            // Inutile de filtrer les pages dont le joueur est owner
-            // (il les voit de toute façon) — on inspecte toutes les pages shop.
             const mejType = foundry.utils.getProperty(page, "flags.monks-enhanced-journal.type");
             if (mejType !== "shop") continue;
             const rawItems = page.getFlag("monks-enhanced-journal", "items") ?? [];
             const arr = Array.isArray(rawItems) ? rawItems : Object.values(rawItems);
-            arr.forEach(i => { if (i?.hidden && i?.id) hiddenIds.add(i.id); });
+
+            // Log diagnostic : montre la structure réelle des items MEJ pour
+            // identifier le nom du champ (hidden vs hide vs autre).
+            console.debug(
+                `[toolkit] _hideMejItems — page shop "${page.name}" :`,
+                `${arr.length} item(s),`,
+                "premier item :", arr[0] ? JSON.stringify(arr[0]).slice(0, 200) : "(aucun)"
+            );
+
+            // MEJ stocke les items comme objets Foundry bruts : l'identifiant
+            // est sur i._id (pas i.id qui est undefined sur un plain object).
+            // On accepte hidden ET hide pour couvrir toutes les versions de MEJ.
+            arr.forEach(i => {
+                const itemId = i._id ?? i.id;
+                if ((i?.hidden || i?.hide) && itemId) hiddenIds.add(itemId);
+            });
         }
 
         if (!hiddenIds.size) {
