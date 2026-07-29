@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.1.8
+Version : 1.1.9
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -120,6 +120,14 @@ INSTALLATION
 ================================================================================
                     TOOLKIT — MISES À JOUR
 ================================================================================
+
+v1.1.9 | 2026-07-29
+   mejshop.js — Fix 2 refonte complète : abandon de la détection par
+   pageId (trop fragile selon la version MEJ). On remonte maintenant au
+   JournalEntry depuis application.object, on collecte tous les item-ids
+   marqués hidden dans toutes les pages shop du journal, puis on retire
+   les lignes [data-id] correspondantes côté DOM. Fonctionne que MEJ
+   stocke l'app par Entry ou par Page.
 
 v1.1.8 | 2026-07-28
    mejshop.js — Fix 1 (bouton "Groupe uniquement") : les flags de party

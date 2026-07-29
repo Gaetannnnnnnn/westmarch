@@ -1,7 +1,7 @@
 /**
  * @file        modules/range-fix.js
  * @module      midi-range-fix
- * @version     1.4.3
+ * @version     1.4.7
  * @author      Soruta (Discord : s0ruta)
  * @license     © 2026 Soruta — Tous droits réservés.
  *              Usage personnel autorisé. Toute redistribution, modification
@@ -72,6 +72,11 @@ let _pollInterval = null;
 // (qui ne passe PAS par le getter de l'instance).
 let _reentering = false;
 
+// Flag actif uniquement pendant un workflow midi-qol (dnd5e.preUseItem).
+// Permet au fallback de _ourPatch de s'activer UNIQUEMENT pour les
+// vrais checks de portée, pas pour les mesures génériques de la règle.
+let _inMidiWorkflow = false;
+
 function _protoCall(waypoints, options) {
     return Object.getPrototypeOf(canvas.grid)?.measurePath?.call(canvas.grid, waypoints, options);
 }
@@ -111,7 +116,11 @@ function _ourPatch(waypoints, options) {
         // Méthode 2 : fallback sur le token contrôlé + la cible désignée.
         // Couvre les cas où midi-qol passe des coordonnées hors-bounds
         // (ex. coin du token, système de coordonnées différent, token hors-grille).
+        // IMPORTANT : uniquement pendant un workflow midi-qol actif (_inMidiWorkflow).
+        // Sans ce garde, le fallback intercepte aussi les mesures génériques de la
+        // règle (ray.A sur token → tgt sur sol → fallback → bord→bord figé).
         if (!attacker || !target) {
+            if (!_inMidiWorkflow) return _protoCall(waypoints, options);
             attacker = canvas.tokens.controlled[0] ?? null;
             target   = [...(game.user?.targets ?? [])][0] ?? null;
             if (!attacker || !target || attacker === target) {
@@ -195,24 +204,39 @@ function _patchRulerLabel() {
         const context = orig.call(this, waypoint, state);
         if (!context?.distance) return context;
 
+        // Ne pas altérer l'affichage pendant un déplacement de token.
+        // this.token est défini sur le Ruler quand le joueur drag son token,
+        // auquel cas ray.B suit le curseur et non un token cible — la valeur
+        // resterait sinon figée sur la distance bord→bord du token visé.
+        if (this.token) return context;
+
         // Vérifier que les deux extrémités du ray tombent dans les bounds d'un token.
         // Tolérance 8 px pour les points de bord.
         const ray = waypoint.ray;
         if (!ray?.A || !ray?.B) return context;
 
         const PAD = 8;
-        function _tokenAt(pt) {
-            return (canvas.tokens?.placeables ?? []).find(t => {
-                if (!t.actor || !t.bounds) return false;
+        // Parmi tous les tokens dont le point est dans les bounds (+ PAD),
+        // retourne celui dont le CENTRE est le plus proche du point.
+        // Évite de capturer un token adjacent au lieu du token visé.
+        function _tokenAt(pt, exclude) {
+            let best = null, bestDist = Infinity;
+            for (const t of (canvas.tokens?.placeables ?? [])) {
+                if (!t.actor || !t.bounds || t === exclude) continue;
                 const b = t.bounds;
-                return pt.x >= b.x - PAD && pt.x <= b.x + b.width  + PAD
-                    && pt.y >= b.y - PAD && pt.y <= b.y + b.height + PAD;
-            }) ?? null;
+                if (pt.x < b.x - PAD || pt.x > b.x + b.width  + PAD) continue;
+                if (pt.y < b.y - PAD || pt.y > b.y + b.height + PAD) continue;
+                const cx = b.x + b.width  / 2;
+                const cy = b.y + b.height / 2;
+                const d  = (pt.x - cx) ** 2 + (pt.y - cy) ** 2;
+                if (d < bestDist) { bestDist = d; best = t; }
+            }
+            return best;
         }
 
-        const srcToken = _tokenAt(ray.A);
+        const srcToken = _tokenAt(ray.A, null);
         if (!srcToken) return context;
-        const tgtToken = _tokenAt(ray.B);
+        const tgtToken = _tokenAt(ray.B, srcToken);
         if (!tgtToken || tgtToken === srcToken) return context;
 
         // Recalculer bord→bord exactement comme _ourPatch le fait pour midi-qol,
@@ -237,14 +261,21 @@ function _patchRulerLabel() {
         }
         if (!bordResult || typeof bordResult.distance !== "number") return context;
 
-        const rawDist   = bordResult.distance;
+        const rawDist    = bordResult.distance;
         const nativeDist = typeof nativeResult?.distance === "number" ? nativeResult.distance : rawDist;
+        const adjust     = game.settings.get(_MODULE, "rangeAdjust") ?? 2.5;
 
-        // Affiche : "bord→bord — natif ft"
-        // → ex : "0,00 — 7,50 ft" quand les tokens se touchent
-        // Foundry ajoute l'unité (ft) après context.distance.total
-        const fmt = (n) => parseFloat(n.toFixed(2)).toLocaleString(game.i18n.lang);
-        context.distance.total = `${fmt(rawDist)} — ${fmt(nativeDist)}`;
+        // Affiche : "bord→bord (+adj) — natif ft"
+        // → ex : "0,00 (+2,50) — 7,50 ft" quand les tokens se touchent
+        // L'adjust entre parenthèses rappelle le buffer qui s'ajoute pour le
+        // check midi-qol : la valeur comparée à la portée d'arme est bord+adj.
+        // Foundry ajoute l'unité (ft) après context.distance.total.
+        const fmt   = (n) => parseFloat(n.toFixed(2)).toLocaleString(game.i18n.lang);
+        const units = context.distance.units ?? canvas.scene?.grid?.units ?? "ft";
+        // Foundry ajoute `units` UNE FOIS après total → on insère l'unité sur la
+        // 1ère valeur (bord→bord) manuellement ; Foundry la rattachera au natif.
+        // Résultat : "3,76 ft (+2,50) — 16,40 ft"
+        context.distance.total = `${fmt(rawDist)} ${units} (+${fmt(adjust)}) — ${fmt(nativeDist)}`;
 
         return context;
     };
@@ -269,14 +300,17 @@ export function RangeFixHooks() {
         }, 0);
     });
 
-    // dnd5e.preUseItem : réinstalle juste avant chaque utilisation d'item.
-    // Couvre le cas où midi-qol/libWrapper a écrasé le patch entre deux attaques
-    // via Object.defineProperty (value descriptor), contournant notre setter.
+    // dnd5e.preUseItem : réinstalle juste avant chaque utilisation d'item,
+    // et active le flag _inMidiWorkflow pour autoriser le fallback dans _ourPatch.
+    // Le flag est remis à false après 500 ms (le check de portée midi-qol est
+    // synchrone ou quasi-synchrone par rapport au hook).
     Hooks.on("dnd5e.preUseItem", () => {
         if (!canvas?.grid) return;
         if (!game.modules.get("midi-qol")?.active) return;
         if (!game.settings.get(_MODULE, "enabled")) return;
         _ensurePatch();
+        _inMidiWorkflow = true;
+        setTimeout(() => { _inMidiWorkflow = false; }, 500);
     });
 
     // canvasInit : arrête le polling (canvas en cours de démontage).

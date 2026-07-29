@@ -82,39 +82,40 @@ export function MejShopHooks() {
     // donc son propre filtre ne retire jamais rien. On corrige ça
     // uniquement côté affichage joueur, sans toucher à MEJ.
     //
-    // Deux hooks : renderApplicationV2 (MEJ migré v2) et
-    // renderApplication (MEJ encore sur ApplicationV1).
-    // MEJ stocke les items en tableau [{id, hidden, ...}] — on
-    // convertit en Map avant de chercher par id.
+    // Approche : on remonte au JournalEntry depuis application.object
+    // (qui peut être un JournalEntry ou une JournalEntryPage selon
+    // la version de MEJ), on collecte tous les item-ids marqués
+    // hidden dans toutes les pages shop du journal, puis on retire
+    // les lignes [data-id] correspondantes. Plus besoin de deviner
+    // quel pageId est actif.
     // ------------------------------------------------------------
     const _hideMejItems = (application, element) => {
         if (game.user.isGM) return;
         if (!game.settings.get("toolkit", "enableMejShopFix")) return;
 
-        // pageId : options (v2) ou object si l'app EST une page (v1)
-        const pageId = application.options?.pageId
-            ?? (application.object instanceof JournalEntryPage ? application.object.id : null);
-        if (!pageId) return;
-
-        let shopPage = null;
-        for (const journal of game.journal.contents) {
-            const p = journal.pages.get(pageId);
-            if (p) { shopPage = p; break; }
+        // Remonter au JournalEntry depuis l'objet de l'application
+        let journal = null;
+        if (application.object instanceof JournalEntry) {
+            journal = application.object;
+        } else if (application.object instanceof JournalEntryPage) {
+            journal = application.object.parent;
         }
-        if (!shopPage || shopPage.isOwner) return;
+        if (!journal) return;
 
-        const mejType = foundry.utils.getProperty(shopPage, "flags.monks-enhanced-journal.type");
-        if (mejType !== "shop") return;
-
-        // MEJ stocke les items comme tableau — on indexe par id
-        const rawItems = shopPage.getFlag("monks-enhanced-journal", "items") ?? [];
-        const itemsById = Array.isArray(rawItems)
-            ? Object.fromEntries(rawItems.filter(i => i?.id).map(i => [i.id, i]))
-            : (rawItems ?? {});
+        // Collecter tous les ids cachés des pages shop de ce journal
+        const hiddenIds = new Set();
+        for (const page of journal.pages.contents) {
+            if (page.isOwner) continue;
+            const mejType = foundry.utils.getProperty(page, "flags.monks-enhanced-journal.type");
+            if (mejType !== "shop") continue;
+            const rawItems = page.getFlag("monks-enhanced-journal", "items") ?? [];
+            const arr = Array.isArray(rawItems) ? rawItems : Object.values(rawItems);
+            arr.forEach(i => { if (i?.hidden && i?.id) hiddenIds.add(i.id); });
+        }
+        if (!hiddenIds.size) return;
 
         element.querySelectorAll("[data-id]").forEach(row => {
-            const item = itemsById[row.dataset.id];
-            if (item?.hidden) row.remove();
+            if (hiddenIds.has(row.dataset.id)) row.remove();
         });
     };
 

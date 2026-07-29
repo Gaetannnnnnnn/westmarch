@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.4.3
+Version : 1.4.7
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -64,6 +64,38 @@ INSTALLATION
 ================================================================================
                     MIDI-RANGE-FIX — MISES À JOUR
 ================================================================================
+
+v1.4.7 | 2026-07-29
+   range-fix.js — Fix unité manquante sur la 1ère valeur de la règle + meilleure
+   détection du token visé. Affichage : "3,76 ft (+2,50) — 16,40 ft" au lieu de
+   "3,76 (+2,50) — 16,40 ft" (Foundry n'ajoute les units qu'une seule fois en fin
+   de chaîne — on intègre l'unité manuellement après rawDist).
+   Détection token : _tokenAt retourne désormais le token dont le CENTRE est le
+   plus proche du point (au lieu du premier dans les bounds), ce qui évite de
+   capturer un token adjacent lorsque plusieurs tokens sont proches.
+
+v1.4.6 | 2026-07-29
+   range-fix.js — Fix règle figée autour d'un token : le fallback de _ourPatch
+   (controlled[0] + targets[0]) s'activait pour toutes les mesures génériques,
+   pas seulement les checks midi-qol. Quand la règle partait d'un token (ray.A
+   dans les bounds), le fallback calculait bord→bord vers la cible désignée —
+   valeur fixe → règle figée. Ajout de _inMidiWorkflow (flag posé dans
+   dnd5e.preUseItem, remis à false après 500 ms) : le fallback ne s'active
+   maintenant que pendant un vrai workflow d'attaque.
+
+v1.4.5 | 2026-07-29
+   range-fix.js — Affichage de l'adjust dans la règle : format
+   "bord→bord (+adj) — natif ft", ex. "0,00 (+2,50) — 7,50 ft".
+   L'adjust entre parenthèses correspond au buffer du setting —
+   la valeur comparée par midi-qol à la portée d'arme est bord+adj.
+   Permet de vérifier visuellement que le setting est bien pris en compte.
+
+v1.4.4 | 2026-07-29
+   range-fix.js — Fix ruler label pendant déplacement de token : quand le
+   joueur drag son token, this.token est défini sur le Ruler. Sans ce check,
+   le patch activait l'affichage bord→bord même en mode déplacement (ray.B =
+   curseur, pas un token cible), ce qui figeait la valeur affichée. Ajout de
+   "if (this.token) return context" en tête de _getWaypointLabelContext.
 
 v1.4.3 | 2026-07-28
    range-fix.js — Double mesure dans la règle :

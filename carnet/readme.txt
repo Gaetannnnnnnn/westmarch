@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.3.5
+Version : 1.3.7
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -105,6 +105,15 @@ INSTALLATION
 ================================================================================
                     CARNET D'EXPÉDITIONS — MISES À JOUR
 ================================================================================
+
+v1.3.7 | 2026-07-29
+   carnet.js — Toutes les nouvelles notes (bouton + et depuis expédition)
+   sont insérées en tête de liste. prepend=true par défaut dans addCarnetNote.
+
+v1.3.6 | 2026-07-29
+   carnet.js — Les notes créées depuis l'onglet Expéditions (bouton
+   "Créer une note") sont maintenant insérées en tête de liste plutôt
+   qu'en bas. addCarnetNote reçoit prepend:true depuis wireDowntimeTab.
 
 v1.3.5 | 2026-07-28
    carnet.js — Bouton "Créer une note" dans l'onglet Expéditions disponible

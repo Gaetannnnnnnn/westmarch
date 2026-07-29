@@ -59,7 +59,7 @@ export async function addCarnetSection(actor) {
     return newSection;
 }
 
-export async function addCarnetNote(actor, { title = "Nouvelle note", linkedExpId = null } = {}) {
+export async function addCarnetNote(actor, { title = "Nouvelle note", linkedExpId = null, prepend = true } = {}) {
     const notes   = getCarnetNotes(actor);
     const newNote = {
         id:          foundry.utils.randomID(),
@@ -67,7 +67,8 @@ export async function addCarnetNote(actor, { title = "Nouvelle note", linkedExpI
         content:     "",
         linkedExpId: linkedExpId ?? null
     };
-    await actor.setFlag(MODULE, "carnetNotes", [...notes, newNote]);
+    const updated = prepend ? [newNote, ...notes] : [...notes, newNote];
+    await actor.setFlag(MODULE, "carnetNotes", updated);
     return newNote;
 }
 
@@ -1133,7 +1134,7 @@ export function wireDowntimeTab(actor, element, sheet) {
             e.preventDefault();
             const expId   = link.dataset.expId;
             const expName = link.dataset.expName;
-            await addCarnetNote(actor, { title: expName || "Nouvelle note", linkedExpId: expId });
+            await addCarnetNote(actor, { title: expName || "Nouvelle note", linkedExpId: expId, prepend: true });
             // Naviguer vers l'onglet Carnet
             _navigateToTab(sheet, "carnet-journal", null);
         });
