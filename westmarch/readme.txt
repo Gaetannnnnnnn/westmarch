@@ -109,6 +109,14 @@ INSTALLATION
                     WESTMARCH — MISES À JOUR
 ================================================================================
 
+v2.2.0 | 2026-07-29
+   chat.js + chat.css — Fix boutons party GM invisibles : la version 2.1.9 utilisait
+   insertAdjacentElement('afterend') qui sortait les boutons hors du conteneur et
+   les rendait invisibles. Nouveau mécanisme : un div séparateur .wm-party-break
+   (data-wm-action="break", flex-basis:100%) est injecté à la fin de .control-buttons
+   avec les boutons westmarch, et flex-wrap:wrap est activé sur le conteneur natif.
+   Résultat : 2 étages stables sans quitter .control-buttons.
+
 v2.1.9 | 2026-07-29
    chat.js + chat.css — Boutons party GM sur 2 lignes : les contrôles natifs
    Foundry restent dans .control-buttons (ligne du haut), et les boutons

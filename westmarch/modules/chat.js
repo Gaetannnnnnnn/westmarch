@@ -105,8 +105,8 @@ async function renderChatLog(log, html, data) {
 // ============================================================
 
 function _injectPartyChatButtons() {
-    // Supprimer les anciens boutons et la ligne westmarch (re-render repart de zéro).
-    document.querySelectorAll('[data-wm-action], .wm-party-controls').forEach(el => el.remove());
+    // Supprimer les anciens boutons (re-render repart de zéro).
+    document.querySelectorAll('[data-wm-action]').forEach(el => el.remove());
 
     // En v13, les contrôles sont dans .control-buttons (dans #chat-controls).
     // On cherche depuis document car le footer est rendu par la Sidebar parente,
@@ -116,17 +116,16 @@ function _injectPartyChatButtons() {
         console.warn("[westmarch] Boutons party chat : .control-buttons introuvable.");
         return;
     }
+    const $controlButtons = $(controlButtons);
 
     const $btnClear  = _makePartyBtn("clearParty",  "fa-users-slash", "Effacer les messages de ma party uniquement");
     const $btnImport = _makePartyBtn("importParty", "fa-file-import",  "Importer des messages (JSON / .txt)");
 
-    // Ligne 2 dédiée aux boutons westmarch party — insérée juste après
-    // .control-buttons pour former un 2e étage sous les contrôles natifs Foundry.
-    const wmRow = document.createElement('div');
-    wmRow.className = 'wm-party-controls';
-    controlButtons.insertAdjacentElement('afterend', wmRow);
-    wmRow.appendChild($btnImport[0]);
-    wmRow.appendChild($btnClear[0]);
+    // Séparateur flex (data-wm-action="break") qui force un retour à la ligne
+    // entre les boutons natifs Foundry (ligne 1) et les boutons westmarch (ligne 2).
+    // Nécessite flex-wrap: wrap sur .control-buttons (défini dans chat.css).
+    const $break = $('<div class="wm-party-break" data-wm-action="break"></div>');
+    $controlButtons.append($break).append($btnImport).append($btnClear);
 
     $btnClear.on("click",  () => _clearPartyMessages());
     $btnImport.on("click", () => _importPartyChatJSON());

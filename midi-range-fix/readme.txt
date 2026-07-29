@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.5.1
+Version : 1.5.2
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -64,6 +64,11 @@ INSTALLATION
 ================================================================================
                     MIDI-RANGE-FIX — MISES À JOUR
 ================================================================================
+
+v1.5.2 | 2026-07-29
+   range-fix.js — Correction d'affichage règle uniquement : soustrait 0.5 ft
+   à la 1ère valeur affichée (bord→bord + adjust - 0.5). Le check midi-qol
+   réel n'est pas modifié.
 
 v1.5.1 | 2026-07-29
    range-fix.js — Fix affichage règle : la 1ère valeur affiche désormais

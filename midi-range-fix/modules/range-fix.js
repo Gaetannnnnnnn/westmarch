@@ -1,7 +1,7 @@
 /**
  * @file        modules/range-fix.js
  * @module      midi-range-fix
- * @version     1.5.1
+ * @version     1.5.2
  * @author      Soruta (Discord : s0ruta)
  * @license     © 2026 Soruta — Tous droits réservés.
  *              Usage personnel autorisé. Toute redistribution, modification
@@ -278,7 +278,8 @@ function _patchRulerLabel() {
         // Ex. tokens qui se touchent (bord=0, adjust=2.5) → "2,50 ft — X ft"
         // Ex. à 2.5ft de bord (adjust=2.5) → "5,00 ft — X ft" (exactement à portée)
         const adjust  = game.settings.get(_MODULE, "rangeAdjust") ?? 2.5;
-        const adjDist = rawDist + adjust;
+        // -0.5 : correction d'affichage pour la règle uniquement (pas le check midi-qol).
+        const adjDist = rawDist + adjust - 0.5;
         const fmt   = (n) => parseFloat(n.toFixed(2)).toLocaleString(game.i18n.lang);
         const units = context.distance.units ?? canvas.scene?.grid?.units ?? "ft";
         // Foundry ajoute `units` UNE FOIS après total → on insère l'unité sur la
