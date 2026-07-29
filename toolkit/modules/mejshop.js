@@ -82,41 +82,95 @@ export function MejShopHooks() {
     // donc son propre filtre ne retire jamais rien. On corrige ça
     // uniquement côté affichage joueur, sans toucher à MEJ.
     //
-    // Approche : on remonte au JournalEntry depuis application.object
-    // (qui peut être un JournalEntry ou une JournalEntryPage selon
-    // la version de MEJ), on collecte tous les item-ids marqués
-    // hidden dans toutes les pages shop du journal, puis on retire
-    // les lignes [data-id] correspondantes. Plus besoin de deviner
-    // quel pageId est actif.
+    // Approche : on remonte au JournalEntry via plusieurs stratégies
+    // (ApplicationV2 : application.document ; V1 : application.object ;
+    // fallback UUID depuis les options), on collecte tous les item-ids
+    // marqués hidden dans toutes les pages shop, et on retire les lignes
+    // [data-id] correspondantes. MutationObserver + setTimeout couvrent
+    // les cas où MEJ charge ses items de manière asynchrone.
     // ------------------------------------------------------------
     const _hideMejItems = (application, element) => {
         if (game.user.isGM) return;
         if (!game.settings.get("toolkit", "enableMejShopFix")) return;
 
-        // Remonter au JournalEntry depuis l'objet de l'application
+        // ── Stratégie 1 : ApplicationV2 utilise application.document,
+        //    ApplicationV1 utilise application.object.
         let journal = null;
-        if (application.object instanceof JournalEntry) {
-            journal = application.object;
-        } else if (application.object instanceof JournalEntryPage) {
-            journal = application.object.parent;
+        const doc = application.document ?? application.object ?? null;
+        if (doc instanceof JournalEntry) {
+            journal = doc;
+        } else if (doc instanceof JournalEntryPage) {
+            journal = doc.parent;
         }
-        if (!journal) return;
 
-        // Collecter tous les ids cachés des pages shop de ce journal
+        // ── Stratégie 2 : MEJ stocke parfois l'UUID dans les options.
+        if (!journal) {
+            const uuid = application.options?.uuid
+                ?? application.options?.document?.uuid
+                ?? application.uuid
+                ?? null;
+            if (uuid) {
+                try {
+                    const parsed = fromUuidSync(uuid);
+                    if (parsed instanceof JournalEntry)     journal = parsed;
+                    else if (parsed instanceof JournalEntryPage) journal = parsed.parent;
+                } catch(_) { /* fromUuidSync peut lever si uuid invalide */ }
+            }
+        }
+
+        // ── Stratégie 3 : attribut data-journal-id dans l'élément.
+        if (!journal) {
+            const jid = element.dataset?.journalId
+                ?? element.closest?.("[data-journal-id]")?.dataset?.journalId
+                ?? null;
+            if (jid) journal = game.journal.get(jid);
+        }
+
+        if (!journal) {
+            console.debug("[toolkit] _hideMejItems — JournalEntry introuvable pour",
+                application.constructor?.name ?? application);
+            return;
+        }
+
+        // ── Collecter tous les ids cachés des pages shop de ce journal.
         const hiddenIds = new Set();
         for (const page of journal.pages.contents) {
-            if (page.isOwner) continue;
+            // Inutile de filtrer les pages dont le joueur est owner
+            // (il les voit de toute façon) — on inspecte toutes les pages shop.
             const mejType = foundry.utils.getProperty(page, "flags.monks-enhanced-journal.type");
             if (mejType !== "shop") continue;
             const rawItems = page.getFlag("monks-enhanced-journal", "items") ?? [];
             const arr = Array.isArray(rawItems) ? rawItems : Object.values(rawItems);
             arr.forEach(i => { if (i?.hidden && i?.id) hiddenIds.add(i.id); });
         }
-        if (!hiddenIds.size) return;
 
-        element.querySelectorAll("[data-id]").forEach(row => {
-            if (hiddenIds.has(row.dataset.id)) row.remove();
-        });
+        if (!hiddenIds.size) {
+            console.debug("[toolkit] _hideMejItems — aucun item caché dans", journal.name);
+            return;
+        }
+        console.debug("[toolkit] _hideMejItems — ids cachés :", [...hiddenIds]);
+
+        // ── Retirer les rows du DOM.
+        const _removeHidden = (root) => {
+            let count = 0;
+            root.querySelectorAll("[data-id]").forEach(row => {
+                if (hiddenIds.has(row.dataset.id)) { row.remove(); count++; }
+            });
+            if (count) console.debug(`[toolkit] _hideMejItems — ${count} item(s) retiré(s) du DOM`);
+        };
+
+        _removeHidden(element);
+
+        // ── Fallback pour les items chargés de façon asynchrone par MEJ.
+        // Deux temps : 150 ms (rechargement rapide) et 800 ms (rechargement lent).
+        setTimeout(() => _removeHidden(element), 150);
+        setTimeout(() => _removeHidden(element), 800);
+
+        // ── MutationObserver : couvre les mutations après les timeouts
+        //    (ex. MEJ qui re-render la liste sur scroll ou filtre).
+        const observer = new MutationObserver(() => _removeHidden(element));
+        observer.observe(element, { childList: true, subtree: true });
+        setTimeout(() => observer.disconnect(), 5000);
     };
 
     // MEJ ApplicationV2

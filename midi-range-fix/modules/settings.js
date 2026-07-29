@@ -26,8 +26,8 @@ export function registerSettings() {
     });
 
     game.settings.register(MODULE, "rangeAdjust", {
-        name: "Portée depuis le bord (ft)",
-        hint: "Portée effective depuis le bord de l'attaquant pour une arme de 5 ft. Chaque tranche de 5 ft supplémentaire de l'arme ajoute 5 ft. Défaut : 2.5 ft (demi-case Medium sur grille 5 ft).",
+        name: "Marge depuis le bord (ft)",
+        hint: "Marge soustraite à la portée de l'arme pour le calcul bord→bord. Plus la valeur est élevée, plus la distance autorisée depuis le bord est réduite. Pour une arme de 5 ft : 0 = jusqu'à 5 ft de bord (trop permissif) · 2.5 = jusqu'à 2.5 ft (défaut D&D 5e, demi-case) · 5 = tokens qui se touchent seulement (très strict). Ne pas dépasser la portée de l'arme concernée (max 5 pour une arme 5 ft).",
         scope:   "world",
         config:  true,
         type:    Number,

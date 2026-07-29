@@ -1,7 +1,7 @@
 /**
  * @file        modules/range-fix.js
  * @module      midi-range-fix
- * @version     1.4.7
+ * @version     1.4.8
  * @author      Soruta (Discord : s0ruta)
  * @license     © 2026 Soruta — Tous droits réservés.
  *              Usage personnel autorisé. Toute redistribution, modification
@@ -265,17 +265,15 @@ function _patchRulerLabel() {
         const nativeDist = typeof nativeResult?.distance === "number" ? nativeResult.distance : rawDist;
         const adjust     = game.settings.get(_MODULE, "rangeAdjust") ?? 2.5;
 
-        // Affiche : "bord→bord (+adj) — natif ft"
-        // → ex : "0,00 (+2,50) — 7,50 ft" quand les tokens se touchent
-        // L'adjust entre parenthèses rappelle le buffer qui s'ajoute pour le
-        // check midi-qol : la valeur comparée à la portée d'arme est bord+adj.
+        // Affiche : "bord→bord ft — natif ft"
+        // → ex : "0,00 ft — 7,50 ft" quand les tokens se touchent
         // Foundry ajoute l'unité (ft) après context.distance.total.
         const fmt   = (n) => parseFloat(n.toFixed(2)).toLocaleString(game.i18n.lang);
         const units = context.distance.units ?? canvas.scene?.grid?.units ?? "ft";
         // Foundry ajoute `units` UNE FOIS après total → on insère l'unité sur la
         // 1ère valeur (bord→bord) manuellement ; Foundry la rattachera au natif.
-        // Résultat : "3,76 ft (+2,50) — 16,40 ft"
-        context.distance.total = `${fmt(rawDist)} ${units} (+${fmt(adjust)}) — ${fmt(nativeDist)}`;
+        // Résultat : "3,76 ft — 16,40 ft"
+        context.distance.total = `${fmt(rawDist)} ${units} — ${fmt(nativeDist)}`;
 
         return context;
     };

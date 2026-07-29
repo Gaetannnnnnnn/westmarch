@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.4.7
+Version : 1.4.8
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -64,6 +64,10 @@ INSTALLATION
 ================================================================================
                     MIDI-RANGE-FIX — MISES À JOUR
 ================================================================================
+
+v1.4.8 | 2026-07-29
+   range-fix.js — Suppression du "(+adj)" dans l'affichage de la règle.
+   Format : "3,76 ft — 16,40 ft" au lieu de "3,76 ft (+2,50) — 16,40 ft".
 
 v1.4.7 | 2026-07-29
    range-fix.js — Fix unité manquante sur la 1ère valeur de la règle + meilleure
