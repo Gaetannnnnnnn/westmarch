@@ -109,6 +109,13 @@ INSTALLATION
                     WESTMARCH — MISES À JOUR
 ================================================================================
 
+v2.2.1 | 2026-07-29
+   chat.css — Fix 2e ligne invisible : ajout de height:auto!important,
+   overflow:visible!important sur .control-buttons et #chat-controls pour
+   que la 2e ligne ne soit pas clippée par la hauteur fixe Foundry.
+   Ajout de order:10 sur .wm-party-break et .wm-party-btn pour s'assurer
+   qu'ils apparaissent après les boutons natifs.
+
 v2.2.0 | 2026-07-29
    chat.js + chat.css — Fix boutons party GM invisibles : la version 2.1.9 utilisait
    insertAdjacentElement('afterend') qui sortait les boutons hors du conteneur et

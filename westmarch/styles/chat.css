@@ -56,19 +56,39 @@
    flex-wrap: wrap + séparateur invisible → 2 étages sans sortir du conteneur.
    ============================================================ */
 
-/* Activer le wrapping dans le conteneur natif Foundry */
+/* Activer le wrapping dans le conteneur natif Foundry.
+   height: auto + overflow: visible nécessaires pour que la 2e ligne
+   ne soit pas clippée par une hauteur fixe Foundry. */
 #chat-controls .control-buttons,
 .control-buttons {
-    flex-wrap: wrap;
+    flex-wrap: wrap !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
 }
 
-/* Séparateur invisible qui force le retour à la ligne */
+/* Le parent #chat-controls peut aussi clipper : même traitement. */
+#chat-controls {
+    height: auto !important;
+    max-height: none !important;
+    overflow: visible !important;
+}
+
+/* Séparateur invisible qui force le retour à la ligne.
+   flex-basis: 100% prend toute la largeur → les boutons suivants
+   passent à la ligne 2. */
 .wm-party-break {
-    flex-basis: 100%;
-    width: 100%;
+    flex-basis: 100% !important;
+    width: 100% !important;
     height: 0;
     border-top: 1px solid rgba(255, 255, 255, 0.08);
     margin-top: 2px;
+    order: 10; /* après tous les boutons natifs */
+}
+
+/* Boutons westmarch : même order que le break pour rester sur la ligne 2 */
+.wm-party-btn {
+    order: 10;
 }
 
 /* Boutons individuels — héritent du style ui-control Foundry v13 */
