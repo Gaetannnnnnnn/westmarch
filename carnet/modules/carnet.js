@@ -21,11 +21,11 @@ export function getExpeditions(actor) {
     return actor.getFlag(MODULE, "expeditions") ?? [];
 }
 
-export async function addExpedition(actor, startDate = null) {
+export async function addExpedition(actor, startDate = null, name = "Nouvelle expédition") {
     const exps   = getExpeditions(actor);
     const newExp = {
         id:        foundry.utils.randomID(),
-        name:      "Nouvelle expédition",
+        name:      name || "Nouvelle expédition",
         startDate: startDate ?? null,
         endDate:   null
     };
@@ -352,13 +352,22 @@ async function _pickDateDialog(title) {
 async function _createExpDialog(members) {
     const currentDate = getCurrentDate();
     const { html: content } = _dateDialogContent(currentDate,
-        `<p style="margin:0;font-size:11px;color:#aaa;padding:0 2px;">
+        `<p style="margin:0 0 6px;font-size:11px;color:#aaa;padding:0 2px;">
              <i class="fas fa-info-circle"></i>
              Crée une nouvelle expédition pour ${members.length} PJ de la party.
-         </p>`
+         </p>
+         <div style="margin-bottom:2px;">
+             <label style="display:block;font-size:12px;font-weight:600;margin-bottom:4px;">
+                 Nom de l'expédition
+             </label>
+             <input id="carnet-exp-name" type="text" placeholder="Nouvelle expédition"
+                    style="width:100%;box-sizing:border-box;"
+                    value="">
+         </div>`
     );
 
     let resolvedDate = null;
+    let resolvedName = "Nouvelle expédition";
     const DialogClass = foundry.applications.api?.DialogV2 ?? globalThis.DialogV2;
 
     if (DialogClass?.wait) {
@@ -374,14 +383,18 @@ async function _createExpDialog(members) {
                     label:    "Créer l'expédition",
                     icon:     '<i class="fas fa-calendar-plus"></i>',
                     default:  true,
-                    callback: () => { resolvedDate = _readDateFromDom(currentDate); }
+                    callback: () => {
+                        resolvedDate = _readDateFromDom(currentDate);
+                        resolvedName = document.getElementById("carnet-exp-name")?.value?.trim()
+                            || "Nouvelle expédition";
+                    }
                 },
                 { action: "cancel", label: "Annuler", icon: '<i class="fas fa-times"></i>' }
             ]
         });
         if (action !== "confirm" || !resolvedDate) return;
     } else {
-        resolvedDate = await new Promise(resolve => {
+        ({ date: resolvedDate, name: resolvedName } = await new Promise(resolve => {
             new Dialog({
                 title:   "Nouvelle expédition — Date de début",
                 content,
@@ -390,22 +403,26 @@ async function _createExpDialog(members) {
                         icon:  '<i class="fas fa-calendar-plus"></i>',
                         label: "Créer l'expédition",
                         callback: (html) => {
-                            try   { resolve(_readDateFromJQuery(html, currentDate)); }
-                            catch { resolve(null); }
+                            try {
+                                resolve({
+                                    date: _readDateFromJQuery(html, currentDate),
+                                    name: html.find("#carnet-exp-name").val()?.trim() || "Nouvelle expédition"
+                                });
+                            } catch { resolve({ date: null, name: "Nouvelle expédition" }); }
                         }
                     },
-                    cancel: { icon: '<i class="fas fa-times"></i>', label: "Annuler", callback: () => resolve(null) }
+                    cancel: { icon: '<i class="fas fa-times"></i>', label: "Annuler", callback: () => resolve({ date: null, name: "" }) }
                 },
                 default: "confirm"
             }, { width: 340 }).render(true);
-        });
+        }));
         if (!resolvedDate) return;
     }
 
     for (const actor of members) {
-        await addExpedition(actor, resolvedDate);
+        await addExpedition(actor, resolvedDate, resolvedName);
     }
-    ui.notifications.info(`[Carnet] Nouvelle expédition créée pour ${members.length} PJ.`);
+    ui.notifications.info(`[Carnet] Expédition "${resolvedName}" créée pour ${members.length} PJ.`);
 }
 
 // ── Dialog : clôturer les expéditions ouvertes ─────────────────

@@ -93,17 +93,35 @@ export function MejShopHooks() {
         if (game.user.isGM) return;
         if (!game.settings.get("toolkit", "enableMejShopFix")) return;
 
-        // ── Stratégie 1 : ApplicationV2 utilise application.document,
-        //    ApplicationV1 utilise application.object.
+        // Bail silencieux si l'élément ne contient pas d'items [data-id] :
+        // cette fenêtre n'est pas une boutique MEJ (Players, Chat, etc.).
+        if (!element.querySelector?.("[data-id]")) return;
+
+        // ── Stratégie 1 : ApplicationV2 (document) ou V1 (object).
         let journal = null;
         const doc = application.document ?? application.object ?? null;
-        if (doc instanceof JournalEntry) {
-            journal = doc;
-        } else if (doc instanceof JournalEntryPage) {
-            journal = doc.parent;
+        if (doc instanceof JournalEntry)     journal = doc;
+        else if (doc instanceof JournalEntryPage) journal = doc.parent;
+
+        // ── Stratégie 2 : propriétés MEJ spécifiques.
+        //    MEJ peut stocker le journal dans journalEntry, options.document,
+        //    object.document, object.journalEntry, options.entity (API v10), etc.
+        if (!journal) {
+            const candidates = [
+                application.journalEntry,
+                application.options?.journalEntry,
+                application.options?.document,
+                application.options?.entity,
+                application.object?.document,
+                application.object?.journalEntry,
+            ];
+            for (const c of candidates) {
+                if (c instanceof JournalEntry)     { journal = c; break; }
+                if (c instanceof JournalEntryPage) { journal = c.parent; break; }
+            }
         }
 
-        // ── Stratégie 2 : MEJ stocke parfois l'UUID dans les options.
+        // ── Stratégie 3 : UUID dans les options.
         if (!journal) {
             const uuid = application.options?.uuid
                 ?? application.options?.document?.uuid
@@ -114,11 +132,11 @@ export function MejShopHooks() {
                     const parsed = fromUuidSync(uuid);
                     if (parsed instanceof JournalEntry)     journal = parsed;
                     else if (parsed instanceof JournalEntryPage) journal = parsed.parent;
-                } catch(_) { /* fromUuidSync peut lever si uuid invalide */ }
+                } catch(_) {}
             }
         }
 
-        // ── Stratégie 3 : attribut data-journal-id dans l'élément.
+        // ── Stratégie 4 : data-journal-id dans l'élément.
         if (!journal) {
             const jid = element.dataset?.journalId
                 ?? element.closest?.("[data-journal-id]")?.dataset?.journalId
@@ -127,8 +145,15 @@ export function MejShopHooks() {
         }
 
         if (!journal) {
-            console.debug("[toolkit] _hideMejItems — JournalEntry introuvable pour",
-                application.constructor?.name ?? application);
+            // Log détaillé pour aider le diagnostic : montre les clés disponibles
+            // sur l'application et ses options pour trouver la bonne propriété MEJ.
+            console.debug(
+                "[toolkit] _hideMejItems — JournalEntry introuvable\n",
+                "  constructor :", application.constructor?.name,
+                "\n  options keys:", Object.keys(application.options ?? {}),
+                "\n  object type :", application.object?.constructor?.name ?? typeof application.object,
+                "\n  document type:", application.document?.constructor?.name ?? typeof application.document,
+            );
             return;
         }
 

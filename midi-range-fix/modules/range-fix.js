@@ -1,7 +1,7 @@
 /**
  * @file        modules/range-fix.js
  * @module      midi-range-fix
- * @version     1.4.8
+ * @version     1.4.9
  * @author      Soruta (Discord : s0ruta)
  * @license     © 2026 Soruta — Tous droits réservés.
  *              Usage personnel autorisé. Toute redistribution, modification
@@ -20,9 +20,9 @@
  *   ---------------------------
  *   1. Calculer le centre géométrique de chaque token (_boundsCenter).
  *   2. Trouver le point le plus proche sur la bounding box de l'attaquant depuis
- *      le centre de la cible (_nearestBorderPoint) → "bord attaquant".
+ *      le centre de la cible (_nearestEllipsePoint) → "bord attaquant".
  *   3. Trouver le point le plus proche sur la bounding box de la cible depuis
- *      le centre de l'attaquant (_nearestBorderPoint) → "bord cible".
+ *      le centre de l'attaquant (_nearestEllipsePoint) → "bord cible".
  *   4. Mesurer la distance entre ces deux points via le prototype Foundry
  *      (_protoCall) sans passer par le getter de l'instance (évite la récursion).
  *   5. Ajouter rangeAdjust (défaut 2.5 ft) à cette distance bord→bord.
@@ -134,8 +134,8 @@ function _ourPatch(waypoints, options) {
         // incohérentes (6/10/11 ft en se déplaçant légèrement).
         const attackerCenter = _boundsCenter(attacker);
         const targetCenter   = _boundsCenter(target);
-        const attackerBorder = _nearestBorderPoint(targetCenter,   attacker);
-        const targetBorder   = _nearestBorderPoint(attackerCenter, target);
+        const attackerBorder = _nearestEllipsePoint(targetCenter,   attacker);
+        const targetBorder   = _nearestEllipsePoint(attackerCenter, target);
 
         _reentering = true;
         let result;
@@ -244,8 +244,8 @@ function _patchRulerLabel() {
         // (centre, bord, n'importe où dans le token).
         const srcCenter = _boundsCenter(srcToken);
         const tgtCenter = _boundsCenter(tgtToken);
-        const srcBorder = _nearestBorderPoint(tgtCenter, srcToken);
-        const tgtBorder = _nearestBorderPoint(srcCenter, tgtToken);
+        const srcBorder = _nearestEllipsePoint(tgtCenter, srcToken);
+        const tgtBorder = _nearestEllipsePoint(srcCenter, tgtToken);
 
         // _reentering = true pour court-circuiter _ourPatch si le prototype
         // rappelle canvas.grid.measurePath en interne.
@@ -430,13 +430,39 @@ function _boundsCenter(token) {
 }
 
 /**
- * Retourne le point le plus proche sur la bounding box du token depuis src.
- * Équivalent au "nearest cell edge" de D&D 5e sur grille carrée.
+ * Retourne le point le plus proche sur l'ELLIPSE du token depuis src.
+ *
+ * Les tokens Foundry sont affichés comme des cercles/ellipses (portrait rond),
+ * pas comme des rectangles. Utiliser la bounding box sur-estimait la distance
+ * en approche diagonale d'un grand token (coin du rectangle > bord de l'ellipse).
+ *
+ * Méthode : on normalise le vecteur src→centre dans l'espace de l'ellipse
+ * (÷ demi-axes), puis on le ramène sur le bord de l'ellipse (× demi-axes).
+ * Exact pour les tokens carrés (cercle). Approximation correcte sinon.
+ *
+ * Cas limite : src au centre → on retourne le bord droit (distance = 0 de
+ * toute façon, cas non rencontré en pratique).
  */
-function _nearestBorderPoint(src, token) {
-    const b = token.bounds;
+function _nearestEllipsePoint(src, token) {
+    const b  = token.bounds;
+    const cx = b.x + b.width  / 2;
+    const cy = b.y + b.height / 2;
+    const rx = b.width  / 2;
+    const ry = b.height / 2;
+
+    const dx = src.x - cx;
+    const dy = src.y - cy;
+
+    if (Math.abs(dx) < 0.001 && Math.abs(dy) < 0.001) {
+        return { x: cx + rx, y: cy };
+    }
+
+    // Normaliser dans l'espace de l'ellipse, projeter sur le bord
+    const nx   = dx / rx;
+    const ny   = dy / ry;
+    const nlen = Math.sqrt(nx * nx + ny * ny);
     return {
-        x: Math.max(b.x, Math.min(src.x, b.x + b.width)),
-        y: Math.max(b.y, Math.min(src.y, b.y + b.height))
+        x: cx + (nx / nlen) * rx,
+        y: cy + (ny / nlen) * ry,
     };
 }

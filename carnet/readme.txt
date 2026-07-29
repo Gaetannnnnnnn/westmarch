@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.3.7
+Version : 1.3.8
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -105,6 +105,12 @@ INSTALLATION
 ================================================================================
                     CARNET D'EXPÉDITIONS — MISES À JOUR
 ================================================================================
+
+v1.3.8 | 2026-07-29
+   carnet.js — Champ "Nom de l'expédition" dans le dialog de création (GM).
+   addExpedition accepte un 3e paramètre name (défaut "Nouvelle expédition").
+   _createExpDialog lit le champ et passe le nom à addExpedition pour tous
+   les membres de la party. Notification de confirmation inclut le nom.
 
 v1.3.7 | 2026-07-29
    carnet.js — Toutes les nouvelles notes (bouton + et depuis expédition)

@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.2.0
+Version : 1.2.1
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -120,6 +120,13 @@ INSTALLATION
 ================================================================================
                     TOOLKIT — MISES À JOUR
 ================================================================================
+
+v1.2.1 | 2026-07-29
+   mejshop.js — Bail silencieux si l'élément n'a pas de [data-id] (évite le
+   log parasite sur les fenêtres non-MEJ comme Players, Chat, etc.) ; ajout de
+   candidates MEJ supplémentaires (journalEntry, options.entity, object.document,
+   object.journalEntry) ; log debug plus détaillé (clés options + types) pour
+   diagnostiquer les cas où le JournalEntry reste introuvable.
 
 v1.2.0 | 2026-07-29
    mejshop.js — Fix hide items : triple stratégie pour trouver le JournalEntry

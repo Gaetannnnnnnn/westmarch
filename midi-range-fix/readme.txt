@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.4.8
+Version : 1.4.9
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -64,6 +64,16 @@ INSTALLATION
 ================================================================================
                     MIDI-RANGE-FIX — MISES À JOUR
 ================================================================================
+
+v1.4.9 | 2026-07-29
+   range-fix.js — Remplacement de _nearestBorderPoint (rectangle) par
+   _nearestEllipsePoint (ellipse). Les tokens sont affichés en cercle/ellipse,
+   pas en rectangle — le calcul bord→bord sur-estimait la distance en approche
+   diagonale d'un grand token (coin du rectangle > bord de l'ellipse). Nouveau
+   calcul : normalisation du vecteur src→centre dans l'espace de l'ellipse (÷
+   demi-axes), projection sur le bord (× demi-axes). Exact pour les tokens
+   carrés (cercle), approximation correcte pour les tokens non-carrés.
+   S'applique dans _ourPatch (check midi-qol) ET _patchRulerLabel (affichage).
 
 v1.4.8 | 2026-07-29
    range-fix.js — Suppression du "(+adj)" dans l'affichage de la règle.
