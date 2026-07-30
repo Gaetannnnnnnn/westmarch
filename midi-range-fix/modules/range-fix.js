@@ -1,7 +1,7 @@
 /**
  * @file        modules/range-fix.js
  * @module      midi-range-fix
- * @version     1.5.2
+ * @version     1.5.5
  * @author      Soruta (Discord : s0ruta)
  * @license     © 2026 Soruta — Tous droits réservés.
  *              Usage personnel autorisé. Toute redistribution, modification
@@ -61,10 +61,16 @@
 const _MODULE     = "midi-range-fix";
 const _PATCH_MARK = Symbol("midiRangeFix"); // identifie _ourPatch sans comparer le code
 
+console.log("[midi-range-fix] v1.5.5 chargé.");
 
 // Référence stable à la version "originale" (midi-qol) à appeler en fallback.
 let _trueOriginal = null;
 let _pollInterval = null;
+
+// Référence à la fonction ORIGINALE Foundry de _getWaypointLabelContext.
+// Sauvegardée une seule fois (avant tout patch). Permet de toujours wrapper
+// l'original et non notre propre patch (évite le double-wrapping à chaque canvasReady).
+let _rulerOrigFn = null;
 
 // Garde de ré-entrance : _trueOriginal (midi-qol) appelle canvas.grid.measurePath
 // en interne, ce qui déclenche à nouveau notre getter → récursion infinie.
@@ -195,13 +201,32 @@ function _patchRulerLabel() {
     const ruler = canvas.controls?.ruler;
     if (!ruler) return;
     const RulerClass = ruler.constructor;
-    if (!RulerClass?.prototype?._getWaypointLabelContext) return;
-    // Éviter le double-patch (canvasReady peut se déclencher plusieurs fois).
-    if (RulerClass.prototype._getWaypointLabelContext[_PATCH_MARK]) return;
+    if (!RulerClass?.prototype?._getWaypointLabelContext) {
+        console.warn("[midi-range-fix] _getWaypointLabelContext introuvable sur Ruler — patch ruler annulé.");
+        return;
+    }
 
-    const orig = RulerClass.prototype._getWaypointLabelContext;
-    RulerClass.prototype._getWaypointLabelContext = function(waypoint, state) {
-        const context = orig.call(this, waypoint, state);
+    // Sauvegarder la fonction ORIGINALE Foundry (une seule fois, avant tout patch).
+    // __origFn est défini par nos patches 1.5.5+.
+    // Pour les patches antérieurs (≤ 1.5.4, sans __origFn) ou pour la première
+    // application, on utilise la fonction courante directement.
+    // Si c'est un vieux patch à nous, double-wrapping acceptable :
+    // le patch extérieur (1.5.5) gagne sur le contexte final.
+    if (!_rulerOrigFn) {
+        const currentFn = RulerClass.prototype._getWaypointLabelContext;
+        _rulerOrigFn = currentFn?.__origFn ?? currentFn;
+    }
+    if (!_rulerOrigFn) {
+        console.warn("[midi-range-fix] Impossible de récupérer _getWaypointLabelContext original.");
+        return;
+    }
+
+    // Construire et (ré)appliquer le patch, toujours sur _rulerOrigFn.
+    // Pas de guard _PATCH_MARK ici : on réapplique à chaque canvasReady pour
+    // garantir que la version la plus récente du code est active.
+    const _orig = _rulerOrigFn;
+    function _rulerPatch(waypoint, state) {
+        const context = _orig.call(this, waypoint, state);
         if (!context?.distance) return context;
 
         // Ne pas altérer l'affichage pendant un déplacement de token.
@@ -258,18 +283,32 @@ function _patchRulerLabel() {
         const gd      = canvas.scene?.grid?.distance ?? canvas.grid?.distance ?? 5;
         const rawDist = dist_px * (gd / gs);
 
-        // Distance native Foundry (curseur→curseur) : waypoint.measurement.distance
-        // est disponible en v13 ; fallback _protoCall pour compatibilité v12.
+        // DIAGNOSTIC — visible dans la console Foundry (F12).
+        // Vérifier : srcBorder et tgtBorder doivent être sur l'ELLIPSE de leur token,
+        // pas sur le coin du rectangle. Pour des tokens carrés (cercles), la distance
+        // du border au centre doit être exactement égale au rayon (b.width/2).
+        console.debug(
+            `[midi-range-fix] ruler ellipse | ${srcToken.name} → ${tgtToken.name}`,
+            `\n  srcBounds:  x=${srcToken.bounds.x} y=${srcToken.bounds.y} w=${srcToken.bounds.width} h=${srcToken.bounds.height}`,
+            `\n  tgtBounds:  x=${tgtToken.bounds.x} y=${tgtToken.bounds.y} w=${tgtToken.bounds.width} h=${tgtToken.bounds.height}`,
+            `\n  srcCenter:  (${srcCenter.x.toFixed(1)}, ${srcCenter.y.toFixed(1)})`,
+            `\n  tgtCenter:  (${tgtCenter.x.toFixed(1)}, ${tgtCenter.y.toFixed(1)})`,
+            `\n  srcBorder:  (${srcBorder.x.toFixed(1)}, ${srcBorder.y.toFixed(1)})  rayon_src=${Math.hypot(srcBorder.x-srcCenter.x, srcBorder.y-srcCenter.y).toFixed(1)} (attendu ${(srcToken.bounds.width/2).toFixed(1)})`,
+            `\n  tgtBorder:  (${tgtBorder.x.toFixed(1)}, ${tgtBorder.y.toFixed(1)})  rayon_tgt=${Math.hypot(tgtBorder.x-tgtCenter.x, tgtBorder.y-tgtCenter.y).toFixed(1)} (attendu ${(tgtToken.bounds.width/2).toFixed(1)})`,
+            `\n  dist_px=${dist_px.toFixed(2)}  rawDist=${rawDist.toFixed(3)} ft  gs=${gs} gd=${gd}`,
+        );
+
+        // Distance native Foundry (curseur→curseur) : on utilise _protoCall
+        // avec _reentering = true pour court-circuiter _ourPatch.
+        // NE PAS utiliser waypoint.measurement.distance : _ourPatch l'a déjà
+        // remplacé par bord→bord + adjust quand les deux extrémités tombent
+        // sur des tokens → valeur figée sur la distance bord→bord.
+        _reentering = true;
         let nativeDist;
-        if (typeof waypoint.measurement?.distance === "number") {
-            nativeDist = waypoint.measurement.distance;
-        } else {
-            _reentering = true;
-            try {
-                nativeDist = _protoCall([ray.A, ray.B], {})?.distance ?? rawDist;
-            } finally {
-                _reentering = false;
-            }
+        try {
+            nativeDist = _protoCall([ray.A, ray.B], {})?.distance ?? rawDist;
+        } finally {
+            _reentering = false;
         }
 
         // Affiche : "(bord→bord + adjust) ft — natif ft"
@@ -288,9 +327,12 @@ function _patchRulerLabel() {
         context.distance.total = `${fmt(adjDist)} ${units} — ${fmt(nativeDist)}`;
 
         return context;
-    };
-    RulerClass.prototype._getWaypointLabelContext[_PATCH_MARK] = true;
-    console.log("[midi-range-fix] Patch ruler label actif.");
+    }
+    _rulerPatch[_PATCH_MARK] = true;
+    _rulerPatch.__origFn     = _rulerOrigFn; // pour récupérer l'original si re-chargement
+
+    RulerClass.prototype._getWaypointLabelContext = _rulerPatch;
+    console.log("[midi-range-fix] Patch ruler label (ré)appliqué — ellipse actif.");
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

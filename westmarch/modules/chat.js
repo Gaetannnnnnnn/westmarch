@@ -121,9 +121,20 @@ function _injectPartyChatButtons() {
     const $btnClear  = _makePartyBtn("clearParty",  "fa-users-slash", "Effacer les messages de ma party uniquement");
     const $btnImport = _makePartyBtn("importParty", "fa-file-import",  "Importer des messages (JSON / .txt)");
 
-    // Séparateur flex (data-wm-action="break") qui force un retour à la ligne
-    // entre les boutons natifs Foundry (ligne 1) et les boutons westmarch (ligne 2).
-    // Nécessite flex-wrap: wrap sur .control-buttons (défini dans chat.css).
+    // Forcer flex-wrap via style inline : priorité absolue, résiste à
+    // !important dans les feuilles de style Foundry ou autres modules.
+    controlButtons.style.flexWrap  = 'wrap';
+    controlButtons.style.height    = 'auto';
+    controlButtons.style.maxHeight = 'none';
+    controlButtons.style.overflow  = 'visible';
+    if (controlButtons.parentElement) {
+        controlButtons.parentElement.style.height    = 'auto';
+        controlButtons.parentElement.style.maxHeight = 'none';
+        controlButtons.parentElement.style.overflow  = 'visible';
+    }
+
+    // Séparateur flex qui force le retour à la ligne : flex-basis 100%
+    // consomme toute la largeur → les boutons suivants passent en ligne 2.
     const $break = $('<div class="wm-party-break" data-wm-action="break"></div>');
     $controlButtons.append($break).append($btnImport).append($btnClear);
 

@@ -141,8 +141,12 @@ async function _showDialog(actor) {
                     icon:  '<i class="fas fa-file-export"></i>',
                     label: "Exporter",
                     callback: (html) => {
-                        const mode = html.find('[name="export-mode"]:checked').val();
-                        resolve(mode ?? "current");
+                        // v13 : html peut être un HTMLElement ou un jQuery selon le contexte.
+                        const el = html instanceof HTMLElement
+                            ? html.querySelector('[name="export-mode"]:checked')
+                            : html.find?.('[name="export-mode"]:checked')?.[0]
+                              ?? html.querySelector?.('[name="export-mode"]:checked');
+                        resolve(el?.value ?? "current");
                     }
                 },
                 cancel: {
@@ -184,7 +188,18 @@ function _exportOriginal(actor) {
 
     const slug     = actor.name.slugify?.() ?? actor.name.toLowerCase().replace(/\s+/g, "-");
     const filename = `fvtt-Actor-${slug}-${actor.id}.json`;
-    saveDataToFile(JSON.stringify(data, null, 2), "text/json", filename);
+
+    // saveDataToFile n'existe plus en Foundry v13 — téléchargement natif browser.
+    const json = JSON.stringify(data, null, 2);
+    const blob = new Blob([json], { type: "application/json" });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement("a");
+    a.href     = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
 
     ui.notifications.info(
         `${actor.name} — exporté avec la fiche originale dnd5e (données modules supprimées).`

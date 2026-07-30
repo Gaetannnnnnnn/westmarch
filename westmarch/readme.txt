@@ -109,6 +109,12 @@ INSTALLATION
                     WESTMARCH — MISES À JOUR
 ================================================================================
 
+v2.2.2 | 2026-07-29
+   chat.js — Fix 2e ligne : forcer flex-wrap via style inline JS au lieu de
+   CSS !important. Les styles inline ont la priorité absolue sur les feuilles
+   de style (y compris Foundry) — c'est ce qui permettait à Foundry de
+   contourner nos !important CSS précédents.
+
 v2.2.1 | 2026-07-29
    chat.css — Fix 2e ligne invisible : ajout de height:auto!important,
    overflow:visible!important sur .control-buttons et #chat-controls pour

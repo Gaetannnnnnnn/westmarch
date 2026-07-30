@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.2.3
+Version : 1.2.4
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -120,6 +120,12 @@ INSTALLATION
 ================================================================================
                     TOOLKIT — MISES À JOUR
 ================================================================================
+
+v1.2.4 | 2026-07-30
+   export-dialog.js — Fix export fiche originale : saveDataToFile() n'existe plus
+   en Foundry v13. Remplacé par un téléchargement natif browser (Blob + <a> click).
+   Fix secondaire : callback Dialog sécurisé pour accepter HTMLElement ou jQuery
+   (v13 peut passer les deux selon le contexte).
 
 v1.2.3 | 2026-07-29
    mejshop.js — Fix root cause du hide items : les items MEJ sont des objets

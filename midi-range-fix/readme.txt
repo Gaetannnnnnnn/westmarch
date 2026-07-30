@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.5.2
+Version : 1.5.5
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -64,6 +64,28 @@ INSTALLATION
 ================================================================================
                     MIDI-RANGE-FIX — MISES À JOUR
 ================================================================================
+
+v1.5.5 | 2026-07-29
+   range-fix.js — Fix critique _rulerOrigFn : la v1.5.4 retournait silencieusement
+   si __origFn était absent (cas patches ≤ 1.5.3 sans __origFn), laissant l'ancien
+   patch actif. Nouveau : _rulerOrigFn = currentFn?.__origFn ?? currentFn accepte
+   n'importe quelle fonction courante comme base (double-wrapping acceptable, le
+   patch 1.5.5 gagne). Console.debug actif pour diagnostiquer les valeurs ellipse.
+
+v1.5.4 | 2026-07-29
+   range-fix.js — Fix guard _PATCH_MARK sur ruler patch : l'ancien guard empêchait
+   la réapplication du patch ellipse à chaque canvasReady si le Symbol était déjà
+   présent (cas hot-reload). Nouveau mécanisme : _rulerOrigFn sauvegarde la fonction
+   Foundry originale une seule fois ; le patch est toujours réappliqué sur l'original
+   (pas sur le patch précédent) → pas de double-wrapping, ellipse garantie active.
+   Ajout de console.debug détaillé (F12) pour vérifier les points srcBorder/tgtBorder
+   et confirmer qu'ils sont bien sur l'ellipse (rayon_calculé == rayon_attendu).
+
+v1.5.3 | 2026-07-29
+   range-fix.js — Fix 2e valeur figée dans la règle : waypoint.measurement.distance
+   est déjà modifié par _ourPatch (bord→bord + adjust) quand les deux extrémités
+   tombent sur des tokens. Retour à _protoCall avec _reentering=true pour obtenir
+   la vraie distance curseur→curseur sans passer par notre patch.
 
 v1.5.2 | 2026-07-29
    range-fix.js — Correction d'affichage règle uniquement : soustrait 0.5 ft
