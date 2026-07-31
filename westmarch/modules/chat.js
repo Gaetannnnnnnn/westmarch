@@ -133,10 +133,25 @@ function _injectPartyChatButtons() {
         controlButtons.parentElement.style.overflow  = 'visible';
     }
 
-    // Séparateur flex qui force le retour à la ligne : flex-basis 100%
-    // consomme toute la largeur → les boutons suivants passent en ligne 2.
-    const $break = $('<div class="wm-party-break" data-wm-action="break"></div>');
-    $controlButtons.append($break).append($btnImport).append($btnClear);
+    // Séparateur flex (flex-basis 100%) inséré AVANT le 5e bouton natif.
+    // Les 4 premiers boutons (modes de jet) restent en ligne 1.
+    // Le filtre, l'export, le flush ET nos boutons passent en ligne 2.
+    const breakEl = document.createElement("div");
+    breakEl.className = "wm-party-break";
+    breakEl.setAttribute("data-wm-action", "break");
+
+    // Trouver le 5e bouton natif (les 4 premiers = modes de jet, confidentialité).
+    const nativeBtns = [...controlButtons.querySelectorAll('button:not([data-wm-action])')];
+    const pivot = nativeBtns[4] ?? null;
+    if (pivot) {
+        controlButtons.insertBefore(breakEl, pivot);
+    } else {
+        controlButtons.appendChild(breakEl);
+    }
+
+    // Ajouter nos boutons à la fin de la ligne 2.
+    controlButtons.appendChild($btnImport[0]);
+    controlButtons.appendChild($btnClear[0]);
 
     $btnClear.on("click",  () => _clearPartyMessages());
     $btnImport.on("click", () => _importPartyChatJSON());

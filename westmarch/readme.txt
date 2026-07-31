@@ -109,6 +109,12 @@ INSTALLATION
                     WESTMARCH — MISES À JOUR
 ================================================================================
 
+v2.2.3 | 2026-07-30
+   chat.js — Déplacer filtre+export+flush en ligne 2 : le break div est maintenant
+   inséré AVANT le 5e bouton natif (au lieu d'être appendé en fin). Les 4 boutons
+   de mode de jet restent en ligne 1 ; filtre, export, flush + les boutons westmarch
+   (import, effacer party) passent tous en ligne 2.
+
 v2.2.2 | 2026-07-29
    chat.js — Fix 2e ligne : forcer flex-wrap via style inline JS au lieu de
    CSS !important. Les styles inline ont la priorité absolue sur les feuilles

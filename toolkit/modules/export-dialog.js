@@ -167,18 +167,22 @@ async function _showDialog(actor) {
 function _exportOriginal(actor) {
     const data = actor.toObject();
 
+    // Remplacer data.flags par une copie plain-object pour éviter les
+    // propriétés getter-only de Foundry v13 (ex. flags.exportSource).
+    data.flags = { ...(data.flags ?? {}) };
+    if (data.flags.core) data.flags.core = { ...data.flags.core };
+
     for (const mod of (CONFIG.asharaSheetsModules ?? [])) {
-        delete data.flags?.[mod];
+        delete data.flags[mod];
     }
 
-    if (data.flags?.core?.sheetClass) {
+    if (data.flags.core?.sheetClass) {
         delete data.flags.core.sheetClass;
     }
 
     data._id       = null;
     data.ownership = { default: 0 };
 
-    data.flags ??= {};
     data.flags.exportSource = {
         world:         game.world.id,
         system:        game.system.id,

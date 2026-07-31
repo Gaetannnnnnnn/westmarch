@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.5.5
+Version : 1.5.6
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -64,6 +64,18 @@ INSTALLATION
 ================================================================================
                     MIDI-RANGE-FIX — MISES À JOUR
 ================================================================================
+
+v1.5.6 | 2026-07-31
+   range-fix.js — Affichage bord→bord pendant le déplacement de token.
+   La v1.5.4 avait ajouté "if (this.token) return context" pour éviter un
+   affichage figé en mode drag — mais ça supprimait aussi l'adjust pendant
+   le déplacement. Nouvelle logique : si le joueur a une cible désignée
+   (game.user.targets), le label affiche la portée RÉSULTANTE depuis la
+   destination du token vers cette cible (bord→bord + adjust), suivi du
+   déplacement natif. Ex. "5,00 ft — 3,25 ft" = portée résultante 5 ft,
+   déplacement 3.25 ft. Si aucune cible n'est désignée, affichage normal.
+   La destination est calculée en décalant les bounds actuels du token par
+   le vecteur ray.A→ray.B (robuste quelle que soit la convention Foundry).
 
 v1.5.5 | 2026-07-29
    range-fix.js — Fix critique _rulerOrigFn : la v1.5.4 retournait silencieusement

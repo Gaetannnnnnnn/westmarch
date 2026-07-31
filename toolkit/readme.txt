@@ -121,6 +121,12 @@ INSTALLATION
                     TOOLKIT — MISES À JOUR
 ================================================================================
 
+v1.2.5 | 2026-07-30
+   export-dialog.js — Fix "setting getter-only property exportSource" : data.flags
+   est maintenant copié en plain-object via spread avant toute modification, ce qui
+   casse les descripteurs getter-only de Foundry v13 sur l'objet retourné par
+   actor.toObject(). data.flags.core est également spreadé pour la même raison.
+
 v1.2.4 | 2026-07-30
    export-dialog.js — Fix export fiche originale : saveDataToFile() n'existe plus
    en Foundry v13. Remplacé par un téléchargement natif browser (Blob + <a> click).

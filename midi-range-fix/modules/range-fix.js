@@ -1,7 +1,7 @@
 /**
  * @file        modules/range-fix.js
  * @module      midi-range-fix
- * @version     1.5.5
+ * @version     1.5.6
  * @author      Soruta (Discord : s0ruta)
  * @license     © 2026 Soruta — Tous droits réservés.
  *              Usage personnel autorisé. Toute redistribution, modification
@@ -61,7 +61,7 @@
 const _MODULE     = "midi-range-fix";
 const _PATCH_MARK = Symbol("midiRangeFix"); // identifie _ourPatch sans comparer le code
 
-console.log("[midi-range-fix] v1.5.5 chargé.");
+console.log("[midi-range-fix] v1.5.6 chargé.");
 
 // Référence stable à la version "originale" (midi-qol) à appeler en fallback.
 let _trueOriginal = null;
@@ -229,12 +229,53 @@ function _patchRulerLabel() {
         const context = _orig.call(this, waypoint, state);
         if (!context?.distance) return context;
 
-        // Ne pas altérer l'affichage pendant un déplacement de token.
-        // this.token est défini sur le Ruler quand le joueur drag son token,
-        // auquel cas ray.B suit le curseur et non un token cible — la valeur
-        // resterait sinon figée sur la distance bord→bord du token visé.
-        if (this.token) return context;
+        // ── Mode déplacement de token (this.token défini = le joueur drag son token) ──
+        // Si le joueur a une cible désignée, afficher la portée résultante depuis
+        // la DESTINATION du token vers cette cible (utile pour savoir si on sera
+        // à portée d'arme une fois le déplacement effectué).
+        // ray.A = position d'origine, ray.B = destination.
+        // On décale les bounds du token par le vecteur A→B, indépendamment de la
+        // convention de coordonnées Foundry (coin haut-gauche ou centre).
+        if (this.token) {
+            const target = [...(game.user?.targets ?? [])].find(t => t !== this.token);
+            if (!target) return context; // pas de cible → affichage normal du déplacement
 
+            const offsetX = ray.B.x - ray.A.x;
+            const offsetY = ray.B.y - ray.A.y;
+            const sb      = this.token.bounds;
+            const destBounds = { x: sb.x + offsetX, y: sb.y + offsetY,
+                                  width: sb.width,   height: sb.height };
+
+            const destCenter = { x: destBounds.x + sb.width  / 2,
+                                  y: destBounds.y + sb.height / 2 };
+            const tgtCenter  = _boundsCenter(target);
+            const srcBorder  = _nearestEllipsePoint(tgtCenter,  { bounds: destBounds });
+            const tgtBorder  = _nearestEllipsePoint(destCenter, target);
+
+            const dx_px   = tgtBorder.x - srcBorder.x;
+            const dy_px   = tgtBorder.y - srcBorder.y;
+            const dist_px = Math.sqrt(dx_px * dx_px + dy_px * dy_px);
+            const gs      = canvas.scene?.grid?.size     ?? canvas.grid?.size     ?? 100;
+            const gd      = canvas.scene?.grid?.distance ?? canvas.grid?.distance ?? 5;
+            const rawDist = dist_px * (gd / gs);
+
+            const adjust  = game.settings.get(_MODULE, "rangeAdjust") ?? 2.5;
+            const adjDist = rawDist + adjust - 0.5;
+            const fmt     = (n) => parseFloat(n.toFixed(2)).toLocaleString(game.i18n.lang);
+            const units   = context.distance.units ?? canvas.scene?.grid?.units ?? "ft";
+
+            // Distance de déplacement native (A→B) pour la garder comme 2ème valeur.
+            _reentering = true;
+            let moveDist;
+            try { moveDist = _protoCall([ray.A, ray.B], {})?.distance ?? rawDist; }
+            finally { _reentering = false; }
+
+            // "portée_résultante ft — déplacement ft"
+            context.distance.total = `${fmt(adjDist)} ${units} — ${fmt(moveDist)}`;
+            return context;
+        }
+
+        // ── Mode règle manuelle ──
         // Vérifier que les deux extrémités du ray tombent dans les bounds d'un token.
         // Tolérance 8 px pour les points de bord.
         const ray = waypoint.ray;
