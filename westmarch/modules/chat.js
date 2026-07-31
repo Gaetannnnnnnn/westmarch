@@ -133,35 +133,29 @@ function _injectPartyChatButtons() {
         controlButtons.parentElement.style.overflow  = 'visible';
     }
 
-    // Architecture 2 lignes via CSS `order`.
-    // En Foundry v13, .control-buttons ne contient que les 3 boutons action
-    // (filter, export, flush) — les 4 boutons de style de message sont dans
-    // un conteneur FRÈRE de .control-buttons.
+    // Architecture 2 lignes via manipulation DOM directe.
+    // On déplace physiquement les 3 derniers boutons natifs (filter, export, flush)
+    // APRÈS le break dans le DOM. flex-wrap + flex-basis:100% sur le break
+    // suffisent à les pousser en ligne 2 — pas besoin de CSS `order`.
     //
-    // On ne peut donc pas faire de insertBefore sur le 5e bouton (il n'existe pas).
-    // Solution : CSS order.
-    //   break      → order 10  (rendu en 1er dans .control-buttons)
-    //   filter/floppy/trash (les 3 derniers natifs) → order 11 via inline style
-    //   import/clear (wm-party-btn) → order 11  (CSS)
-    //
+    // Résultat DOM dans .control-buttons :
+    //   [autres boutons natifs...] [break] [filter] [floppy] [trash] [import] [clear]
     // Résultat visuel :
-    //   ligne 1 : boutons style-message (frère) | break (invisible, dans .control-buttons)
+    //   ligne 1 : boutons avant le break (modes de jet ou conteneur frère)
     //   ligne 2 : filter | floppy | trash | import | clear
     const breakEl = document.createElement("div");
     breakEl.className = "wm-party-break";
     breakEl.setAttribute("data-wm-action", "break");
 
-    // Pousser les 3 derniers boutons natifs (filter, export, flush) en ligne 2.
-    // slice(-3) = derniers 3 quelle que soit la longueur → robuste si Foundry
-    // ajoute un jour des boutons supplémentaires en début de liste.
     const nativeBtns = [...controlButtons.querySelectorAll('button:not([data-wm-action])')];
-    nativeBtns.slice(-3).forEach(btn => { btn.style.order = '11'; });
+    const actionBtns = nativeBtns.slice(-3); // filter, floppy, trash
 
-    // Le break s'appuie sur son order: 10 (CSS) pour passer AVANT les boutons
-    // natifs (order: 11) et APRÈS rien → il prend seul la "ligne 1" interne.
+    // 1. Appendre le break après les boutons actuellement en place.
     controlButtons.appendChild(breakEl);
-
-    // Ajouter nos boutons à la fin (order: 11 via CSS .wm-party-btn).
+    // 2. Déplacer (pas copier) filter/floppy/trash après le break.
+    //    appendChild sur un élément déjà dans le DOM le déplace.
+    actionBtns.forEach(btn => controlButtons.appendChild(btn));
+    // 3. Nos boutons en fin de ligne 2.
     controlButtons.appendChild($btnImport[0]);
     controlButtons.appendChild($btnClear[0]);
 

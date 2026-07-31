@@ -1,7 +1,7 @@
 /**
  * @file        modules/range-fix.js
  * @module      midi-range-fix
- * @version     1.5.7
+ * @version     1.5.8
  * @author      Soruta (Discord : s0ruta)
  * @license     © 2026 Soruta — Tous droits réservés.
  *              Usage personnel autorisé. Toute redistribution, modification
@@ -61,7 +61,7 @@
 const _MODULE     = "midi-range-fix";
 const _PATCH_MARK = Symbol("midiRangeFix"); // identifie _ourPatch sans comparer le code
 
-console.log("[midi-range-fix] v1.5.7 chargé.");
+console.log("[midi-range-fix] v1.5.8 chargé.");
 
 // Référence stable à la version "originale" (midi-qol) à appeler en fallback.
 let _trueOriginal = null;
@@ -229,6 +229,10 @@ function _patchRulerLabel() {
         const context = _orig.call(this, waypoint, state);
         if (!context?.distance) return context;
 
+        // ray doit être déclaré ICI, avant tout bloc qui l'utilise.
+        const ray = waypoint.ray;
+        if (!ray?.A || !ray?.B) return context;
+
         // ── Mode déplacement de token (this.token défini = le joueur drag son token) ──
         // Chercher le token le plus proche du point de DESTINATION (ray.B) pour
         // afficher la portée bord→bord + adjust résultante, sans exiger de cible
@@ -284,8 +288,6 @@ function _patchRulerLabel() {
         // ── Mode règle manuelle ──
         // Vérifier que les deux extrémités du ray tombent dans les bounds d'un token.
         // Tolérance 8 px pour les points de bord.
-        const ray = waypoint.ray;
-        if (!ray?.A || !ray?.B) return context;
 
         const PAD = 8;
         // Parmi tous les tokens dont le point est dans les bounds (+ PAD),

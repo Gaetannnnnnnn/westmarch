@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.5.7
+Version : 1.5.8
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -64,6 +64,14 @@ INSTALLATION
 ================================================================================
                     MIDI-RANGE-FIX — MISES À JOUR
 ================================================================================
+
+v1.5.8 | 2026-07-31
+   range-fix.js — Fix critique bug silencieux v1.5.6/1.5.7 : `const ray =
+   waypoint.ray` était déclaré APRÈS le bloc `if (this.token)` qui l'utilisait
+   → TDZ ReferenceError → le bloc catchait silencieusement et retournait le
+   contexte natif (affichage "1.77 ft" inchangé). Fix : `const ray` et le guard
+   `!ray?.A || !ray?.B` déplacés AVANT le bloc movement. La distance bord→bord
+   + adjust s'affiche maintenant correctement pendant le déplacement de token.
 
 v1.5.7 | 2026-07-31
    range-fix.js — Fix déplacement : v1.5.6 utilisait game.user.targets pour
