@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.5.6
+Version : 1.5.7
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -64,6 +64,16 @@ INSTALLATION
 ================================================================================
                     MIDI-RANGE-FIX — MISES À JOUR
 ================================================================================
+
+v1.5.7 | 2026-07-31
+   range-fix.js — Fix déplacement : v1.5.6 utilisait game.user.targets pour
+   trouver la cible pendant le drag. Si le joueur n'a pas explicitement ciblé
+   l'ennemi, la cible est vide → retour au déplacement natif. Nouvelle approche :
+   détecter le token le plus proche du point de DESTINATION (ray.B) dans un rayon
+   de 200 px (≈2 cases). Pas besoin de cible désignée — fonctionne dès que le
+   joueur déplace son token à moins de 2 cases d'un autre token. Affichage :
+   uniquement la portée bord→bord + adjust (même format que la 1ère valeur de
+   la règle manuelle), sans la distance de déplacement en 2e valeur.
 
 v1.5.6 | 2026-07-31
    range-fix.js — Affichage bord→bord pendant le déplacement de token.

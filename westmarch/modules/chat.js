@@ -133,28 +133,42 @@ function _injectPartyChatButtons() {
         controlButtons.parentElement.style.overflow  = 'visible';
     }
 
-    // Séparateur flex (flex-basis 100%) inséré AVANT le 5e bouton natif.
-    // Les 4 premiers boutons (modes de jet) restent en ligne 1.
-    // Le filtre, l'export, le flush ET nos boutons passent en ligne 2.
+    // Architecture 2 lignes via CSS `order`.
+    // En Foundry v13, .control-buttons ne contient que les 3 boutons action
+    // (filter, export, flush) — les 4 boutons de style de message sont dans
+    // un conteneur FRÈRE de .control-buttons.
+    //
+    // On ne peut donc pas faire de insertBefore sur le 5e bouton (il n'existe pas).
+    // Solution : CSS order.
+    //   break      → order 10  (rendu en 1er dans .control-buttons)
+    //   filter/floppy/trash (les 3 derniers natifs) → order 11 via inline style
+    //   import/clear (wm-party-btn) → order 11  (CSS)
+    //
+    // Résultat visuel :
+    //   ligne 1 : boutons style-message (frère) | break (invisible, dans .control-buttons)
+    //   ligne 2 : filter | floppy | trash | import | clear
     const breakEl = document.createElement("div");
     breakEl.className = "wm-party-break";
     breakEl.setAttribute("data-wm-action", "break");
 
-    // Trouver le 5e bouton natif (les 4 premiers = modes de jet, confidentialité).
+    // Pousser les 3 derniers boutons natifs (filter, export, flush) en ligne 2.
+    // slice(-3) = derniers 3 quelle que soit la longueur → robuste si Foundry
+    // ajoute un jour des boutons supplémentaires en début de liste.
     const nativeBtns = [...controlButtons.querySelectorAll('button:not([data-wm-action])')];
-    const pivot = nativeBtns[4] ?? null;
-    if (pivot) {
-        controlButtons.insertBefore(breakEl, pivot);
-    } else {
-        controlButtons.appendChild(breakEl);
-    }
+    nativeBtns.slice(-3).forEach(btn => { btn.style.order = '11'; });
 
-    // Ajouter nos boutons à la fin de la ligne 2.
+    // Le break s'appuie sur son order: 10 (CSS) pour passer AVANT les boutons
+    // natifs (order: 11) et APRÈS rien → il prend seul la "ligne 1" interne.
+    controlButtons.appendChild(breakEl);
+
+    // Ajouter nos boutons à la fin (order: 11 via CSS .wm-party-btn).
     controlButtons.appendChild($btnImport[0]);
     controlButtons.appendChild($btnClear[0]);
 
-    $btnClear.on("click",  () => _clearPartyMessages());
-    $btnImport.on("click", () => _importPartyChatJSON());
+    // stopPropagation : empêche Foundry d'intercepter le clic via sa gestion
+    // des .ui-control (qui ouvrirait le FilePicker natif → "map" au lieu du JSON).
+    $btnClear.on("click",  (e) => { e.stopPropagation(); e.preventDefault(); _clearPartyMessages(); });
+    $btnImport.on("click", (e) => { e.stopPropagation(); e.preventDefault(); _importPartyChatJSON(); });
 
     // Intercepter le bouton export natif (floppy disk) pour proposer txt ou JSON.
     // Listener en capture sur le conteneur parent → priorité sur le handler Foundry.
@@ -294,7 +308,7 @@ async function _exportPartyChatJSON() {
     }
 
     const data = messages.map(m => m.toObject());
-    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/octet-stream" });
     const url  = URL.createObjectURL(blob);
     const date = new Date().toISOString().slice(0, 10);
     const a    = document.createElement("a");

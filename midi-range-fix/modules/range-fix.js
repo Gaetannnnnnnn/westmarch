@@ -1,7 +1,7 @@
 /**
  * @file        modules/range-fix.js
  * @module      midi-range-fix
- * @version     1.5.6
+ * @version     1.5.7
  * @author      Soruta (Discord : s0ruta)
  * @license     © 2026 Soruta — Tous droits réservés.
  *              Usage personnel autorisé. Toute redistribution, modification
@@ -61,7 +61,7 @@
 const _MODULE     = "midi-range-fix";
 const _PATCH_MARK = Symbol("midiRangeFix"); // identifie _ourPatch sans comparer le code
 
-console.log("[midi-range-fix] v1.5.6 chargé.");
+console.log("[midi-range-fix] v1.5.7 chargé.");
 
 // Référence stable à la version "originale" (midi-qol) à appeler en fallback.
 let _trueOriginal = null;
@@ -230,27 +230,39 @@ function _patchRulerLabel() {
         if (!context?.distance) return context;
 
         // ── Mode déplacement de token (this.token défini = le joueur drag son token) ──
-        // Si le joueur a une cible désignée, afficher la portée résultante depuis
-        // la DESTINATION du token vers cette cible (utile pour savoir si on sera
-        // à portée d'arme une fois le déplacement effectué).
-        // ray.A = position d'origine, ray.B = destination.
-        // On décale les bounds du token par le vecteur A→B, indépendamment de la
-        // convention de coordonnées Foundry (coin haut-gauche ou centre).
+        // Chercher le token le plus proche du point de DESTINATION (ray.B) pour
+        // afficher la portée bord→bord + adjust résultante, sans exiger de cible
+        // explicitement désignée.
+        // PAD_MOVE = 200 px ≈ 2 cases (grille 100 px/5 ft) : couvre les tokens
+        // adjacents et les tokens 1-2 cases d'écart.
         if (this.token) {
-            const target = [...(game.user?.targets ?? [])].find(t => t !== this.token);
-            if (!target) return context; // pas de cible → affichage normal du déplacement
+            const PAD_MOVE = 200;
+            let nearest = null, nearestDist = Infinity;
+            for (const t of (canvas.tokens?.placeables ?? [])) {
+                if (!t.actor || !t.bounds || t === this.token) continue;
+                const b  = t.bounds;
+                // Distance de ray.B au bord le plus proche du rectangle du token.
+                const cx = Math.max(b.x, Math.min(ray.B.x, b.x + b.width));
+                const cy = Math.max(b.y, Math.min(ray.B.y, b.y + b.height));
+                const d  = Math.hypot(ray.B.x - cx, ray.B.y - cy);
+                if (d < PAD_MOVE && d < nearestDist) { nearestDist = d; nearest = t; }
+            }
+            if (!nearest) return context; // aucun token à portée → déplacement normal
 
+            // Calculer les bounds du token en MOUVEMENT à sa DESTINATION.
+            // On décale les bounds actuels par le vecteur A→B, ce qui fonctionne
+            // quelle que soit la convention de coordonnées Foundry (coin ou centre).
             const offsetX = ray.B.x - ray.A.x;
             const offsetY = ray.B.y - ray.A.y;
             const sb      = this.token.bounds;
             const destBounds = { x: sb.x + offsetX, y: sb.y + offsetY,
-                                  width: sb.width,   height: sb.height };
-
+                                  width: sb.width,    height: sb.height };
             const destCenter = { x: destBounds.x + sb.width  / 2,
                                   y: destBounds.y + sb.height / 2 };
-            const tgtCenter  = _boundsCenter(target);
+
+            const tgtCenter  = _boundsCenter(nearest);
             const srcBorder  = _nearestEllipsePoint(tgtCenter,  { bounds: destBounds });
-            const tgtBorder  = _nearestEllipsePoint(destCenter, target);
+            const tgtBorder  = _nearestEllipsePoint(destCenter, nearest);
 
             const dx_px   = tgtBorder.x - srcBorder.x;
             const dy_px   = tgtBorder.y - srcBorder.y;
@@ -264,14 +276,8 @@ function _patchRulerLabel() {
             const fmt     = (n) => parseFloat(n.toFixed(2)).toLocaleString(game.i18n.lang);
             const units   = context.distance.units ?? canvas.scene?.grid?.units ?? "ft";
 
-            // Distance de déplacement native (A→B) pour la garder comme 2ème valeur.
-            _reentering = true;
-            let moveDist;
-            try { moveDist = _protoCall([ray.A, ray.B], {})?.distance ?? rawDist; }
-            finally { _reentering = false; }
-
-            // "portée_résultante ft — déplacement ft"
-            context.distance.total = `${fmt(adjDist)} ${units} — ${fmt(moveDist)}`;
+            // Même format que la 1ère valeur de la règle manuelle token→token.
+            context.distance.total = `${fmt(adjDist)} ${units}`;
             return context;
         }
 

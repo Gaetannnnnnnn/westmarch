@@ -195,7 +195,9 @@ function _exportOriginal(actor) {
 
     // saveDataToFile n'existe plus en Foundry v13 — téléchargement natif browser.
     const json = JSON.stringify(data, null, 2);
-    const blob = new Blob([json], { type: "application/json" });
+    // application/octet-stream : force le téléchargement dans tous les navigateurs.
+    // application/json ouvre un JSON viewer dans Firefox au lieu de télécharger.
+    const blob = new Blob([json], { type: "application/octet-stream" });
     const url  = URL.createObjectURL(blob);
     const a    = document.createElement("a");
     a.href     = url;

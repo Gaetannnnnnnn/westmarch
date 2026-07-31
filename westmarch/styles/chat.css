@@ -76,19 +76,20 @@
 
 /* Séparateur invisible qui force le retour à la ligne.
    flex-basis: 100% prend toute la largeur → les boutons suivants
-   passent à la ligne 2. */
+   passent à la ligne 2.
+   order: 10 → rendu AVANT filter/floppy/trash (order 11, défini en JS).
+   Résultat : ligne 1 interne = break seul (invisible), ligne 2 = tout le reste. */
 .wm-party-break {
     flex-basis: 100% !important;
     width: 100% !important;
     height: 0;
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
-    margin-top: 2px;
-    order: 10; /* après tous les boutons natifs */
+    order: 10;
 }
 
-/* Boutons westmarch : même order que le break pour rester sur la ligne 2 */
+/* Boutons westmarch : order 11 = même groupe que filter/floppy/trash (mis à 11 en JS).
+   DOM order → import puis clear passent APRÈS filter/floppy/trash. */
 .wm-party-btn {
-    order: 10;
+    order: 11;
 }
 
 /* Boutons individuels — héritent du style ui-control Foundry v13 */

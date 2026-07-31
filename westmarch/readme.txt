@@ -109,6 +109,17 @@ INSTALLATION
                     WESTMARCH — MISES À JOUR
 ================================================================================
 
+v2.2.4 | 2026-07-31
+   chat.js + chat.css — Fix 2e ligne : abandon de l'approche insertBefore (le 5e
+   bouton natif n'existe pas — .control-buttons ne contient que filter/export/flush,
+   les 4 boutons de style-message sont dans un conteneur FRÈRE). Nouvelle approche
+   CSS order : les 3 boutons natifs passent à order:11 (via inline style JS),
+   le break reste à order:10, nos boutons (import, clear) passent à order:11.
+   Résultat visuel : ligne 1 = boutons style-message (frère) | break (invisible),
+   ligne 2 = filter | floppy | trash | import | clear.
+   chat.css — Suppression du border-top du break (visuellement inutile en ligne 1).
+   .wm-party-btn order: 10 → 11 (cohérence avec le nouveau schéma d'order).
+
 v2.2.3 | 2026-07-30
    chat.js — Déplacer filtre+export+flush en ligne 2 : le break div est maintenant
    inséré AVANT le 5e bouton natif (au lieu d'être appendé en fin). Les 4 boutons
