@@ -3,7 +3,7 @@
                       Module Foundry VTT — Privé
 ================================================================================
 
-Version : 1.5.8
+Version : 1.5.9
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : © 2026 Soruta — Tous droits réservés. Usage personnel autorisé.
@@ -64,6 +64,12 @@ INSTALLATION
 ================================================================================
                     MIDI-RANGE-FIX — MISES À JOUR
 ================================================================================
+
+v1.5.9 | 2026-08-01
+   range-fix.js — Retrait de la détection de déplacement de token (bloc
+   if (this.token) ajouté en v1.5.6-1.5.8). La règle pendant un drag affiche
+   à nouveau la distance native Foundry. Seule la règle manuelle token→token
+   affiche bord→bord + adjust.
 
 v1.5.8 | 2026-07-31
    range-fix.js — Fix critique bug silencieux v1.5.6/1.5.7 : `const ray =
