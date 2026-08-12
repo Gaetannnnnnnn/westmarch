@@ -98,16 +98,6 @@ export function registerSettings() {
         requiresReload: false
     });
 
-    game.settings.register("westmarch", "enableWebhook", {
-        name: "Webhook Discord",
-        hint: "Permet de configurer un webhook Discord sur chaque scène. Les messages IC envoyés dans le chat sont automatiquement relayés vers le webhook de la scène active.",
-        scope: "world",
-        config: true,
-        type: Boolean,
-        default: true,
-        requiresReload: false
-    });
-
     game.settings.register("westmarch", "enableSessionLog", {
         name: "Journal de session",
         hint: "Active le bouton 'Clore la session' sous la liste des joueurs. Génère automatiquement un journal de session avec les joueurs présents, l'XP avant/après, les ennemis rencontrés, les PNJ et les objets récupérés.",

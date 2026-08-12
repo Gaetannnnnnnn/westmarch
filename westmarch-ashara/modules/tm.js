@@ -268,6 +268,11 @@ function dateAndRollHtml(idPrefix, sDay, sMonth, sYear, eDay, eMonth, eYear, pre
 <div class="tm-d20-row-${idPrefix}" style="display:flex; gap:6px; align-items:center;${rollOpacity}">
     <input type="checkbox" name="tm-roll-${idPrefix}"${rollChecked}${rollDisabled} style="margin:0;">
     <label style="margin:0;">Test de compétence <em style="color:#888;">(≥ 5 jours requis)</em></label>
+</div>
+<div style="display:flex; gap:6px; align-items:center; flex-wrap:wrap;">
+    <label style="min-width:90px; white-space:nowrap;">Bonus au jet :</label>
+    <input type="text" name="tm-bonus-${idPrefix}" value="" placeholder="+10, 1d6…" style="width:80px;">
+    <input type="text" name="tm-bonus-src-${idPrefix}" value="" placeholder="Provenance du bonus…" style="flex:1;">
 </div>`;
 }
 
@@ -307,8 +312,12 @@ function wireControls(html, actor, idPrefix) {
         const hasTools     = html.find(`[name="tm-tools-${idPrefix}"]`).prop("checked");
         const days         = getDays();
         const rate         = calcDailyRate(actor, skillId, hasMaitrise, hasExpertise, hasTools);
+        const bonusRaw  = html.find(`[name="tm-bonus-${idPrefix}"]`).val()?.trim() ?? "";
+        const bonusSrc  = html.find(`[name="tm-bonus-src-${idPrefix}"]`).val()?.trim() ?? "";
+        const baseEst   = Math.round(rate * days);
+        const bonusPart = bonusRaw ? ` · bonus jet : ${bonusRaw}${bonusSrc ? ` (${bonusSrc})` : ""}` : "";
         html.find(`.tm-preview-${idPrefix}`)
-            .text(`≈ ${rate} po/jour → ${Math.round(rate * days)} po sur ${days} jour${days > 1 ? "s" : ""}`);
+            .text(`≈ ${rate} po/jour → ${baseEst} po sur ${days} jour${days > 1 ? "s" : ""}${bonusPart}`);
     }
 
     function refreshAbility() {
@@ -374,6 +383,9 @@ function wireControls(html, actor, idPrefix) {
         `[name="tm-eday-${idPrefix}"]`, `[name="tm-emonth-${idPrefix}"]`, `[name="tm-eyear-${idPrefix}"]`
     ].join(", ");
     html.find(dateFields).on("change input", () => { refreshDayCount(); refreshD20(); refreshPreview(); });
+
+    // Bonus → rafraîchit le preview
+    html.find(`[name="tm-bonus-${idPrefix}"], [name="tm-bonus-src-${idPrefix}"]`).on("change input", refreshPreview);
 
     // État initial
     refreshAbility();
@@ -650,7 +662,12 @@ async function openDeclarationDialog(actor) {
             const label = item.type === "craft"
                 ? `🔨 <strong>${item.craftName || "Craft"}</strong> — ${craftTypeLabel(item.craftType)} — ${item.dateRangeLabel ?? "?"} (${item.days ?? "?"} j) · <em>${item.craftCost ?? "?"} po</em>`
                   + ((item.craftDaysAlready ?? 0) > 0 ? ` · ${item.craftDaysAlready}/${item.craftTotalDays} j déjà faits` : "")
-                : `<strong>${item.choiceLabel ?? item.skillId}</strong> — ${item.dateRangeLabel ?? "?"} (${item.days ?? "?"} j)`;
+                : (() => {
+                    const bonusRoll = item.bonusRoll ?? "";
+                    const bonusSrc  = item.bonusSrc ?? "";
+                    const bonusPart = bonusRoll ? ` · <em>bonus jet : ${bonusRoll}${bonusSrc ? ` (${bonusSrc})` : ""}</em>` : "";
+                    return `<strong>${item.choiceLabel ?? item.skillId}</strong> — ${item.dateRangeLabel ?? "?"} (${item.days ?? "?"} j)${bonusPart}`;
+                })();
             return `<div class="tm-cart-item" style="display:flex; justify-content:space-between; align-items:center; padding:3px 0; border-bottom:1px solid #eee; font-size:0.9em; gap:8px;">
                 <span style="flex:1;">${label}</span>
                 <button type="button" class="tm-remove-item" data-index="${i}"
@@ -813,6 +830,8 @@ async function openDeclarationDialog(actor) {
                     const hasExpertise = $html.find('[name="tm-expertise-decl"]').prop("checked");
                     const hasTools     = $html.find('[name="tm-tools-decl"]').prop("checked");
                     const doRoll       = $html.find('[name="tm-roll-decl"]').prop("checked");
+                    const bonusRoll    = ($html.find('[name="tm-bonus-decl"]').val() ?? "").trim();
+                    const bonusSrc     = ($html.find('[name="tm-bonus-src-decl"]').val() ?? "").trim();
                     const sDay   = Math.max(1, parseInt($html.find('[name="tm-sday-decl"]').val())   || 1);
                     const sMonth = parseInt($html.find('[name="tm-smonth-decl"]').val())             || 0;
                     const sYear  = Math.max(1, parseInt($html.find('[name="tm-syear-decl"]').val())  || 1);
@@ -829,6 +848,7 @@ async function openDeclarationDialog(actor) {
                         type: "gain",
                         skillId, choiceLabel, abilityId,
                         hasMaitrise, hasExpertise, hasTools, doRoll,
+                        bonusRoll, bonusSrc,
                         startDay: sDay, startMonth: sMonth, startYear: sYear,
                         endDay: eDay, endMonth: eMonth, endYear: eYear,
                         days, dateRangeLabel
@@ -902,12 +922,15 @@ function buildActorRow(actor, startUnchecked = false) {
                 <div>${progressStr}</div>
             </div>`;
         } else {
-            const profStr = item.hasTools ? " [Tools]" : item.hasExpertise ? " [Expertise]" : item.hasMaitrise ? " [Maîtrise]" : "";
-            const rate    = item.skillId ? calcDailyRate(actor, item.skillId, item.hasMaitrise, item.hasExpertise, item.hasTools) : 0;
-            const est     = rate * (item.days ?? 0);
+            const profStr   = item.hasTools ? " [Tools]" : item.hasExpertise ? " [Expertise]" : item.hasMaitrise ? " [Maîtrise]" : "";
+            const rate      = item.skillId ? calcDailyRate(actor, item.skillId, item.hasMaitrise, item.hasExpertise, item.hasTools) : 0;
+            const est       = rate * (item.days ?? 0);
+            const bonusRoll = item.bonusRoll ?? "";
+            const bonusSrc  = item.bonusSrc ?? "";
+            const bonusPart = bonusRoll ? ` · bonus jet : <strong>${bonusRoll}</strong>${bonusSrc ? ` <span style="color:#888;">(${bonusSrc})</span>` : ""}` : "";
             return `<div style="font-size:0.9em; padding:4px 0 4px 4px; border-top:1px solid #eee;">
                 <div><strong>${item.choiceLabel ?? item.skillId}</strong>${profStr} — ${item.dateRangeLabel ?? ""} (${item.days ?? "?"} j)</div>
-                <div style="color:#888;">≈ ${rate} po/j → ~${est} po${item.doRoll ? " · test d20 demandé" : " · pas de jet"}</div>
+                <div style="color:#888;">≈ ${rate} po/j → ~${est} po${bonusPart}${item.doRoll ? " · test d20 demandé" : " · pas de jet"}</div>
             </div>`;
         }
     }).join("") || `<div style="color:#888; font-size:0.9em; font-style:italic; padding-top:4px;">Aucune activité déclarée.</div>`;
@@ -1175,6 +1198,8 @@ async function applyDowntimeGains($html, actors) {
                 const hasExpertise = item.hasExpertise ?? false;
                 const hasTools     = item.hasTools     ?? false;
                 const doRoll       = item.doRoll       ?? false;
+                const bonusRoll    = item.bonusRoll    ?? "";
+                const bonusSrc     = item.bonusSrc     ?? "";
                 const sDay   = item.startDay   ?? 1;
                 const sMonth = item.startMonth ?? 0;
                 const sYear  = item.startYear  ?? 1;
@@ -1206,6 +1231,21 @@ async function applyDowntimeGains($html, actors) {
                     });
                     const effectiveD20 = (hasReliableTalent && d20Raw < 10) ? 10 : d20Raw;
                     rollResult = effectiveD20 + checkMod;
+
+                    // Évaluer le bonus au jet s'il est renseigné
+                    if (bonusRoll) {
+                        try {
+                            const bonusR = await new Roll(bonusRoll).evaluate();
+                            rollResult += bonusR.total ?? 0;
+                            await bonusR.toMessage({
+                                speaker: { alias: `Temps mort — ${actor.name}` },
+                                flavor: `Bonus au test${bonusSrc ? ` (${bonusSrc})` : ""}`
+                            });
+                        } catch(e) {
+                            const flat = parseInt(bonusRoll);
+                            if (!isNaN(flat)) rollResult += flat;
+                        }
+                    }
 
                     const mult = rollResult <= 1 ? 0.8 : rollResult >= 20 ? 1.2 : rollResult >= 10 ? 1.1 : 1.0;
                     total = total * mult;

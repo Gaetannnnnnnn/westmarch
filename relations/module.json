@@ -20,9 +20,6 @@
   "styles": [
     "./styles/relations.css"
   ],
-  "templates": [
-    "./templates/character-relations.hbs"
-  ],
   "url": "https://github.com/Gaetannnnnnnn/westmarch.git",
   "manifest": "https://raw.githubusercontent.com/Gaetannnnnnnn/westmarch/main/relations/module.json",
   "download": "https://github.com/Gaetannnnnnnn/westmarch/raw/main/relations.zip"
