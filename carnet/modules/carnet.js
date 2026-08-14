@@ -743,9 +743,6 @@ export function buildDowntimeHtml(actor) {
                 return isNaN(d) ? null : d;
             } catch { return null; }
         })();
-        const bonusValue  = parseInt(exp.bonus?.value) || 0;
-        const bonusSource = exp.bonus?.source ?? "";
-        const totalDays   = durationDays !== null ? durationDays + bonusValue : null;
         const statusClass = isOpen ? "open" : (hasDates ? "closed" : "pending");
         const statusLabel = isOpen ? "En cours" : (hasDates ? "Terminée" : "Planifiée");
         const statusIcon  = isOpen ? "fa-clock" : (hasDates ? "fa-check-circle" : "fa-hourglass-start");
@@ -809,25 +806,6 @@ export function buildDowntimeHtml(actor) {
                     <div class="carnet-date-block duration">
                         <span class="carnet-date-label"><i class="fas fa-hourglass-half"></i> Durée</span>
                         <span class="carnet-duration-value">${duration}</span>
-                    </div>` : ""}
-                </div>
-
-                <div class="carnet-tm-bonus">
-                    <span class="carnet-date-label"><i class="fas fa-dice-d20"></i> Bonus TM</span>
-                    <div class="carnet-tm-bonus-fields">
-                        ${canEdit
-                            ? `<input type="number" class="carnet-bonus-value" data-exp-id="${exp.id}"
-                                      value="${bonusValue}" placeholder="0" step="1">`
-                            : `<span class="carnet-bonus-value-display">${bonusValue}</span>`}
-                        ${canEdit
-                            ? `<input type="text" class="carnet-bonus-source" data-exp-id="${exp.id}"
-                                      value="${bonusSource.replace(/"/g, "&quot;")}" placeholder="Provenance…">`
-                            : (bonusSource ? `<span class="carnet-bonus-source-display">${bonusSource}</span>` : "")}
-                    </div>
-                    ${totalDays !== null ? `
-                    <div class="carnet-tm-total">
-                        <span class="carnet-date-label"><i class="fas fa-equals"></i> Total</span>
-                        <span class="carnet-duration-value">${totalDays} jour${totalDays !== 1 ? "s" : ""}</span>
                     </div>` : ""}
                 </div>
 
@@ -1174,33 +1152,6 @@ export function wireDowntimeTab(actor, element, sheet) {
         });
     });
 
-    // Bonus TM — valeur numérique
-    element.querySelectorAll('.carnet-bonus-value').forEach(input => {
-        input.addEventListener('change', async () => {
-            const expId   = input.dataset.expId;
-            const val     = parseInt(input.value) || 0;
-            input.value   = val;
-            const updated = getExpeditions(actor).map(ex =>
-                ex.id === expId
-                    ? { ...ex, bonus: { value: val, source: ex.bonus?.source ?? "" } }
-                    : ex
-            );
-            await actor.setFlag(MODULE, "expeditions", updated);
-        });
-    });
-
-    // Bonus TM — provenance
-    element.querySelectorAll('.carnet-bonus-source').forEach(input => {
-        input.addEventListener('change', async () => {
-            const expId   = input.dataset.expId;
-            const updated = getExpeditions(actor).map(ex =>
-                ex.id === expId
-                    ? { ...ex, bonus: { value: ex.bonus?.value ?? 0, source: input.value.trim() } }
-                    : ex
-            );
-            await actor.setFlag(MODULE, "expeditions", updated);
-        });
-    });
 
     // Créer une note liée depuis l'onglet Expéditions
     element.querySelectorAll('.carnet-create-note').forEach(link => {

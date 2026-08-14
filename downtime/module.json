@@ -1,0 +1,21 @@
+{
+  "id": "downtime",
+  "title": "Soruta — Downtime",
+  "version": "1.0.0",
+  "changelog": "2026-08-13",
+  "authors": [
+    {
+      "name": "Soruta",
+      "discord": "s0ruta"
+    }
+  ],
+  "compatibility": {
+    "minimum": "13",
+    "verified": "13"
+  },
+  "description": "Système de temps morts configurable. Formules de gain, tables de craft et multiplicateurs de jet entièrement paramétrables par le GM.",
+  "esmodules": [
+    "./index.js"
+  ],
+  "styles": []
+}

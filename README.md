@@ -12,7 +12,7 @@ Modules Foundry VTT v13 / D&D 5e v3 pour les serveurs WestMarch.
 | WestMarch Ashara | `westmarch-ashara` | 1.1.1 | Extensions serveur — temps morts, XP, Discord log |
 | Relations | `ashara-relations` | 1.6.3 | Onglet Relations sur la fiche PJ |
 | Bestiaire | `ashara-bestiary` | 1.3.4 | Onglet Bestiaire sur la fiche PJ |
-| Carnet d'Expéditions | `carnet` | 1.4.0 | Onglets Carnet & Expéditions sur la fiche PJ |
+| Carnet d'Expéditions | `carnet` | 1.4.1 | Onglets Carnet & Expéditions sur la fiche PJ |
 | Map Ouvert Systèmes | `carte-expeditions` | 1.0.2 | Gestion fog of war par personnage/groupe |
 | Midi Range Fix | `midi-range-fix` | 1.5.9 | Corrige la portée midi-qol pour les grands tokens |
 | Toolkit | `toolkit` | 1.2.6 | Outils GM — polymorph, boutiques MEJ, export fiches |
