@@ -3,7 +3,7 @@
                       Module Foundry VTT — Open Source
 ================================================================================
 
-Version : 2.1.8
+Version : 2.2.6
 Auteur  : Soruta (Discord : s0ruta)
 Système : dnd5e sur Foundry VTT v13+
 Accès   : Open source — redistribution autorisée avec attribution
@@ -54,8 +54,8 @@ image.js
    uniquement). Partage l'image directement aux membres de sa party.
 
 chat.js
-   Filtrage du chat par party (3 onglets IC/OOC/Other, isolation par groupe)
-   et relay des messages IC vers un webhook Discord par scène.
+   Filtrage du chat par party (3 onglets IC/OOC/Other, isolation par groupe),
+   avec boutons GM (effacer/importer/exporter les messages de sa party).
 
 session.js
    Bouton "Clore la session" sous la liste des joueurs. Capture automatiquement
@@ -66,8 +66,13 @@ anticheat.js
    sorts préparés, son attunement ou son équipement sur un personnage engagé.
 
 combat.js
-   Détache les combats de la scène et les associe à la party du GM. Chaque
-   joueur ne voit que le combat de sa propre party.
+   Associe chaque combat à la party du GM (via un flag, pas via la scène).
+   Chaque client ne voit que le combat de SA propre party, que les parties
+   jouent sur la même scène ou sur des scènes différentes (override du getter
+   CombatTracker#viewed, par client). Sur une scène partagée, un token ajouté
+   au combat est aiguillé vers le combat de sa party (créé au besoin) plutôt
+   que vers le combat actif d'un autre GM. Gère aussi le pan caméra, les sons
+   de combat et le mouvement (Monk's TokenBar) pour les clients hors-party.
 
 audio.js
    Coupe les sons globaux (dés, thème de combat) pour les clients hors-party,
@@ -92,7 +97,6 @@ Accessibles via : Paramètres du jeu → Configuration des modules → Soruta �
   └ Filtrage du chat par party
   └ Journal de session
   └ Combat lié à la party
-- Webhook Discord (chat IC, par scène)
 - Anti-Cheat (combat)
 
 --------------------------------------------------------------------------------
@@ -108,6 +112,20 @@ INSTALLATION
 ================================================================================
                     WESTMARCH — MISES À JOUR
 ================================================================================
+
+v2.2.6 | 2026-10-06
+   combat.js — Réparation du combat par party (portage depuis Completed
+   Westmarch) :
+     • preCreateCombat ne force plus scene:null (c'était la cause du « il faut
+       lier une scène » / un seul combat possible) : on conserve une scène
+       valide, l'isolation se fait via le flag partyId.
+     • Override du getter CombatTracker#viewed par client : chaque joueur/GM
+       voit le combat de SA party, même sur une scène partagée.
+     • Aiguillage preCreateCombatant : un token ajouté au combat sur une scène
+       partagée va dans le combat de SA party (créé au besoin), plus dans
+       celui d'un autre GM.
+   readme — Retrait des mentions d'un « webhook Discord des messages IC » (non
+   implémenté dans ce module) ; version d'en-tête resynchronisée sur module.json.
 
 v2.2.4 | 2026-07-31
    chat.js + chat.css — Fix 2e ligne : abandon de l'approche insertBefore (le 5e

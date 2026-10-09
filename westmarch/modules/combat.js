@@ -1,15 +1,17 @@
 // ============================================================
 // combat.js — Combat lié à la party plutôt qu'à la scène
-// - Un combat n'est de toute façon pas lié à une scène par défaut
-//   (il fallait déjà cliquer manuellement sur le bouton "lien" du
-//   tracker pour le faire) — on force juste scene: null à la
-//   création par sécurité, pour garantir cet état quoi qu'il arrive.
-// - Ce qui change réellement : le combat est marqué (flag) comme
-//   appartenant à la party du GM qui l'a créé.
-// - Du coup, si deux parties jouent en parallèle (table avec plusieurs
-//   GM, chacun avec sa propre party), chaque joueur ET chaque GM ne voit
-//   dans son tracker que le combat de SA propre party — un GM ne voit
-//   pas le combat géré par un autre GM.
+// - Le combat garde une scène valide (celle de création) pour que l'ajout
+//   de combattants fonctionne en v13/v14 ; ce qui l'isole, c'est un FLAG
+//   « partyId » posé à la création, pas la scène.
+// - Chaque client voit dans son tracker le combat de SA propre party, que
+//   les parties jouent sur la MÊME scène ou sur des scènes DIFFÉRENTES
+//   (override du getter CombatTracker#viewed, par client — voir plus bas).
+// - Sur une scène partagée, un token ajouté au combat est AIGUILLÉ vers le
+//   combat de SA party (créé au besoin), pas vers le combat actif d'un
+//   autre GM (voir preCreateCombatant).
+// - Du coup, si plusieurs parties jouent en parallèle (plusieurs GM, un
+//   par party), les combats ne se mélangent jamais : un GM ne voit pas le
+//   combat géré par un autre GM.
 // ============================================================
 
 import { partyFeatureEnabled } from './settings.js';
@@ -54,11 +56,97 @@ function isMyCombat(combat) {
     return combatPartyId === myPartyId;
 }
 
+// ============================================================
+// Override du combat « affiché » par le tracker, PAR CLIENT.
+// ------------------------------------------------------------
+// Foundry n'a qu'UN seul combat « viewed » à la fois (celui actif sur la
+// scène vue) : dès qu'une party démarre son combat, le tracker de TOUT LE
+// MONDE bascule dessus → les parties se mélangent. `viewed` est un getter
+// en lecture seule sans setter public ; on enveloppe donc le getter sur le
+// prototype de base `CombatTracker` pour que CHAQUE client voie le combat
+// de SA propre party, quelle que soit la scène. Idempotent.
+function installTrackerViewOverride() {
+    try {
+        const proto = foundry?.applications?.sidebar?.tabs?.CombatTracker?.prototype;
+        if (!proto) return;
+        const desc = Object.getOwnPropertyDescriptor(proto, "viewed");
+        if (!desc?.get || desc.get.__wmWrapped) return;
+        const orig = desc.get;
+        const wrapped = function () {
+            const native = orig.call(this);
+            try {
+                if (!partyFeatureEnabled("enableCombatParty")) return native;
+                // Déjà sur un combat qui est le nôtre → on n'y touche pas.
+                if (native && isMyCombat(native)) return native;
+                // Sinon, on bascule sur NOTRE combat (démarré, puis actif, puis
+                // le premier) parmi tous les combats de la table.
+                const mine = (game.combats?.contents ?? []).filter(c => isMyCombat(c) && c.getFlag?.("westmarch", "partyId"));
+                if (!mine.length) return native;
+                return mine.find(c => c.started) ?? mine.find(c => c.active) ?? mine[0];
+            } catch (e) { return native; }
+        };
+        wrapped.__wmWrapped = true;
+        Object.defineProperty(proto, "viewed", { ...desc, get: wrapped });
+    } catch (e) { console.warn(`[westmarch] Override tracker.viewed échoué :`, e); }
+}
+
+// Trouve (ou crée) le combat de MA party sur une scène donnée, puis y ajoute
+// le combattant décrit par `data`. Utilisé pour aiguiller un token ajouté au
+// combat d'un AUTRE GM vers le nôtre (voir preCreateCombatant plus bas).
+async function routeCombatantToMyCombat(sceneId, data) {
+    try {
+        const myPartyId = game.user.getFlag("westmarch", "partyId") ?? game.user.id;
+        let mine = (game.combats?.contents ?? []).find(c =>
+            c.getFlag("westmarch", "partyId") === myPartyId && (c.scene?.id ?? null) === (sceneId ?? null));
+        if (!mine) {
+            // active:false → on ne vole pas le combat actif de l'autre GM ;
+            // l'affichage de NOTRE combat est assuré par l'override de `viewed`.
+            mine = await Combat.create({
+                scene: sceneId ?? null,
+                active: false,
+                "flags.westmarch.partyId": myPartyId
+            });
+        }
+        if (!mine) return;
+        if (data?.tokenId && mine.combatants.some(cb => cb.tokenId === data.tokenId)) return;
+        await mine.createEmbeddedDocuments("Combatant", [data]);
+    } catch (e) { console.error(`[westmarch] Aiguillage combattant échoué :`, e); }
+}
+
 export function CombatHooks() {
+
+    // Chaque client affiche le combat de SA party (voir ci-dessus).
+    installTrackerViewOverride();
+
+    // ============================================================
+    // SECTION : Aiguillage des combattants vers le combat de SA party.
+    // Sur une scène PARTAGÉE par plusieurs GM, le clic droit « Entrer en
+    // combat » d'un token l'ajoute au combat ACTIF de la scène — qui peut
+    // être celui d'un AUTRE GM. On intercepte la création du combattant : si
+    // elle vise un combat qui n'est pas le nôtre, on l'ANNULE et on recrée le
+    // combattant dans NOTRE combat de party sur cette scène (créé au besoin).
+    // La re-création vise notre propre combat → isMyCombat vrai → pas de boucle.
+    // ============================================================
+    Hooks.on("preCreateCombatant", (combatant, data, options, userId) => {
+        if (!partyFeatureEnabled("enableCombatParty")) return;
+        if (game.userId !== userId) return;        // uniquement le client initiateur
+        const target = combatant.parent;           // le combat visé par Foundry
+        if (!target) return;
+        if (isMyCombat(target)) return;            // déjà notre combat → on laisse
+
+        const payload = combatant.toObject();
+        delete payload._id;
+        const sceneId = payload.sceneId ?? target.scene?.id ?? canvas?.scene?.id ?? null;
+        routeCombatantToMyCombat(sceneId, payload);
+        return false;                              // annule l'ajout au combat étranger
+    });
 
     // ============================================================
     // SECTION : Tague le combat avec la party de son créateur, dès sa
-    // création (GM uniquement). Garantit aussi scene: null.
+    // création (GM uniquement). Le filtrage se fait via le FLAG, pas via la
+    // scène → on garde une scène valide pour que l'ajout de combattants
+    // fonctionne (forcer scene:null le cassait en v13/v14 : « il faut lier
+    // une scène au combat », et limitait à un seul combat « sans scène »).
     // ============================================================
     Hooks.on("preCreateCombat", (combat, data, options, userId) => {
         if (!partyFeatureEnabled("enableCombatParty")) return;
@@ -70,8 +158,14 @@ export function CombatHooks() {
         // reste cohérent et permet de filtrer dès qu'il en crée une.
         const partyId = game.user.getFlag("westmarch", "partyId") ?? game.user.id;
 
+        // Scène : on conserve celle de création ; à défaut, la scène vue par
+        // le GM. On traite "" et null comme « absent » pour que le repli
+        // s'applique vraiment.
+        const pick = (...v) => v.find(x => x != null && x !== "") ?? null;
+        const scene = pick(combat.scene?.id, data?.scene, game.user.viewedScene, canvas?.scene?.id);
+
         combat.updateSource({
-            scene: null,
+            scene,
             "flags.westmarch.partyId": partyId
         });
     });

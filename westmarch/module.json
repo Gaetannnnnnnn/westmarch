@@ -1,8 +1,8 @@
 {
   "id": "westmarch",
   "title": "Soruta — WestMarch Système",
-  "version": "2.2.5",
-  "changelog": "2026-08-01",
+  "version": "2.2.6",
+  "changelog": "2026-10-06",
   "authors": [
 		{
 			"name": "Soruta",
@@ -11,7 +11,7 @@
 	],
   "compatibility": {
     "minimum": "13",
-    "verified": "13"
+    "verified": "14"
   },
   "description": "Système de jeu WestMarch",
   "esmodules": [
