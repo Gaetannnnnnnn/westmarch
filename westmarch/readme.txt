@@ -28,6 +28,12 @@ Ce module fait partie d'un ensemble de trois modules complémentaires :
 FICHIERS
 --------------------------------------------------------------------------------
 
+site.js
+   Message privé aux MJ dans le chat, au premier lancement puis après chaque
+   mise à jour (une fois par version et par monde) : lien vers la page des
+   modules sur le site d'Althéia (altheia.eu/foundry-modules.html), pour suivre
+   les mises à jour et découvrir la version complète (Completed Westmarch).
+
 settings.js
    Enregistre tous les paramètres du module. Accessibles via :
    Paramètres du jeu → Configuration des modules → Soruta — WestMarch Système.
@@ -112,6 +118,12 @@ INSTALLATION
 ================================================================================
                     WESTMARCH — MISES À JOUR
 ================================================================================
+
+v2.2.7 | 2026-10-16
+   site.js — Nouveau : au premier lancement puis après chaque mise à jour, les
+   MJ reçoivent un message privé dans le chat avec le lien de la page des
+   modules sur le site d'Althéia (mises à jour + version complète Completed
+   Westmarch). Une fois par version et par monde ; invisible pour les joueurs.
 
 v2.2.6 | 2026-10-06
    combat.js — Réparation du combat par party (portage depuis Completed

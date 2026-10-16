@@ -10,6 +10,7 @@ import { AntiCheatHooks } from './modules/anticheat.js';
 import { SocketHooks } from './modules/socket.js';
 import { CombatHooks } from './modules/combat.js';
 import { AudioHooks } from './modules/audio.js';
+import { registerSiteSettings, SiteHooks } from './modules/site.js';
 
 Hooks.on("init", async () => {
     Handlebars.registerHelper('for', function(from, to, incr, block) {
@@ -24,6 +25,7 @@ Hooks.on("init", async () => {
     });
 
     registerSettings();
+    registerSiteSettings();
     ChatHooks();
     ImageHooks();
     PlayerHooks();
@@ -36,3 +38,7 @@ Hooks.on("init", async () => {
     CombatHooks();
     AudioHooks();
 });
+
+// Message aux MJ (une fois par version) : où suivre les mises à jour et
+// découvrir la version complète, sur le site d'Althéia.
+SiteHooks();
