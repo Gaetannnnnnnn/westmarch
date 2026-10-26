@@ -1,266 +1,242 @@
 ================================================================================
                       SORUTA — WESTMARCH SYSTÈME
-                      Module Foundry VTT — Open Source
+                  Foundry VTT module — free and open source
 ================================================================================
 
-Version : 2.2.6
-Auteur  : Soruta (Discord : s0ruta)
-Système : dnd5e sur Foundry VTT v13+
-Accès   : Open source — redistribution autorisée avec attribution
-          © 2026 Soruta — Logiciel open source. Redistribution et modification
-          autorisées avec attribution.
+Version  : 2.2.7
+Author   : Soruta
+System   : dnd5e, Foundry VTT v13 (verified on v14)
+Licence  : © 2026 Soruta — open source software. Redistribution and
+           modification allowed, provided you credit the author.
+Support  : ticket on the Althéia Discord (no private messages, please)
+           https://discord.com/invite/sbHSVXDeMJ
+
+Note: the in-game interface of the module is in French.
 
 --------------------------------------------------------------------------------
 DESCRIPTION
 --------------------------------------------------------------------------------
 
-Module core pour les campagnes de type West March, où plusieurs GM gèrent
-chacun leur propre groupe de joueurs de manière indépendante. Gère le système
-de parties (groupes), la téléportation, le filtrage du chat, le journal de
-session et l'anti-cheat.
+Foundation for West Marches campaigns: several game masters and several
+groups ("parties") playing in parallel in the same world. Each party has its
+own sessions, chat, combats and audio, without disturbing the others.
 
-Ce module fait partie d'un ensemble de trois modules complémentaires :
-  • westmarch          (ce fichier) — core multijoueur, open source
-  • toolkit            — features génériques (tokens, transformations, MEJ...)
-  • westmarch-ashara   — personnalisations serveur Ashara (temps morts, logs...)
-
---------------------------------------------------------------------------------
-FICHIERS
---------------------------------------------------------------------------------
-
-site.js
-   Message privé aux MJ dans le chat, au premier lancement puis après chaque
-   mise à jour (une fois par version et par monde) : lien vers la page des
-   modules sur le site d'Althéia (altheia.eu/foundry-modules.html), pour suivre
-   les mises à jour et découvrir la version complète (Completed Westmarch).
-
-settings.js
-   Enregistre tous les paramètres du module. Accessibles via :
-   Paramètres du jeu → Configuration des modules → Soruta — WestMarch Système.
-
-socket.js
-   Canal de communication ciblée entre clients (queries Foundry v13). Gère la
-   téléportation d'un utilisateur précis vers une scène sans socket natif.
-
-player.js
-   Gestion de la liste des joueurs : création/gestion des parties (Create Party,
-   Join, Leave, Kick, Invite), menu contextuel, Join Scene, et regroupement
-   visuel des membres d'une même party.
-
-scenes.js
-   Option "Go With Party" dans le menu contextuel du répertoire de scènes.
-   Téléporte tous les membres de la party vers la scène sélectionnée.
-
-journal.js
-   Menu contextuel sur les liens de scène dans les journaux : "Go Alone" et
-   "Go With Party".
-
-image.js
-   Bouton "Show Party" dans la barre de titre des fenêtres d'image (GM
-   uniquement). Partage l'image directement aux membres de sa party.
-
-chat.js
-   Filtrage du chat par party (3 onglets IC/OOC/Other, isolation par groupe),
-   avec boutons GM (effacer/importer/exporter les messages de sa party).
-
-session.js
-   Bouton "Clore la session" sous la liste des joueurs. Capture automatiquement
-   l'XP, les ennemis, les PNJ et les objets de la session, et génère un journal.
-
-anticheat.js
-   Pendant un combat actif, avertit les GM (whisper) si un joueur modifie ses
-   sorts préparés, son attunement ou son équipement sur un personnage engagé.
-
-combat.js
-   Associe chaque combat à la party du GM (via un flag, pas via la scène).
-   Chaque client ne voit que le combat de SA propre party, que les parties
-   jouent sur la même scène ou sur des scènes différentes (override du getter
-   CombatTracker#viewed, par client). Sur une scène partagée, un token ajouté
-   au combat est aiguillé vers le combat de sa party (créé au besoin) plutôt
-   que vers le combat actif d'un autre GM. Gère aussi le pan caméra, les sons
-   de combat et le mouvement (Monk's TokenBar) pour les clients hors-party.
-
-audio.js
-   Coupe les sons globaux (dés, thème de combat) pour les clients hors-party,
-   utilisé en complément du filtrage du chat.
-
-document.js
-   Limite la hauteur de la fenêtre de propriété des documents à 70 % de l'écran
-   avec scroll si le contenu dépasse.
-
---------------------------------------------------------------------------------
-PARAMÈTRES CONFIGURABLES
---------------------------------------------------------------------------------
-
-Accessibles via : Paramètres du jeu → Configuration des modules → Soruta — WestMarch Système
-
-- Système de Party (paramètre maître)
-  └ Join Scene
-  └ Show Party (partage d'image)
-  └ Regroupement visuel des joueurs par party
-  └ Go With Party (répertoire de scènes)
-  └ Go With Party (liens de journaux)
-  └ Filtrage du chat par party
-  └ Journal de session
-  └ Combat lié à la party
-- Anti-Cheat (combat)
+Full module: Soruta — Completed Westmarch (licensed) includes every feature
+of WestMarch Système and adds many more (world registry, relations, bestiary,
+expedition map, downtime, XP, Discord log…). Do not enable both in the same
+world.
+Overview (in French): https://altheia.eu/foundry-modules.html
 
 --------------------------------------------------------------------------------
 INSTALLATION
 --------------------------------------------------------------------------------
 
-1. Dans Foundry : Setup → Add-on Modules → Install Module
-2. Coller l'URL du manifest dans le champ "Manifest URL" :
+1. Foundry VTT: Setup → Add-on Modules → Install Module.
+2. Paste the manifest URL:
    https://raw.githubusercontent.com/Gaetannnnnnnn/westmarch/main/westmarch/module.json
-3. Cliquer "Install"
-4. Activer le module dans le monde : Setup → Gérer les modules
+3. Install, then enable the module in the world (Manage Modules).
+
+Optional: Monk's TokenBar (token movement during party combats).
+
+--------------------------------------------------------------------------------
+SETTINGS
+--------------------------------------------------------------------------------
+
+Game Settings → Configure Settings → Soruta — WestMarch Système
+
+- Party system (master setting: when disabled, the options marked ┗ have no
+  effect)
+  ┗ Join Scene ............................ join a member's scene
+  ┗ Show Party ............................ show an image to your party
+  ┗ Group players by party ................ sorted player list
+  ┗ Go With Party (scene directory) ....... take the whole party along
+  ┗ Go With Party (journal links) ......... "Go Alone" / "Go With Party"
+  ┗ Filter chat by party .................. IC / OOC / Other tabs
+  ┗ Session log ........................... "Close session" button
+  ┗ Party-bound combat .................... one combat per party
+- Anti-Cheat (combat) ..................... alert to the GM during combat
+
+--------------------------------------------------------------------------------
+FILES
+--------------------------------------------------------------------------------
+
+index.js        Entry point: registers the settings and enables each part.
+settings.js     Module settings and information banner in the settings.
+player.js       Player list: create / join / leave / invite / kick from a
+                party, Join Scene, visual grouping by party.
+scenes.js       "Go With Party" in the scene directory.
+journal.js      "Go Alone" / "Go With Party" on journal scene links.
+socket.js       Moves a specific player to a scene (Foundry v13 targeted
+                queries, no module socket).
+image.js        "Show Party" button in image windows (GM).
+chat.js         Chat filtering by party (IC / OOC / Other tabs) and GM
+                buttons: clear, export (text / JSON), import their party's
+                messages.
+combat.js       One combat per party (partyId flag), the right combat shown to
+                each client even on a shared scene, routing of tokens added
+                to combat, camera, sounds and movement (Monk's TokenBar) for
+                clients outside the party.
+audio.js        Mutes global sounds (dice, combat) outside the party.
+session.js      "Close session": session journal (players present, XP
+                before / after, enemies, NPCs, items found).
+anticheat.js    During combat: private alert to the GM if a player changes
+                their prepared spells, attunement or equipment.
+document.js     Document ownership window limited to 70% of the screen
+                (scrolls beyond that).
+site.js         Private message to the GMs, once per version and per world:
+                link to the modules page on altheia.eu.
 
 ================================================================================
-                    WESTMARCH — MISES À JOUR
+                    WESTMARCH — CHANGELOG
 ================================================================================
 
 v2.2.7 | 2026-10-16
-   site.js — Nouveau : au premier lancement puis après chaque mise à jour, les
-   MJ reçoivent un message privé dans le chat avec le lien de la page des
-   modules sur le site d'Althéia (mises à jour + version complète Completed
-   Westmarch). Une fois par version et par monde ; invisible pour les joueurs.
+   site.js — New: on first launch and after each update, GMs receive a
+   private chat message with the link to the modules page on the Althéia
+   website (updates + the full Completed Westmarch version). Once per version
+   and per world; invisible to players.
 
 v2.2.6 | 2026-10-06
-   combat.js — Réparation du combat par party (portage depuis Completed
-   Westmarch) :
-     • preCreateCombat ne force plus scene:null (c'était la cause du « il faut
-       lier une scène » / un seul combat possible) : on conserve une scène
-       valide, l'isolation se fait via le flag partyId.
-     • Override du getter CombatTracker#viewed par client : chaque joueur/GM
-       voit le combat de SA party, même sur une scène partagée.
-     • Aiguillage preCreateCombatant : un token ajouté au combat sur une scène
-       partagée va dans le combat de SA party (créé au besoin), plus dans
-       celui d'un autre GM.
-   readme — Retrait des mentions d'un « webhook Discord des messages IC » (non
-   implémenté dans ce module) ; version d'en-tête resynchronisée sur module.json.
+   combat.js — Party combat repair (ported from Completed Westmarch):
+     • preCreateCombat no longer forces scene:null (this caused the "you must
+       link a scene" error / only one combat possible): a valid scene is kept,
+       isolation is done through the partyId flag.
+     • Per-client override of the CombatTracker#viewed getter: each player/GM
+       sees THEIR party's combat, even on a shared scene.
+     • preCreateCombatant routing: a token added to combat on a shared scene
+       goes into THEIR party's combat (created if needed), no longer into
+       another GM's combat.
+   readme — Removed mentions of a "Discord webhook for IC messages" (not
+   implemented in this module); header version resynchronised with
+   module.json.
 
 v2.2.4 | 2026-07-31
-   chat.js + chat.css — Fix 2e ligne : abandon de l'approche insertBefore (le 5e
-   bouton natif n'existe pas — .control-buttons ne contient que filter/export/flush,
-   les 4 boutons de style-message sont dans un conteneur FRÈRE). Nouvelle approche
-   CSS order : les 3 boutons natifs passent à order:11 (via inline style JS),
-   le break reste à order:10, nos boutons (import, clear) passent à order:11.
-   Résultat visuel : ligne 1 = boutons style-message (frère) | break (invisible),
-   ligne 2 = filter | floppy | trash | import | clear.
-   chat.css — Suppression du border-top du break (visuellement inutile en ligne 1).
-   .wm-party-btn order: 10 → 11 (cohérence avec le nouveau schéma d'order).
+   chat.js + chat.css — 2nd row fix: dropped the insertBefore approach (the
+   5th native button does not exist — .control-buttons only contains
+   filter/export/flush, the 4 message-style buttons are in a SIBLING
+   container). New approach using CSS order: the 3 native buttons get
+   order:11 (inline style via JS), the break stays at order:10, our buttons
+   (import, clear) get order:11.
+   Visual result: row 1 = message-style buttons (sibling) | break (invisible),
+   row 2 = filter | floppy | trash | import | clear.
+   chat.css — Removed the break's border-top (visually useless in row 1).
+   .wm-party-btn order: 10 → 11 (consistent with the new order scheme).
 
 v2.2.3 | 2026-07-30
-   chat.js — Déplacer filtre+export+flush en ligne 2 : le break div est maintenant
-   inséré AVANT le 5e bouton natif (au lieu d'être appendé en fin). Les 4 boutons
-   de mode de jet restent en ligne 1 ; filtre, export, flush + les boutons westmarch
-   (import, effacer party) passent tous en ligne 2.
+   chat.js — Move filter+export+flush to row 2: the break div is now inserted
+   BEFORE the 5th native button (instead of being appended at the end). The
+   4 roll-mode buttons stay in row 1; filter, export, flush + the westmarch
+   buttons (import, clear party) all move to row 2.
 
 v2.2.2 | 2026-07-29
-   chat.js — Fix 2e ligne : forcer flex-wrap via style inline JS au lieu de
-   CSS !important. Les styles inline ont la priorité absolue sur les feuilles
-   de style (y compris Foundry) — c'est ce qui permettait à Foundry de
-   contourner nos !important CSS précédents.
+   chat.js — 2nd row fix: force flex-wrap with an inline JS style instead of
+   CSS !important. Inline styles take absolute priority over stylesheets
+   (Foundry's included) — which is how Foundry got around our previous CSS
+   !important rules.
 
 v2.2.1 | 2026-07-29
-   chat.css — Fix 2e ligne invisible : ajout de height:auto!important,
-   overflow:visible!important sur .control-buttons et #chat-controls pour
-   que la 2e ligne ne soit pas clippée par la hauteur fixe Foundry.
-   Ajout de order:10 sur .wm-party-break et .wm-party-btn pour s'assurer
-   qu'ils apparaissent après les boutons natifs.
+   chat.css — Invisible 2nd row fix: added height:auto!important,
+   overflow:visible!important on .control-buttons and #chat-controls so the
+   2nd row is not clipped by Foundry's fixed height.
+   Added order:10 on .wm-party-break and .wm-party-btn to make sure they
+   appear after the native buttons.
 
 v2.2.0 | 2026-07-29
-   chat.js + chat.css — Fix boutons party GM invisibles : la version 2.1.9 utilisait
-   insertAdjacentElement('afterend') qui sortait les boutons hors du conteneur et
-   les rendait invisibles. Nouveau mécanisme : un div séparateur .wm-party-break
-   (data-wm-action="break", flex-basis:100%) est injecté à la fin de .control-buttons
-   avec les boutons westmarch, et flex-wrap:wrap est activé sur le conteneur natif.
-   Résultat : 2 étages stables sans quitter .control-buttons.
+   chat.js + chat.css — Fix for invisible GM party buttons: version 2.1.9
+   used insertAdjacentElement('afterend'), which moved the buttons outside
+   the container and made them invisible. New mechanism: a .wm-party-break
+   separator div (data-wm-action="break", flex-basis:100%) is injected at the
+   end of .control-buttons along with the westmarch buttons, and
+   flex-wrap:wrap is enabled on the native container.
+   Result: 2 stable rows without leaving .control-buttons.
 
 v2.1.9 | 2026-07-29
-   chat.js + chat.css — Boutons party GM sur 2 lignes : les contrôles natifs
-   Foundry restent dans .control-buttons (ligne du haut), et les boutons
-   westmarch (import, effacer party) sont déplacés dans un nouveau div
-   .wm-party-controls inséré juste après (ligne du bas). Réduit le
-   surencombrement de la barre de contrôles du chat.
+   chat.js + chat.css — GM party buttons on 2 rows: Foundry's native controls
+   stay in .control-buttons (top row), and the westmarch buttons (import,
+   clear party) are moved into a new .wm-party-controls div inserted right
+   after it (bottom row). Reduces clutter in the chat control bar.
 
 v2.1.8 | 2026-07-28
-   chat.js — Fix boutons GM qui disparaissent après re-render de la Sidebar :
-   _injectPartyChatButtons est maintenant appelé à chaque renderChatLog (pas
-   seulement au ready). Guard remplacé par remove+re-inject : on supprime les
-   anciens boutons [data-wm-action] avant de ré-injecter, ce qui préserve aussi
-   le capture listener sur le bouton export natif (le listener était perdu quand
-   le DOM était recréé).
+   chat.js — Fix GM buttons disappearing after a Sidebar re-render:
+   _injectPartyChatButtons is now called on every renderChatLog (not only at
+   ready). Guard replaced by remove + re-inject: old [data-wm-action] buttons
+   are removed before re-injecting, which also keeps the capture listener on
+   the native export button (the listener was lost when the DOM was
+   recreated).
 
 v2.1.7 | 2026-07-28
-   chat.js — Interception du bouton export natif (floppy disk) : capture listener
-   sur .control-buttons → dialog "Texte (.txt) / JSON / Annuler". Le txt re-déclenche
-   le comportement Foundry natif ; le JSON exporte les messages avec leur HTML complet
-   (mise en forme préservée à la réimportation). Import JSON : pas de dialog de tab,
-   le style est déjà dans le JSON. Nouvelle fonction _exportPartyChatJSON.
+   chat.js — Interception of the native export button (floppy disk): capture
+   listener on .control-buttons → "Text (.txt) / JSON / Cancel" dialog. Text
+   re-triggers Foundry's native behaviour; JSON exports the messages with
+   their full HTML (formatting kept on re-import). JSON import: no tab
+   dialog, the style is already in the JSON. New function
+   _exportPartyChatJSON.
 
 v2.1.6 | 2026-07-28
-   chat.js — Import : dialog de choix de tab (Personnages / Rolls / Joueurs / Annuler)
-   au lieu du confirm simple. Le style est appliqué à tous les messages importés.
+   chat.js — Import: tab choice dialog (Characters / Rolls / Players /
+   Cancel) instead of a simple confirm. The style is applied to all imported
+   messages.
 
 v2.1.5 | 2026-07-28
-   chat.js — Fix duplication des tabs : guard document.querySelector('.tabbed-controls')
-   avant le prepend pour éviter le doublement quand renderChatLog fire plusieurs fois.
-   chat.css — margin-left: 4px sur .wm-party-btn pour espacer les boutons custom.
+   chat.js — Duplicate tabs fix: document.querySelector('.tabbed-controls')
+   guard before the prepend to avoid duplicates when renderChatLog fires
+   several times.
+   chat.css — margin-left: 4px on .wm-party-btn to space the custom buttons.
 
 v2.1.4 | 2026-07-28
-   chat.js — Injection boutons GM via Hooks.once("ready") + setTimeout(200ms)
-   pour garantir que #chat-controls est dans le DOM (renderChatLog fire trop tôt).
-   Fix renderTemplate déprécié v13 → foundry.applications.handlebars.renderTemplate
-   avec fallback pour compatibilité v12.
+   chat.js — GM button injection through Hooks.once("ready") +
+   setTimeout(200ms) to make sure #chat-controls is in the DOM (renderChatLog
+   fires too early).
+   Fix for renderTemplate deprecated in v13 →
+   foundry.applications.handlebars.renderTemplate, with a fallback for v12
+   compatibility.
 
 v2.1.3 | 2026-07-28
-   chat.js — Fix injection boutons : le footer #chat-controls est rendu par
-   la Sidebar parente et n'est pas dans log.element au moment du hook.
-   On utilise désormais setTimeout(fn, 0) + document.querySelector depuis
-   le document global au lieu de $html.find(). Suppression du paramètre
-   $html dans _injectPartyChatButtons.
+   chat.js — Button injection fix: the #chat-controls footer is rendered by
+   the parent Sidebar and is not in log.element when the hook fires. Now
+   uses setTimeout(fn, 0) + document.querySelector on the global document
+   instead of $html.find(). Removed the $html parameter from
+   _injectPartyChatButtons.
 
 v2.1.2 | 2026-07-28
-   chat.js — Fix injection boutons party : en v13, l'icône est une classe
-   sur le bouton lui-même (pas de <i> enfant), et les contrôles sont dans
-   .control-buttons (pas via i.fa-trash-can). Nouveau sélecteur :
-   button[data-action="flush"] dans .control-buttons. makePartyBtn adapté
-   au style ui-control v13 (icône FA directement sur le bouton).
-   chat.css — CSS simplifié pour hériter de ui-control Foundry v13.
+   chat.js — Party button injection fix: in v13 the icon is a class on the
+   button itself (no <i> child), and the controls are in .control-buttons
+   (not reached via i.fa-trash-can). New selector: button[data-action="flush"]
+   in .control-buttons. makePartyBtn adapted to the v13 ui-control style (FA
+   icon directly on the button).
+   chat.css — Simplified CSS inheriting Foundry v13's ui-control.
 
 v2.1.1 | 2026-07-28
-   chat.js — Fix parser import .txt : le format natif Foundry est
-   "[timestamp] Nom GM\ncontenu\n---------------------------"
-   (pas "[timestamp] Auteur: contenu" sur une ligne). Nouveau parser
-   découpe sur les séparateurs "---", extrait le nom en strippant le
-   suffixe de rôle (GM, Trusted…) et reconstitue le contenu multi-lignes.
+   chat.js — .txt import parser fix: Foundry's native format is
+   "[timestamp] GM Name\ncontent\n---------------------------"
+   (not "[timestamp] Author: content" on one line). The new parser splits on
+   the "---" separators, extracts the name by stripping the role suffix (GM,
+   Trusted…) and rebuilds multi-line content.
 
 v2.1.0 | 2026-07-28
-   chat.js — Fix injection boutons party GM : en Foundry v13, renderChatLog passe
-   html = zone messages seulement (pas les contrôles du bas). On utilise désormais
-   log.element (racine ApplicationV2 de la sidebar) pour trouver les boutons natifs
-   filter/save/trash. Ajout d'un console.log diagnostic qui liste les data-actions
-   trouvés dans l'élément racine, pour corriger l'ancrage si nécessaire.
+   chat.js — GM party button injection fix: in Foundry v13, renderChatLog
+   passes html = message area only (not the bottom controls). Now uses
+   log.element (ApplicationV2 root of the sidebar) to find the native
+   filter/save/trash buttons. Added a diagnostic console.log listing the
+   data-actions found in the root element, to fix the anchoring if needed.
    module.json — Bump 2.0.9 → 2.1.0.
 
 v2.0.9 | 2026-07-28
-   chat.js — Trois nouveaux boutons GM dans le chat (visibles uniquement pour les GMs) :
-     • Effacer ma party (fa-users-slash) — supprime uniquement les messages dont
-       l'auteur partage le même partyId que le GM courant. Les autres parties
-       ne sont pas impactées.
-     • Exporter JSON (fa-file-export) — télécharge les messages de la party en JSON.
-     • Importer JSON (fa-file-import) — réimporte un JSON exporté précédemment ;
-       les messages sont recréés en conservant leur timestamp d'origine pour
-       garder l'ordre chronologique, mais avec de nouveaux _id pour éviter
-       les conflits.
-   chat.css — styles des trois boutons (.wm-party-btn).
+   chat.js — Three new GM buttons in the chat (visible to GMs only):
+     • Clear my party (fa-users-slash) — deletes only the messages whose
+       author shares the current GM's partyId. Other parties are not
+       affected.
+     • Export JSON (fa-file-export) — downloads the party's messages as JSON.
+     • Import JSON (fa-file-import) — re-imports a previously exported JSON;
+       messages are recreated with their original timestamp to keep the
+       chronological order, but with new _ids to avoid conflicts.
+   chat.css — styles of the three buttons (.wm-party-btn).
    module.json — Bump 2.0.8 → 2.0.9.
 
 v2.0.8 | 2026-07-23
-   Synchronisation module.json / readme.txt sur la même version.
+   module.json / readme.txt synchronised on the same version.
 
 v2.0.7 | 2026-07-22
-   socket.js — suppression du code mort (sendFakeWarning, handler
-   westmarch.fakeWarning déplacé dans westmarch-ashara). Titre mis à jour :
-   Soruta — WestMarch Système. Bandeau settings : copyright open source ajouté.
+   socket.js — removed dead code (sendFakeWarning, westmarch.fakeWarning
+   handler moved to the former server module). Title updated:
+   Soruta — WestMarch Système. Settings banner: open source copyright added.

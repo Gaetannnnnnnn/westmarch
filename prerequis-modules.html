@@ -163,8 +163,8 @@
 
     <tr>
       <td>
-        <div class="module-name">WestMarch Ashara</div>
-        <div class="module-id">westmarch-ashara</div>
+        <div class="module-name">WestMarch Serveur</div>
+        <div class="module-id">westmarch-serveur</div>
       </td>
       <td class="version">v1.0.7</td>
       <td>
@@ -180,7 +180,7 @@
     <tr>
       <td>
         <div class="module-name">Relations</div>
-        <div class="module-id">ashara-relations</div>
+        <div class="module-id">relations</div>
       </td>
       <td class="version">v1.6.0</td>
       <td><span class="empty">—</span></td>
@@ -192,13 +192,13 @@
     <tr>
       <td>
         <div class="module-name">Bestiaire</div>
-        <div class="module-id">ashara-bestiary</div>
+        <div class="module-id">bestiary</div>
       </td>
       <td class="version">v1.3.1</td>
       <td><span class="empty">—</span></td>
       <td>
         <div class="tags">
-          <span class="tag"><span class="badge badge-rec">Rec.</span> <span class="tag-label">ashara-relations <small>(fiche enrichie)</small></span></span>
+          <span class="tag"><span class="badge badge-rec">Rec.</span> <span class="tag-label">relations <small>(fiche enrichie)</small></span></span>
         </div>
       </td>
       <td><span class="empty">—</span></td>
@@ -218,8 +218,8 @@
       </td>
       <td>
         <div class="tags">
-          <span class="tag"><span class="badge badge-rec">Rec.</span> <span class="tag-label">ashara-bestiary <small>(fiche enrichie)</small></span></span>
-          <span class="tag"><span class="badge badge-rec">Rec.</span> <span class="tag-label">ashara-relations <small>(fallback fiche)</small></span></span>
+          <span class="tag"><span class="badge badge-rec">Rec.</span> <span class="tag-label">bestiary <small>(fiche enrichie)</small></span></span>
+          <span class="tag"><span class="badge badge-rec">Rec.</span> <span class="tag-label">relations <small>(fallback fiche)</small></span></span>
         </div>
       </td>
       <td><span class="empty">—</span></td>
@@ -307,13 +307,13 @@
   <h2>Chaîne d'héritage des fiches PJ</h2>
   <code>CharacterActorSheet (dnd5e)</code>
   <span class="arrow">→</span>
-  <code>AshCharacterSheet</code> (ashara-relations)
+  <code>RelationsSheet</code> (relations)
   <span class="arrow">→</span>
-  <code>AshBestiarySheet</code> (ashara-bestiary)
+  <code>BestiarySheet</code> (bestiary)
   <span class="arrow">→</span>
   <code>CarnetSheet</code> (carnet)
   <br><br>
-  Chaque module détecte ceux qui lui précèdent via <code>CONFIG.asharaSheets</code> et hérite de leur fiche.
+  Chaque module détecte ceux qui lui précèdent via <code>CONFIG.sorutaSheets</code> et hérite de leur fiche.
   Si un maillon manque, il remonte la chaîne et hérite du dernier disponible.
   Le <strong>carnet</strong> enregistre toujours la fiche finale active.
 </div>

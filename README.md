@@ -1,78 +1,71 @@
-# Soruta — Modules Foundry VTT
+# Soruta — WestMarch Système
 
-Modules Foundry VTT v13 / D&D 5e v3 pour les serveurs WestMarch.
+A **Foundry VTT** module for **West Marches** campaigns: several game masters and several groups of players playing in parallel in the same world, without getting in each other's way.
 
----
+Each group ("party") has its own sessions, chat, combats and audio. The module is **free and open source**.
 
-## Modules
+- **Module ID:** `westmarch`
+- **Version:** 2.2.7
+- **Compatibility:** Foundry VTT **v13** (verified on **v14**), **dnd5e** system
+- **Author:** Soruta
 
-| Module | ID | Version | Description |
-|--------|----|---------|-------------|
-| WestMarch Système | `westmarch` | 2.2.5 | Socle core — sessions, party, chat, combat, audio |
-| WestMarch Ashara | `westmarch-ashara` | 1.1.1 | Extensions serveur — temps morts, XP, Discord log |
-| Relations | `ashara-relations` | 1.6.3 | Onglet Relations sur la fiche PJ |
-| Bestiaire | `ashara-bestiary` | 1.3.4 | Onglet Bestiaire sur la fiche PJ |
-| Carnet d'Expéditions | `carnet` | 1.4.1 | Onglets Carnet & Expéditions sur la fiche PJ |
-| Map Ouvert Systèmes | `carte-expeditions` | 1.0.2 | Gestion fog of war par personnage/groupe |
-| Midi Range Fix | `midi-range-fix` | 1.5.9 | Corrige la portée midi-qol pour les grands tokens |
-| Toolkit | `toolkit` | 1.2.6 | Outils GM — polymorph, boutiques MEJ, export fiches |
-| Tutoriel | `tutoriel` | 1.2.7 | Guide interactif pour les joueurs et le GM |
+> The in-game interface of the module is in French.
 
 ---
 
-## Prérequis
+## Features
 
-### Légende
+| Feature | What it does |
+|---|---|
+| **Party system** | Players create, join and leave groups from the player list (create, join, leave, invite, kick). This is the master setting: the features below depend on it. |
+| **Join Scene** | A party member can join the scene another member is on (context menu of the player list). |
+| **Go With Party** | From the scene directory or a scene link in a journal: "Go With Party" takes the whole party, "Go Alone" only yourself. |
+| **Show Party** | The GM shows an image to their own party only (button in the image window). |
+| **Player grouping** | The player list is sorted by party, with a coloured separator. |
+| **Party chat** | Each player only sees the messages of their own party. Three tabs (IC / OOC / Other). The GM can clear, export (text or JSON) and re-import their party's messages. |
+| **Party combat** | Each combat belongs to its GM's party. Everyone only sees their party's combat, even when several groups play on the same scene. With Monk's TokenBar, movement is handled for players outside the combat. |
+| **Party audio** | A party's global sounds (dice, combat theme) are not played for the other parties. |
+| **Session log** | "Close session" button under the player list: generates a journal with the players present, XP before / after, enemies met, NPCs and items found. |
+| **Anti-cheat (combat)** | During a combat, privately warns the GM if a player changes their prepared spells, attunement or equipment. |
 
-- **Requis** — sans ce module, la fonctionnalité centrale ne fonctionne pas
-- **Recommandé** — fonctionne seul mais incomplet sans
-- **Ext. requis** — module tiers indispensable
-- **Ext. optionnel** — améliore une feature spécifique
+Each feature can be turned on or off separately in **Game Settings → Configure Settings → Soruta — WestMarch Système**.
 
-### Tableau des dépendances
+---
 
-| Module | Soruta requis | Soruta recommandé | Externe requis | Externe optionnel |
-|--------|--------------|-------------------|----------------|-------------------|
-| `westmarch` | — | — | — | `monks-tokenbar` |
-| `westmarch-ashara` | `westmarch` | — | — | `simple-calendar` |
-| `ashara-relations` | — | — | — | — |
-| `ashara-bestiary` | — | `ashara-relations` | — | — |
-| `carnet` | `westmarch` | `ashara-bestiary`, `ashara-relations` | — | `simple-calendar` |
-| `carte-expeditions` | — | — | — | — |
-| `midi-range-fix` | — | — | `midi-qol` | — |
-| `toolkit` | — | — | — | `monks-enhanced-journal`, `lib-wrapper`, `monks-tokenbar` |
-| `tutoriel` | — | `westmarch` | — | `monks-enhanced-journal` |
+## Installation
 
-### Chaîne d'héritage des fiches PJ
+In Foundry VTT: **Setup → Add-on Modules → Install Module**, then paste this URL into "Manifest URL":
 
 ```
-CharacterActorSheet (dnd5e)
-  → AshCharacterSheet      (ashara-relations)
-    → AshBestiarySheet     (ashara-bestiary)
-      → CarnetSheet        (carnet)
+https://raw.githubusercontent.com/Gaetannnnnnnn/westmarch/main/westmarch/module.json
 ```
 
-Chaque module détecte ceux qui le précèdent via `CONFIG.asharaSheets` et hérite de leur fiche. Si un maillon manque, il remonte à la fiche disponible la plus proche.
+Then enable the module in your world (**Manage Modules**).
 
-### Export des fiches PJ
+### Recommended modules (optional)
 
-`toolkit` expose un menu contextuel (clic droit sur un acteur) permettant d'exporter en deux formats :
-
-- **Fiche actuelle** — export complet avec toutes les données modules (flags, expéditions, relations, bestiaire…). À réimporter sur un serveur avec les mêmes modules.
-- **Fiche originale dnd5e** — supprime tous les flags propres aux modules Soruta avant export. Compatible avec n'importe quel serveur Foundry.
-
-Les modules `ashara-relations`, `ashara-bestiary` et `carnet` se déclarent automatiquement dans `CONFIG.asharaSheetsModules` au démarrage. `toolkit` lit cette liste pour savoir quels flags supprimer — aucune dépendance explicite n'est requise entre ces modules et `toolkit`.
+- **Monk's TokenBar**: token movement handling during party combats.
 
 ---
 
-## Notes
+## What about Completed Westmarch?
 
-- Tous les modules nécessitent **Foundry VTT v13+** et le système **D&D 5e v3+**.
-- `midi-range-fix` s'inactive automatiquement si `midi-qol` n'est pas installé.
-- `westmarch-ashara` — les dates (temps morts, caldate) utilisent l'API calendrier **native Foundry v13** (`game.time.calendar`), pas `SimpleCalendar.api` directement. Mais en pratique, Simple Calendar est recommandé pour avoir les bons noms de mois du calendrier Ashara. Le log Discord passe par un webhook HTTP configuré en settings.
-- `carte-expeditions` et `ashara-relations` sont les seuls modules totalement autonomes.
-- `monks-enhanced-journal` est uniquement requis pour les features boutiques/réapprovisionnement de `toolkit`. Le reste du module (polymorph, export, outils GM) fonctionne sans.
+**Soruta — Completed Westmarch** is the full module, built on top of this one: world registry, relations and bestiary, expedition map with per-character fog of war, downtime and crafting, XP progression, Discord log, diagnostics… It is reserved for trusted tables and requires a licence.
+
+Do not enable both modules in the same world: Completed Westmarch already includes every feature of WestMarch Système.
+
+Overview of both modules (in French): https://altheia.eu/foundry-modules.html
 
 ---
 
-*© 2026 Soruta — Usage personnel autorisé. Toute redistribution ou usage commercial est interdit sans autorisation écrite.*
+## Support and updates
+
+- **A problem or a question?** Open a **ticket** on the Althéia Discord (please avoid private messages): https://discord.com/invite/sbHSVXDeMJ
+- **New releases** are announced on the same Discord, in the module updates channel. You can "follow" it from your own server.
+- **Detailed version history:** [`westmarch/readme.txt`](westmarch/readme.txt).
+
+---
+
+## Licence
+
+© 2026 Soruta. Open source software: redistribution and modification are allowed, **provided you credit the author** (Soruta) and keep this link to the original project.
