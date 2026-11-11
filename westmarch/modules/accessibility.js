@@ -1,7 +1,9 @@
 // ============================================================
 // accessibility.js — Accessibilité (Soruta — WestMarch Système)
 //
-// Réglages PERSONNELS (scope client) : chaque joueur règle les siens dans
+// Réglages PERSONNELS (scope « user » : rattachés au COMPTE, pas au navigateur ;
+// deux comptes ouverts sur le même ordinateur ont chacun les leurs) : chaque
+// joueur règle les siens dans
 // la fenêtre « Accessibilité » des réglages du module (visible par tous).
 //
 //   1. Daltonisme — filtre de CORRECTION des couleurs (daltonisation) sur la
@@ -36,19 +38,19 @@ const _get = (k) => { try { return game.settings.get(MOD, k); } catch { return u
 // ── Réglages ────────────────────────────────────────────────
 function registerA11ySettings() {
     game.settings.register(MOD, K_DALTON, {
-        name: tl("Mode daltonisme"), scope: "client", config: false,
+        name: tl("Mode daltonisme"), scope: "user", config: false,
         type: String, choices: choixDalton(), default: "none", onChange: applyAccessibility
     });
     game.settings.register(MOD, K_CONTRAST, {
-        name: tl("Fort contraste"), scope: "client", config: false,
+        name: tl("Fort contraste"), scope: "user", config: false,
         type: Boolean, default: false, onChange: applyAccessibility
     });
     game.settings.register(MOD, K_CONTRASTCOL, {
-        name: tl("Couleur des contours"), scope: "client", config: false,
+        name: tl("Couleur des contours"), scope: "user", config: false,
         type: String, default: DEFAULT_BORDER, onChange: applyAccessibility
     });
     game.settings.register(MOD, K_COMPACT, {
-        name: tl("Contrôles de gauche compacts"), scope: "client", config: false,
+        name: tl("Contrôles de gauche compacts"), scope: "user", config: false,
         type: Boolean, default: false, onChange: applyAccessibility
     });
 }

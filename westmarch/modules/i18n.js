@@ -17,8 +17,8 @@ import EN from "./i18n-en.js";
 const MOD_ID = "westmarch";
 const CLE_CHOIX = "moduleLanguage";
 
-// Choix de l'utilisateur (réglage client). Lu aussi avant l'initialisation
-// du jeu, dans le stockage local où Foundry range les réglages client.
+// Choix de l'utilisateur (réglage du compte). Avant que les réglages soient
+// disponibles, on lit la copie locale enregistrée par onChange / ready.
 function choixModule() {
     try {
         const v = globalThis.game?.settings?.settings?.has?.(`${MOD_ID}.${CLE_CHOIX}`)
@@ -64,13 +64,26 @@ export const locale = () => (estFr() ? "fr-FR" : "en-US");
  *  langue du MJ qui les a créés). */
 export const nomsPossibles = (fr) => (EN[fr] && EN[fr] !== fr ? [fr, EN[fr]] : [fr]);
 
-/** Réglage client « Langue du module », visible par tous (joueurs inclus). */
+/** Réglage « Langue du module » (portée « user » : propre à chaque compte),
+ *  visible par tous (joueurs inclus). */
 export function registerLangueSetting() {
     game.settings.register(MOD_ID, CLE_CHOIX, {
         name: "Module language / Langue du module",
-        hint: "Language of Soruta — WestMarch Système for you only. Automatic = the Foundry language. — Langue du module pour toi seulement. Automatique = la langue de Foundry.",
-        scope: "client", config: true, type: String, requiresReload: true,
+        hint: "Language of Soruta — WestMarch Système for your account only. Automatic = your Foundry language. — Langue du module pour ton compte seulement. Automatique = ta langue de Foundry.",
+        scope: "user", config: true, type: String, requiresReload: true,
         choices: { auto: "Automatic / Automatique", en: "English", fr: "Français" },
-        default: "auto"
+        default: "auto",
+        // Copie locale : lue au tout début du chargement, avant que les
+        // réglages du compte soient disponibles.
+        onChange: (v) => { try { globalThis.localStorage?.setItem(`${MOD_ID}.${CLE_CHOIX}`, JSON.stringify(v)); } catch { /* */ } }
+    });
+    // Au chargement, la copie locale reprend le choix du compte connecté
+    // (utile si plusieurs comptes utilisent le même navigateur).
+    Hooks.once("ready", () => {
+        try {
+            const v = game.settings.get(MOD_ID, CLE_CHOIX) ?? "auto";
+            const k = `${MOD_ID}.${CLE_CHOIX}`;
+            if (globalThis.localStorage?.getItem(k) !== JSON.stringify(v)) globalThis.localStorage?.setItem(k, JSON.stringify(v));
+        } catch { /* */ }
     });
 }

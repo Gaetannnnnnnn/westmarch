@@ -3,7 +3,7 @@
                   Foundry VTT module — free and open source
 ================================================================================
 
-Version  : 2.2.8
+Version  : 2.2.9
 Author   : Soruta
 System   : dnd5e, Foundry VTT v13 (verified on v14)
 Licence  : © 2026 Soruta — open source software. Redistribution and
@@ -57,7 +57,8 @@ Game Settings → Configure Settings → Soruta — WestMarch Système
   ┗ Party-bound combat .................... one combat per party
 - Anti-Cheat (combat) ..................... alert to the GM during combat
 
-Visible to every user (players and GMs), each one for themselves:
+Visible to every user (players and GMs), each one for their own account
+("user" scope: two accounts on the same computer keep separate settings):
 - Module language ......................... Automatic / English / Français
 - Accessibility (window) .................. colour-blind mode, high contrast
                                             and outline colour, compact
@@ -104,6 +105,12 @@ site.js         Private message to the GMs, once per version and per world:
 ================================================================================
                     WESTMARCH — CHANGELOG
 ================================================================================
+
+v2.2.9 | 2026-11-11
+   i18n.js / accessibility.js — Fix: "Module language" and the accessibility
+   settings are now stored per ACCOUNT ("user" scope) instead of per browser
+   ("client" scope). Two accounts used on the same computer (a GM and a
+   player, for instance) no longer share them.
 
 v2.2.8 | 2026-11-11
    i18n.js / i18n-en.js — New: French / English interface. Every text of
