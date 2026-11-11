@@ -3,7 +3,7 @@
                   Foundry VTT module — free and open source
 ================================================================================
 
-Version  : 2.2.7
+Version  : 2.2.8
 Author   : Soruta
 System   : dnd5e, Foundry VTT v13 (verified on v14)
 Licence  : © 2026 Soruta — open source software. Redistribution and
@@ -11,7 +11,8 @@ Licence  : © 2026 Soruta — open source software. Redistribution and
 Support  : ticket on the Althéia Discord (no private messages, please)
            https://discord.com/invite/sbHSVXDeMJ
 
-Note: the in-game interface of the module is in French.
+Languages: French and English (each user picks in the module settings;
+"Automatic" follows the Foundry language).
 
 --------------------------------------------------------------------------------
 DESCRIPTION
@@ -56,11 +57,25 @@ Game Settings → Configure Settings → Soruta — WestMarch Système
   ┗ Party-bound combat .................... one combat per party
 - Anti-Cheat (combat) ..................... alert to the GM during combat
 
+Visible to every user (players and GMs), each one for themselves:
+- Module language ......................... Automatic / English / Français
+- Accessibility (window) .................. colour-blind mode, high contrast
+                                            and outline colour, compact
+                                            left-hand controls
+- About (window) .......................... version, author, rights,
+                                            website, support
+
 --------------------------------------------------------------------------------
 FILES
 --------------------------------------------------------------------------------
 
 index.js        Entry point: registers the settings and enables each part.
+i18n.js         Module language (tl("French text")) and "Module language"
+                setting; i18n-en.js = English dictionary.
+accessibility.js  Accessibility window and per-user settings (colour-blind
+                filter on the map and the interface, high contrast with
+                outline colour, compact controls); styles/accessibility.css.
+about.js        "About" window (version, author, rights, website, support).
 settings.js     Module settings and information banner in the settings.
 player.js       Player list: create / join / leave / invite / kick from a
                 party, Join Scene, visual grouping by party.
@@ -89,6 +104,22 @@ site.js         Private message to the GMs, once per version and per world:
 ================================================================================
                     WESTMARCH — CHANGELOG
 ================================================================================
+
+v2.2.8 | 2026-11-11
+   i18n.js / i18n-en.js — New: French / English interface. Every text of
+   the module goes through tl(); English dictionary. "Module language"
+   setting (client, visible to everyone): Automatic (Foundry language) /
+   English / Français. The "GM" and "Session report" journal folders are
+   found under either name, so two GMs using different languages do not
+   create duplicates.
+   accessibility.js — New (ported from Completed Westmarch): "Accessibility"
+   window visible to players and GMs, personal settings: colour-blind mode
+   (protanopia / deuteranopia / tritanopia correction on the map and the
+   interface), high contrast with outline colour, compact left-hand
+   controls.
+   about.js — New: "About" window visible to everyone: version, author,
+   rights (open source, attribution), source code, website, support
+   (Discord ticket), full version.
 
 v2.2.7 | 2026-10-16
    site.js — New: on first launch and after each update, GMs receive a

@@ -16,6 +16,7 @@
 
 import { partyFeatureEnabled } from './settings.js';
 import { registerSoundFilter } from './audio.js';
+import { tl } from "./i18n.js";
 
 // Mémorise, pour le combat en cours de changement de tour, la position de
 // la caméra d'un joueur hors-party AVANT que Foundry ne la déplace
@@ -216,7 +217,7 @@ export function CombatHooks() {
 
             if (kept === 0) {
                 root.empty().append(
-                    `<p style="padding:8px; opacity:0.7; font-style:italic;">Aucun combat en cours pour votre party.</p>`
+                    `<p style="padding:8px; opacity:0.7; font-style:italic;">${tl("Aucun combat en cours pour votre party.")}</p>`
                 );
             }
         }

@@ -11,6 +11,9 @@ import { SocketHooks } from './modules/socket.js';
 import { CombatHooks } from './modules/combat.js';
 import { AudioHooks } from './modules/audio.js';
 import { registerSiteSettings, SiteHooks } from './modules/site.js';
+import { tl, registerLangueSetting } from './modules/i18n.js';
+import { AccessibilityHooks } from './modules/accessibility.js';
+import { registerAboutMenu } from './modules/about.js';
 
 Hooks.on("init", async () => {
     Handlebars.registerHelper('for', function(from, to, incr, block) {
@@ -23,6 +26,14 @@ Hooks.on("init", async () => {
     Handlebars.registerHelper("lte", function(a, b) {
         return a <= b;
     });
+
+    // Texte traduit dans les gabarits Handlebars : {{wmTl "texte français"}}.
+    Handlebars.registerHelper("wmTl", (fr) => tl(String(fr)));
+
+    // Réglages visibles par tous (joueurs et MJ) : langue, accessibilité, à propos.
+    registerLangueSetting();
+    AccessibilityHooks();
+    registerAboutMenu();
 
     registerSettings();
     registerSiteSettings();

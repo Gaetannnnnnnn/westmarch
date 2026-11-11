@@ -1,8 +1,8 @@
 {
   "id": "westmarch",
   "title": "Soruta — WestMarch Système",
-  "version": "2.2.7",
-  "changelog": "2026-10-16",
+  "version": "2.2.8",
+  "changelog": "2026-11-11",
   "authors": [
 		{
 			"name": "Soruta",
@@ -19,7 +19,8 @@
   ],
   "styles": [
     "./styles/chat.css",
-    "./styles/character.css"
+    "./styles/character.css",
+    "./styles/accessibility.css"
   ],
   "url": "https://github.com/Gaetannnnnnnn/westmarch.git",
   "manifest": "https://raw.githubusercontent.com/Gaetannnnnnnn/westmarch/main/westmarch/module.json",

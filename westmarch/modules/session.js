@@ -4,6 +4,7 @@
 // ============================================================
 
 import { partyFeatureEnabled } from './settings.js';
+import { tl, locale, nomsPossibles } from "./i18n.js";
 
 // Données capturées en début de session
 var sessionData = {
@@ -37,7 +38,7 @@ function getCloseBtnSingleton() {
     closeBtnSingleton = $(`
         <div class="westmarch-close-session-wrap">
             <button type="button" class="westmarch-close-session">
-                <i class="fas fa-book"></i> Clore la session
+                <i class="fas fa-book"></i> ${tl("Clore la session")}
             </button>
         </div>
     `);
@@ -47,7 +48,7 @@ function getCloseBtnSingleton() {
             await closeSession(currentPlayersApp);
         } catch (err) {
             console.error("[WestMarch] Erreur lors de la clôture de session :", err);
-            ui.notifications.error("Erreur lors de la clôture de la session (voir console).");
+            ui.notifications.error(tl("Erreur lors de la clôture de la session (voir console)."));
         }
     });
     return closeBtnSingleton;
@@ -228,7 +229,7 @@ export function startSessionLog(partyId) {
 // ============================================================
 async function closeSession(playerListApp) {
     if (!sessionData.partyId) {
-        ui.notifications.warn("Aucune session en cours.");
+        ui.notifications.warn(tl("Aucune session en cours."));
         return;
     }
 
@@ -263,30 +264,30 @@ async function closeSession(playerListApp) {
     }
 
     // Générer le contenu HTML du journal
-    const date = new Date().toLocaleDateString("fr-FR");
-    let content = `<h2>Rapport de session — ${date}</h2>`;
-    content += `<p><strong>Meneur :</strong> ${sessionData.gmName}</p>`;
+    const date = new Date().toLocaleDateString(locale());
+    let content = `<h2>${tl("Rapport de session — {0}", date)}</h2>`;
+    content += `<p>${tl("<strong>Meneur :</strong> {0}", sessionData.gmName)}</p>`;
 
     // Joueurs
-    content += `<h3>Joueurs</h3><ul>`;
+    content += `<h3>${tl("Joueurs")}</h3><ul>`;
     playersReport.forEach(p => {
-        content += `<li><strong>${p.name}</strong> — XP : ${p.xpBefore} → ${p.xpAfter}`;
+        content += `<li><strong>${p.name}</strong> — ${tl("XP : {0} → {1}", p.xpBefore, p.xpAfter)}`;
         if (p.xpGained > 0) content += ` (+${p.xpGained})`;
-        if (p.levelUp) content += ` <strong style="color:#e67e22;">⬆ Level Up ! (Niveau ${p.levelAfter})</strong>`;
+        if (p.levelUp) content += ` <strong style="color:#e67e22;">${tl("⬆ Level Up ! (Niveau {0})", p.levelAfter)}</strong>`;
         content += `</li>`;
     });
     content += `</ul>`;
 
     // Ennemis rencontrés
     if (sessionData.combatants.length > 0) {
-        content += `<h3>Ennemis rencontrés</h3><ul>`;
+        content += `<h3>${tl("Ennemis rencontrés")}</h3><ul>`;
         sessionData.combatants.forEach(e => {
             content += `<li><strong>${e.name}</strong>`;
             if (e.cr !== null) content += ` — CR ${e.cr}`;
             if (e.hp !== null) content += ` — HP ${e.hp}`;
-            if (e.ac !== null) content += ` — CA ${e.ac}`;
-            if (e.legendaryActions) content += ` — Actions légendaires : ${e.legendaryActions}`;
-            if (e.legendaryResistances) content += ` — Résistances légendaires : ${e.legendaryResistances}`;
+            if (e.ac !== null) content += ` — ${tl("CA {0}", e.ac)}`;
+            if (e.legendaryActions) content += ` — ${tl("Actions légendaires : {0}", e.legendaryActions)}`;
+            if (e.legendaryResistances) content += ` — ${tl("Résistances légendaires : {0}", e.legendaryResistances)}`;
             content += `</li>`;
         });
         content += `</ul>`;
@@ -294,14 +295,14 @@ async function closeSession(playerListApp) {
 
     // PNJ rencontrés
     if (npcs.length > 0) {
-        content += `<h3>PNJ rencontrés</h3><ul>`;
+        content += `<h3>${tl("PNJ rencontrés")}</h3><ul>`;
         npcs.forEach(n => { content += `<li>${n.name}</li>`; });
         content += `</ul>`;
     }
 
     // Items récupérés
     if (sessionData.items.length > 0) {
-        content += `<h3>Objets récupérés</h3><ul>`;
+        content += `<h3>${tl("Objets récupérés")}</h3><ul>`;
         sessionData.items.forEach(i => {
             content += `<li><strong>${i.playerName}</strong> — ${i.itemName}</li>`;
         });
@@ -326,7 +327,7 @@ async function closeSession(playerListApp) {
     // Reset session
     sessionData = { gmName: null, partyId: null, players: [], enemies: [], combatants: [], items: [], sceneId: null };
 
-    ui.notifications.info("Session close — journal créé.");
+    ui.notifications.info(tl("Session close — journal créé."));
 }
 
 // ============================================================
@@ -334,9 +335,9 @@ async function closeSession(playerListApp) {
 // ============================================================
 async function createSessionJournal(date, content) {
     // Trouver ou créer le dossier racine "MJ"
-    let rootFolder = game.folders.find(f => f.name === "MJ" && f.type === "JournalEntry" && !f.folder);
+    let rootFolder = game.folders.find(f => nomsPossibles("MJ").includes(f.name) && f.type === "JournalEntry" && !f.folder);
     if (!rootFolder) {
-        rootFolder = await Folder.create({ name: "MJ", type: "JournalEntry" });
+        rootFolder = await Folder.create({ name: tl("MJ"), type: "JournalEntry" });
     }
 
     // Trouver ou créer le dossier du GM
@@ -346,9 +347,9 @@ async function createSessionJournal(date, content) {
     }
 
     // Trouver ou créer le dossier "Rapport de session"
-    let reportFolder = game.folders.find(f => f.name === "Rapport de session" && f.type === "JournalEntry" && f.folder?.id === gmFolder.id);
+    let reportFolder = game.folders.find(f => nomsPossibles("Rapport de session").includes(f.name) && f.type === "JournalEntry" && f.folder?.id === gmFolder.id);
     if (!reportFolder) {
-        reportFolder = await Folder.create({ name: "Rapport de session", type: "JournalEntry", folder: gmFolder.id });
+        reportFolder = await Folder.create({ name: tl("Rapport de session"), type: "JournalEntry", folder: gmFolder.id });
     }
 
     // Créer le journal

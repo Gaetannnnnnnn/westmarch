@@ -1,4 +1,5 @@
 import { partyFeatureEnabled } from './settings.js';
+import { tl } from "./i18n.js";
 
 export function ImageHooks() {
     // En v13, getImagePopoutHeaderButtons n'est plus déclenché
@@ -33,7 +34,7 @@ export function ImageHooks() {
             if (users.length > 0) {
                 application.shareImage({ users: users.map(u => u.id) });
             } else {
-                ui.notifications.warn("Aucun membre de la party connecté.");
+                ui.notifications.warn(tl("Aucun membre de la party connecté."));
             }
         });
 
@@ -66,7 +67,7 @@ export function ImageHooks() {
             if (users.length > 0) {
                 application.shareImage({ users: users.map(u => u.id) });
             } else {
-                ui.notifications.warn("Aucun membre de la party connecté.");
+                ui.notifications.warn(tl("Aucun membre de la party connecté."));
             }
         });
 

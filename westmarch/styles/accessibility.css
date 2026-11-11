@@ -1,0 +1,85 @@
+/* ============================================================
+   accessibility.css — Accessibilité (Soruta — WestMarch Système)
+   Réglages personnels par joueur : voir modules/accessibility.js.
+   Le daltonisme est appliqué en JavaScript (filtre PIXI sur la carte,
+   filtre SVG sur l'interface) : aucune règle ici.
+   ============================================================ */
+
+/* ── Fort contraste ─────────────────────────────────────── */
+/* La couleur des contours est pilotée par --wm-a11y-border, posée en
+   inline sur <body> par accessibility.js (réglage a11yContrastColor).
+   Valeur de repli si non définie : jaune. */
+body.wm-a11y-contrast #interface {
+    --color-text-dark-primary: #ffffff;
+    --color-text-light-primary: #ffffff;
+}
+/* Fonds opaques UNIQUEMENT sur des fenêtres dimensionnées. On NE touche PAS :
+   #players (barre noire) NI les messages de chat (habillage crème dédié). */
+body.wm-a11y-contrast .app,
+body.wm-a11y-contrast .application {
+    background: rgba(0, 0, 0, 0.92) !important;
+    border-color: var(--wm-a11y-border, #ffd54a) !important;
+    color: #ffffff !important;
+}
+/* Liste des joueurs : on renforce le texte et on borde SEULEMENT la liste
+   réelle, sans remplir tout le panneau. */
+body.wm-a11y-contrast #players .players-list,
+body.wm-a11y-contrast #players .player {
+    border-color: var(--wm-a11y-border, #ffd54a) !important;
+}
+body.wm-a11y-contrast #interface a,
+body.wm-a11y-contrast .window-content,
+body.wm-a11y-contrast #players .player-name,
+body.wm-a11y-contrast .player-name {
+    color: #ffffff !important;
+    text-shadow: 0 0 2px #000, 0 0 2px #000 !important;
+}
+/* Le fort contraste ne doit PAS toucher les cartes de chat (habillage crème). */
+body.wm-a11y-contrast :is(#chat-log, .chat-log, .chat-sidebar, .chat-popout) .message,
+body.wm-a11y-contrast :is(#chat-log, .chat-log, .chat-sidebar, .chat-popout) .message-content {
+    background: revert !important;
+    color: revert !important;
+    text-shadow: none !important;
+}
+body.wm-a11y-contrast .control-tool,
+body.wm-a11y-contrast #controls .control,
+body.wm-a11y-contrast button.control,
+body.wm-a11y-contrast .scene-control {
+    border: 2px solid var(--wm-a11y-border, #ffd54a) !important;
+}
+body.wm-a11y-contrast :focus-visible {
+    outline: 3px solid var(--wm-a11y-border, #ffd54a) !important;
+    outline-offset: 2px !important;
+}
+
+/* ── Contrôles de gauche compacts (icônes + espacements resserrés) ── */
+/* Taille des boutons. */
+body.wm-a11y-compact #controls .control-tool,
+body.wm-a11y-compact #controls li.scene-control,
+body.wm-a11y-compact #controls .control,
+body.wm-a11y-compact #scene-controls .control,
+body.wm-a11y-compact #ui-left button.control {
+    width: 30px !important;
+    height: 30px !important;
+    line-height: 30px !important;
+    font-size: 14px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+/* Espacement vertical entre boutons + entre les deux colonnes (outils/sous-outils). */
+body.wm-a11y-compact #ui-left,
+body.wm-a11y-compact #controls,
+body.wm-a11y-compact #scene-controls {
+    gap: 2px !important;
+}
+body.wm-a11y-compact #controls ol,
+body.wm-a11y-compact #controls menu,
+body.wm-a11y-compact #controls .control-tools,
+body.wm-a11y-compact #scene-controls ol,
+body.wm-a11y-compact #scene-controls menu {
+    gap: 2px !important;
+    margin: 0 !important;
+    padding: 0 !important;
+}
+/* Colle les deux colonnes (barre principale ↔ sous-outils). */
+body.wm-a11y-compact #controls { column-gap: 3px !important; }

@@ -1,6 +1,7 @@
 import { ReloadChat } from './chat.js';
 import { startSessionLog } from './session.js';
 import { partyFeatureEnabled } from './settings.js';
+import { tl } from "./i18n.js";
 
 var appPlayerList = undefined;
 
@@ -148,7 +149,7 @@ export function PlayerHooks() {
                 const targetUser = game.users.get(li.dataset.userId);
                 const targetSceneId = targetUser.viewedScene;
                 if (!targetSceneId) {
-                    ui.notifications.warn("Ce joueur n'est sur aucune scène.");
+                    ui.notifications.warn(tl("Ce joueur n'est sur aucune scène."));
                     return;
                 }
 
@@ -158,7 +159,7 @@ export function PlayerHooks() {
                 // directement notre propre scène, sans passer par le socket.
                 const scene = game.scenes.get(targetSceneId);
                 if (!scene) {
-                    ui.notifications.warn("Scène introuvable.");
+                    ui.notifications.warn(tl("Scène introuvable."));
                     return;
                 }
                 scene.view();

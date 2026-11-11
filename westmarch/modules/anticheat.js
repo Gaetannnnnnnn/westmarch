@@ -5,13 +5,15 @@
 // sorts, ou les utilisations restantes d'une feature, pendant un combat
 // ============================================================
 
+import { tl } from "./i18n.js";
+
 export function AntiCheatHooks() {
 
     // Helper commun : envoie le message d'alerte au(x) GM de la party
     // concernée uniquement (pas à tous les GM de la table).
     const notifyGM = (actor, userId, events) => {
         if (events.length === 0) return;
-        const author = game.users.get(userId)?.name ?? "Inconnu";
+        const author = game.users.get(userId)?.name ?? tl("Inconnu");
 
         // La partyId d'un joueur correspond à l'id du GM qui a créé la party.
         const partyId = game.users.get(userId)?.getFlag("westmarch", "partyId");
@@ -21,7 +23,7 @@ export function AntiCheatHooks() {
         if (gmIds.length === 0) return;
 
         ChatMessage.create({
-            content: `⚠️ <strong>Anti-Cheat</strong> — <strong>${actor.name}</strong> (joueur : ${author}) ${events.join(", ")} <em>pendant le combat</em>.`,
+            content: tl("⚠️ <strong>Anti-Cheat</strong> — <strong>{0}</strong> (joueur : {1}) {2} <em>pendant le combat</em>.", actor.name, author, events.join(", ")),
             whisper: gmIds,
             speaker: { alias: "Anti-Cheat" }
         });
@@ -60,7 +62,7 @@ export function AntiCheatHooks() {
             const before = !!item.system.preparation?.prepared;
             const after = preparedChange;
             if (before !== after && item.system.preparation?.mode === "prepared") {
-                events.push(`${after ? "a préparé" : "a dé-préparé"} le sort <strong>${item.name}</strong>`);
+                events.push((after ? tl("a préparé le sort <strong>{0}</strong>", item.name) : tl("a dé-préparé le sort <strong>{0}</strong>", item.name)));
             }
         }
 
@@ -69,7 +71,7 @@ export function AntiCheatHooks() {
             const before = item.system.attuned;
             const after = changes.system.attuned;
             if (before !== after) {
-                events.push(`${after ? "s'est attuné à" : "s'est désattuné de"} <strong>${item.name}</strong>`);
+                events.push((after ? tl("s'est attuné à <strong>{0}</strong>", item.name) : tl("s'est désattuné de <strong>{0}</strong>", item.name)));
             }
         }
 
@@ -78,7 +80,7 @@ export function AntiCheatHooks() {
             const before = item.system.equipped;
             const after = changes.system.equipped;
             if (before !== after) {
-                events.push(`${after ? "a équipé" : "a déséquipé"} <strong>${item.name}</strong>`);
+                events.push((after ? tl("a équipé <strong>{0}</strong>", item.name) : tl("a déséquipé <strong>{0}</strong>", item.name)));
             }
         }
 
@@ -92,14 +94,14 @@ export function AntiCheatHooks() {
             const after = changes.system.uses.spent;
             if (after < before) {
                 const max = item.system.uses?.max ?? "?";
-                events.push(`a regagné des utilisations de <strong>${item.name}</strong> (${max - before} → ${max - after})`);
+                events.push(tl("a regagné des utilisations de <strong>{0}</strong> ({1} → {2})", item.name, max - before, max - after));
             }
         }
         if (changes.system?.uses?.max !== undefined && item.type === "feat") {
             const before = item.system.uses?.max ?? 0;
             const after = changes.system.uses.max;
             if (after !== before) {
-                events.push(`a modifié le maximum d'utilisations de <strong>${item.name}</strong> (${before} → ${after})`);
+                events.push(tl("a modifié le maximum d'utilisations de <strong>{0}</strong> ({1} → {2})", item.name, before, after));
             }
         }
 
@@ -126,10 +128,10 @@ export function AntiCheatHooks() {
             // On ne signale que les hausses de "value" (récupération
             // suspecte d'emplacements) et tout changement de "max".
             if (slotChange.value !== undefined && slotChange.value > (before.value ?? 0)) {
-                events.push(`a regagné un emplacement de sort (${slotKey}) (${before.value} → ${slotChange.value})`);
+                events.push(tl("a regagné un emplacement de sort ({0}) ({1} → {2})", slotKey, before.value, slotChange.value));
             }
             if (slotChange.max !== undefined && slotChange.max !== (before.max ?? 0)) {
-                events.push(`a modifié le maximum d'emplacements de sort (${slotKey}) (${before.max} → ${slotChange.max})`);
+                events.push(tl("a modifié le maximum d'emplacements de sort ({0}) ({1} → {2})", slotKey, before.max, slotChange.max));
             }
         }
 

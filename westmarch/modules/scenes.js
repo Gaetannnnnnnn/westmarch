@@ -1,5 +1,6 @@
 import { partyFeatureEnabled } from './settings.js';
 import { pullUserToScene } from './socket.js';
+import { tl } from "./i18n.js";
 
 export function ScenesHooks() {
     Hooks.on('getSceneContextOptions', (html, contextMenu) => {
@@ -28,7 +29,7 @@ export function ScenesHooks() {
 
 function GoWithParty(destination){
     if (!destination) {
-        ui.notifications.warn("Scène de destination introuvable.");
+        ui.notifications.warn(tl("Scène de destination introuvable."));
         return;
     }
     // myPartyId doit être vérifié en plus de l'égalité stricte : sinon
@@ -43,5 +44,5 @@ function GoWithParty(destination){
             pullUserToScene(destination.id, user.id);
         }
     });
-    ui.notifications.info(`Groupe téléporté vers ${destination.name} (${count} membre(s)).`);
+    ui.notifications.info(tl("Groupe téléporté vers {0} ({1} membre(s)).", destination.name, count));
 }

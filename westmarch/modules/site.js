@@ -8,6 +8,8 @@
 // © 2026 Soruta.
 // ============================================================
 
+import { tl } from "./i18n.js";
+
 const MOD = "westmarch";
 export const URL_PAGE_MODULES = "https://altheia.eu/foundry-modules.html";
 
@@ -34,10 +36,10 @@ async function annoncerSite() {
         whisper: mj,
         content: `
             <div style="line-height:1.5;">
-                <p style="margin:0 0 6px;"><strong>Merci d’utiliser Soruta — WestMarch Système</strong> (version ${version.replace(/[^\w.\-]/g, "")}).</p>
-                <p style="margin:0 0 6px;">Sur le site d’Althéia, retrouve les mises à jour du module et découvre sa <strong>version complète</strong>, Soruta — Completed Westmarch&nbsp;: casier du meneur, carte des expéditions, temps morts, fiche enrichie et bien plus.</p>
-                <p style="margin:0;"><a href="${URL_PAGE_MODULES}" target="_blank" rel="noopener"><i class="fa-solid fa-arrow-up-right-from-square"></i> altheia.eu — Nos modules</a></p>
-                <p style="margin:6px 0 0;font-size:11px;opacity:.7;">Ce message n’est visible que par les MJ et ne s’affiche qu’une fois par version.</p>
+                <p style="margin:0 0 6px;">${tl("<strong>Merci d’utiliser Soruta — WestMarch Système</strong> (version {0}).", version.replace(/[^\w.\-]/g, ""))}</p>
+                <p style="margin:0 0 6px;">${tl("Sur le site d’Althéia, retrouve les mises à jour du module et découvre sa <strong>version complète</strong>, Soruta — Completed Westmarch&nbsp;: casier du meneur, carte des expéditions, temps morts, fiche enrichie et bien plus.")}</p>
+                <p style="margin:0;"><a href="${URL_PAGE_MODULES}" target="_blank" rel="noopener"><i class="fa-solid fa-arrow-up-right-from-square"></i> ${tl("altheia.eu — Nos modules")}</a></p>
+                <p style="margin:6px 0 0;font-size:11px;opacity:.7;">${tl("Ce message n’est visible que par les MJ et ne s’affiche qu’une fois par version.")}</p>
             </div>`
     });
     await game.settings.set(MOD, "siteMessageVersion", version);

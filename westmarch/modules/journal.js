@@ -1,4 +1,5 @@
 import { pullUserToScene } from './socket.js';
+import { tl } from "./i18n.js";
 
 export function JournalHooks() {
     Hooks.on("renderJournalEntrySheet", (sheet, html, data) => renderJournalEntrySheet(sheet, html, data));
@@ -33,7 +34,7 @@ function renderJournalEntrySheet(sheet, html, data) {
                         pullUserToScene(scene.id, user.id);
                     }
                 });
-                ui.notifications.info(`Groupe téléporté vers ${scene.name}`);
+                ui.notifications.info(tl("Groupe téléporté vers {0}", scene.name));
             }
         }
     ];

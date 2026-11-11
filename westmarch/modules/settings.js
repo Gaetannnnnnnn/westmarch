@@ -1,3 +1,4 @@
+import { tl } from "./i18n.js";
 // Settings dont l'utilité dépend entièrement du système de party.
 // Utilisé pour la cascade fonctionnelle et le regroupement visuel dans le menu.
 export const PARTY_DEPENDENT_SETTINGS = [
@@ -29,8 +30,8 @@ export function registerSettings() {
     // ============================================================
 
     game.settings.register("westmarch", "enableParty", {
-        name: "Système de Party",
-        hint: "Active le système de party (Create/Join/Leave/Kick/Invite Party). Si désactivé, le GM ne peut plus créer ou gérer de party, et toutes les options qui en dépendent sont automatiquement désactivées.",
+        name: tl("Système de Party"),
+        hint: tl("Active le système de party (Create/Join/Leave/Kick/Invite Party). Si désactivé, le GM ne peut plus créer ou gérer de party, et toutes les options qui en dépendent sont automatiquement désactivées."),
         scope: "world",
         config: true,
         type: Boolean,
@@ -39,8 +40,8 @@ export function registerSettings() {
     });
 
     game.settings.register("westmarch", "enableJoinScene", {
-        name: "Join Scene",
-        hint: "Ajoute une option 'Join Scene' dans le menu contextuel de la liste des joueurs. Permet à n'importe quel membre d'une party de se téléporter vers la scène d'un autre membre.",
+        name: tl("Join Scene"),
+        hint: tl("Ajoute une option 'Join Scene' dans le menu contextuel de la liste des joueurs. Permet à n'importe quel membre d'une party de se téléporter vers la scène d'un autre membre."),
         scope: "world",
         config: true,
         type: Boolean,
@@ -49,8 +50,8 @@ export function registerSettings() {
     });
 
     game.settings.register("westmarch", "enableShowParty", {
-        name: "Show Party (partage d'image)",
-        hint: "Ajoute un bouton 'Show Party' dans la barre de titre des fenêtres d'image. Permet au GM de partager une image directement à tous les membres de sa party.",
+        name: tl("Show Party (partage d'image)"),
+        hint: tl("Ajoute un bouton 'Show Party' dans la barre de titre des fenêtres d'image. Permet au GM de partager une image directement à tous les membres de sa party."),
         scope: "world",
         config: true,
         type: Boolean,
@@ -59,8 +60,8 @@ export function registerSettings() {
     });
 
     game.settings.register("westmarch", "enablePlayerGrouping", {
-        name: "Regroupement visuel des joueurs par party",
-        hint: "Réorganise la liste des joueurs pour regrouper visuellement les membres d'une même party, séparés par des lignes colorées.",
+        name: tl("Regroupement visuel des joueurs par party"),
+        hint: tl("Réorganise la liste des joueurs pour regrouper visuellement les membres d'une même party, séparés par des lignes colorées."),
         scope: "world",
         config: true,
         type: Boolean,
@@ -69,8 +70,8 @@ export function registerSettings() {
     });
 
     game.settings.register("westmarch", "enableGoWithPartyScenes", {
-        name: "Go With Party (répertoire de scènes)",
-        hint: "Ajoute une option 'Go With Party' dans le menu contextuel du répertoire de scènes. Téléporte tous les membres de la party vers la scène sélectionnée.",
+        name: tl("Go With Party (répertoire de scènes)"),
+        hint: tl("Ajoute une option 'Go With Party' dans le menu contextuel du répertoire de scènes. Téléporte tous les membres de la party vers la scène sélectionnée."),
         scope: "world",
         config: true,
         type: Boolean,
@@ -79,8 +80,8 @@ export function registerSettings() {
     });
 
     game.settings.register("westmarch", "enableGoWithPartyJournal", {
-        name: "Go With Party (liens de journaux)",
-        hint: "Ajoute un menu contextuel sur les liens de scène dans les journaux avec les options 'Go Alone' et 'Go With Party'.",
+        name: tl("Go With Party (liens de journaux)"),
+        hint: tl("Ajoute un menu contextuel sur les liens de scène dans les journaux avec les options 'Go Alone' et 'Go With Party'."),
         scope: "world",
         config: true,
         type: Boolean,
@@ -89,8 +90,8 @@ export function registerSettings() {
     });
 
     game.settings.register("westmarch", "enableChatFilter", {
-        name: "Filtrage du chat par party",
-        hint: "Les joueurs ne voient dans le chat que les messages envoyés par les membres de leur propre party. Sans party assignée, tous les messages sont visibles.",
+        name: tl("Filtrage du chat par party"),
+        hint: tl("Les joueurs ne voient dans le chat que les messages envoyés par les membres de leur propre party. Sans party assignée, tous les messages sont visibles."),
         scope: "world",
         config: true,
         type: Boolean,
@@ -99,8 +100,8 @@ export function registerSettings() {
     });
 
     game.settings.register("westmarch", "enableSessionLog", {
-        name: "Journal de session",
-        hint: "Active le bouton 'Clore la session' sous la liste des joueurs. Génère automatiquement un journal de session avec les joueurs présents, l'XP avant/après, les ennemis rencontrés, les PNJ et les objets récupérés.",
+        name: tl("Journal de session"),
+        hint: tl("Active le bouton 'Clore la session' sous la liste des joueurs. Génère automatiquement un journal de session avec les joueurs présents, l'XP avant/après, les ennemis rencontrés, les PNJ et les objets récupérés."),
         scope: "world",
         config: true,
         type: Boolean,
@@ -109,8 +110,8 @@ export function registerSettings() {
     });
 
     game.settings.register("westmarch", "enableCombatParty", {
-        name: "Combat lié à la party (plutôt qu'à la scène)",
-        hint: "Les combats créés par un GM sont automatiquement détachés de leur scène et marqués comme appartenant à sa party. Chaque joueur ne voit que le combat de sa propre party.",
+        name: tl("Combat lié à la party (plutôt qu'à la scène)"),
+        hint: tl("Les combats créés par un GM sont automatiquement détachés de leur scène et marqués comme appartenant à sa party. Chaque joueur ne voit que le combat de sa propre party."),
         scope: "world",
         config: true,
         type: Boolean,
@@ -119,8 +120,8 @@ export function registerSettings() {
     });
 
     game.settings.register("westmarch", "enableAntiCheat", {
-        name: "Anti-Cheat (combat)",
-        hint: "Pendant un combat actif, avertit les GM (en privé) lorsqu'un joueur modifie ses sorts préparés, son attunement, ou équipe/déséquipe une arme/armure sur un personnage engagé dans le combat.",
+        name: tl("Anti-Cheat (combat)"),
+        hint: tl("Pendant un combat actif, avertit les GM (en privé) lorsqu'un joueur modifie ses sorts préparés, son attunement, ou équipe/déséquipe une arme/armure sur un personnage engagé dans le combat."),
         scope: "world",
         config: true,
         type: Boolean,
@@ -142,15 +143,15 @@ export function registerSettings() {
         const moduleData = game.modules.get("westmarch");
         const version = moduleData?.version ?? "?";
         const description = moduleData?.description
-            ?? "Module de gestion de campagnes West March : parties, téléportation de groupe, journal de session, filtrage du chat et plus.";
+            ? tl(moduleData.description) : tl("Module de gestion de campagnes West March : parties, téléportation de groupe, journal de session, filtrage du chat et plus.");
         const author = moduleData?.authors?.[0]?.name ?? "Soruta";
 
         const banner = $(`
             <div class="westmarch-settings-banner" style="margin-bottom: 12px; padding: 10px 14px; border: 1px solid #e67e22; border-radius: 4px; background: rgba(230,126,34,0.08);">
                 <p style="margin:0 0 4px 0;"><strong>Soruta — WestMarch Système</strong> — v${version}</p>
                 <p style="margin:0 0 4px 0; font-size: 0.9em;">${description}</p>
-                <p style="margin:0 0 4px 0; font-size: 0.9em;">Auteur : ${author}</p>
-                <p style="margin:0; font-size: 0.85em; font-style: italic; color: #aaa;">© 2026 Soruta — Logiciel open source. Redistribution et modification autorisées avec attribution.</p>
+                <p style="margin:0 0 4px 0; font-size: 0.9em;">${tl("Auteur : {0}", author)}</p>
+                <p style="margin:0; font-size: 0.85em; font-style: italic; color: #aaa;">${tl("© 2026 Soruta — Logiciel open source. Redistribution et modification autorisées avec attribution.")}</p>
             </div>
         `);
         partyGroup.before(banner);
@@ -161,7 +162,7 @@ export function registerSettings() {
 
         partyGroup.find('label').first().append(
             ` <i class="fa-solid fa-triangle-exclamation westmarch-party-warning" ` +
-            `title="Si désactivé, ces options n'ont plus aucun effet, même si elles sont cochées : ${subNames.join(', ')}" ` +
+            `title="${tl("Si désactivé, ces options n'ont plus aucun effet, même si elles sont cochées : {0}", subNames.join(', '))}" ` +
             `style="color:#e67e22; cursor: help; margin-left: 4px;"></i>`
         );
 
